@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:prod": "vite build --mode production",
+    "build:prod": "vite build --mode production && node scripts/generate-404.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build:prod",
