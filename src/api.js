@@ -32,8 +32,23 @@ export const activitiesAPI = {
     create: (data) => api.post('/activities', data),
 };
 export const inquiriesAPI = {
-    getAll: () => api.get('/inquiries'), // Assuming this exists
-    // ...
+    getAll: () => api.get('/inquiries'),
+    updateStatus: (id, status) => api.put(`/inquiries/${id}/status`, { status }),
+    delete: (id) => api.delete(`/inquiries/${id}`),
+};
+
+export const clientsAPI = {
+    getAll: () => api.get('/clients'),
+    create: (data) => api.post('/clients', data),
+    update: (id, data) => api.put(`/clients/${id}`, data),
+    delete: (id) => api.delete(`/clients/${id}`),
+};
+
+export const projectsAPI = {
+    getAll: () => api.get('/projects'),
+    create: (data) => api.post('/projects', data),
+    update: (id, data) => api.put(`/projects/${id}`, data),
+    delete: (id) => api.delete(`/projects/${id}`),
 };
 
 export default api;
