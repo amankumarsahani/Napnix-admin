@@ -1,0 +1,189 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
+const API_URL = 'http://localhost:5000/api';
+
+export default function DetailSidebar({ isOpen, onClose, entityType, entityId, title, subTitle, status, type }) {
+    const [activeTab, setActiveTab] = useState('overview');
+    const [activities, setActivities] = useState([]);
+    const [newNote, setNewNote] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && entityId) {
+            fetchActivities();
+        }
+    }, [isOpen, entityId]);
+
+    const fetchActivities = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_URL}/activities/${entityType}/${entityId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) {
+                setActivities(res.data.data);
+            }
+        } catch (error) {
+            console.error('Failed to load activities', error);
+        }
+    };
+
+    const handleAddNote = async (e) => {
+        e.preventDefault();
+        if (!newNote.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`${API_URL}/activities`, {
+                entityType,
+                entityId,
+                type: 'note',
+                summary: 'User Note',
+                details: newNote
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.data.success) {
+                toast.success('Note added');
+                setNewNote('');
+                fetchActivities();
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to add note');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex justify-end">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity"
+                onClick={onClose}
+            ></div>
+
+            {/* Sidebar Panel */}
+            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+                {/* Header */}
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+                            <p className="text-sm text-slate-500 mt-1">{subTitle}</p>
+                            {status && (
+                                <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-100 text-brand-700 capitalize">
+                                    {status}
+                                </span>
+                            )}
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex gap-6 mt-6 border-b border-slate-200">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === 'overview' ? 'text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Overview
+                            {activeTab === 'overview' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-brand-600 rounded-full"></div>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('activity')}
+                            className={`pb-3 text-sm font-semibold transition-colors relative ${activeTab === 'activity' ? 'text-brand-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Activity & Notes
+                            {activeTab === 'activity' && <div className="absolute bottom-[-1px] left-0 right-0 h-0.5 bg-brand-600 rounded-full"></div>}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                    {activeTab === 'overview' ? (
+                        <div className="space-y-6">
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Contact Information</h3>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-700">email@example.com</span> {/* Placeholder, pass via props */}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        </div>
+                                        <span className="text-sm font-medium text-slate-700">+1 234 567 890</span> {/* Placeholder */}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Entity Specific Details (Inquiry/Lead specific fields could be passed as children or props) */}
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Note Input */}
+                            <div className="relative">
+                                <textarea
+                                    className="w-full p-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all resize-none text-sm"
+                                    rows="3"
+                                    placeholder="Add a note or call summary..."
+                                    value={newNote}
+                                    onChange={(e) => setNewNote(e.target.value)}
+                                ></textarea>
+                                <div className="flex justify-end mt-2">
+                                    <button
+                                        onClick={handleAddNote}
+                                        disabled={isSubmitting || !newNote.trim()}
+                                        className="px-4 py-1.5 bg-brand-600 text-white text-xs font-bold rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                                    >
+                                        Add Note
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Timeline */}
+                            <div className="relative border-l-2 border-slate-100 ml-3 space-y-6 pb-6">
+                                {activities.length === 0 ? (
+                                    <p className="text-sm text-slate-400 italic pl-6">No activity recorded yet.</p>
+                                ) : (
+                                    activities.map((activity) => (
+                                        <div key={activity.id} className="relative pl-6">
+                                            <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white shadow-sm ${activity.type === 'note' ? 'bg-blue-400' :
+                                                    activity.type === 'call' ? 'bg-emerald-400' : 'bg-slate-400'
+                                                }`}></div>
+
+                                            <div className="flex items-baseline justify-between mb-1">
+                                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                                                    {activity.type} • {activity.firstName || 'User'}
+                                                </span>
+                                                <span className="text-[10px] font-semibold text-slate-400">
+                                                    {new Date(activity.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-700 border border-slate-100">
+                                                <p>{activity.details}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

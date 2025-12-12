@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
+import DetailSidebar from '../components/common/DetailSidebar';
 
 export default function Inquiries() {
     const [inquiries, setInquiries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [sidebarInquiry, setSidebarInquiry] = useState(null);
 
     useEffect(() => {
         fetchInquiries();
@@ -15,7 +17,8 @@ export default function Inquiries() {
     const fetchInquiries = async () => {
         try {
             const response = await inquiriesAPI.getAll();
-            setInquiries(response.data || []);
+            const payload = response.data;
+            setInquiries(Array.isArray(payload) ? payload : payload.data || []);
         } catch (error) {
             toast.error('Failed to load inquiries');
             console.error('Fetch inquiries error:', error);
@@ -124,7 +127,11 @@ export default function Inquiries() {
                                 </tr>
                             ) : (
                                 inquiries.map((inquiry) => (
-                                    <tr key={inquiry.id} className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        key={inquiry.id}
+                                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                                        onClick={() => setSidebarInquiry(inquiry)}
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="font-medium text-slate-900">{inquiry.name}</div>
                                         </td>
@@ -137,8 +144,12 @@ export default function Inquiries() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <select
                                                 value={inquiry.status}
-                                                onChange={(e) => handleStatusChange(inquiry.id, e.target.value)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    handleStatusChange(inquiry.id, e.target.value);
+                                                }}
                                                 className={`px-3 py-1 text-xs font-semibold rounded-full border-0 cursor-pointer ${getStatusBadge(inquiry.status)}`}
+                                                onClick={(e) => e.stopPropagation()}
                                             >
                                                 <option value="new">New</option>
                                                 <option value="contacted">Contacted</option>
@@ -150,7 +161,8 @@ export default function Inquiries() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <button
-                                                onClick={() => {
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setSelectedInquiry(inquiry);
                                                     setShowModal(true);
                                                 }}
@@ -246,6 +258,16 @@ export default function Inquiries() {
                     </div>
                 </div>
             )}
+
+            <DetailSidebar
+                isOpen={!!sidebarInquiry}
+                onClose={() => setSidebarInquiry(null)}
+                entityType="inquiry"
+                entityId={sidebarInquiry?.id}
+                title={sidebarInquiry?.name}
+                subTitle={sidebarInquiry?.company}
+                status={sidebarInquiry?.status}
+            />
         </div>
     );
 }
