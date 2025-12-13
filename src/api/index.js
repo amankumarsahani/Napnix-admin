@@ -199,3 +199,22 @@ export const activitiesAPI = {
         return response.data;
     },
 };
+
+// Dashboard API - for admin dashboard stats
+export const dashboardAPI = {
+    getLeadStats: async () => {
+        const response = await apiClient.get('/leads/stats');
+        return response.data;
+    },
+
+    getInquiryStats: async () => {
+        const response = await apiClient.get('/inquiries/stats');
+        return response.data;
+    },
+
+    getAssignableUsers: async () => {
+        const response = await apiClient.get('/leads/assignable-users');
+        return response.data;
+    },
+};
+

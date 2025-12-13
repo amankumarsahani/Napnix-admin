@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import AdminStatsSection from '../components/charts/AdminStatsSection';
 
 // Mock data (replace with API calls later)
 const stats = [
@@ -140,6 +141,16 @@ export default function Dashboard() {
                     </div>
                 ))}
             </div>
+
+            {/* Stats Charts Section - Admin sees all, Sales Operator sees their own */}
+            {['admin', 'sales_operator'].includes(user?.role) && (
+                <div className="mt-8">
+                    <h2 className="text-xl font-bold text-slate-800 mb-6">
+                        {user?.role === 'admin' ? 'Analytics Overview' : 'My Performance'}
+                    </h2>
+                    <AdminStatsSection />
+                </div>
+            )}
 
             {/* Main Dashboard Content */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

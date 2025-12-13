@@ -69,11 +69,11 @@ export default function Team() {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Success handling
+            // Success handling - email is now sent with credentials
             setCreatedUser({
                 name: formData.name,
                 email: formData.email,
-                password: 'Password123!' // Default password as per backend
+                emailSent: response.data.emailSent
             });
             setShowModal(false);
             setShowSuccessModal(true);
@@ -269,28 +269,54 @@ export default function Team() {
                 </div>
             )}
 
-            {/* Success Modal with Credentials */}
+            {/* Success Modal - Email Sent */}
             {showSuccessModal && createdUser && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
                     <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200 text-center">
                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            {createdUser.emailSent ? (
+                                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            )}
                         </div>
                         <h2 className="text-xl font-bold text-slate-900 mb-2">Employee Created!</h2>
-                        <p className="text-slate-500 text-sm mb-6">Share these login credentials with the user.</p>
 
-                        <div className="bg-slate-50 rounded-xl p-4 text-left space-y-3 mb-6 border border-slate-200">
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</p>
-                                <p className="font-medium text-slate-900 select-all">{createdUser.email}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Default Password</p>
-                                <p className="font-mono font-bold text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded select-all inline-block mt-1">
-                                    {createdUser.password}
+                        {createdUser.emailSent ? (
+                            <>
+                                <p className="text-slate-500 text-sm mb-6">
+                                    A welcome email with login credentials has been sent to the employee.
                                 </p>
-                            </div>
-                        </div>
+
+                                <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-3 mb-6 border border-emerald-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Email Sent To</p>
+                                            <p className="font-medium text-slate-900">{createdUser.email}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-6 text-left">
+                                    <p className="text-xs text-blue-700">
+                                        <strong>📧 Email includes:</strong> Login credentials, password, and a link to the admin dashboard.
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-slate-500 text-sm mb-6">
+                                User already had an account. Team profile has been created.
+                            </p>
+                        )}
 
                         <button onClick={() => setShowSuccessModal(false)} className="btn btn-primary w-full">
                             Done
