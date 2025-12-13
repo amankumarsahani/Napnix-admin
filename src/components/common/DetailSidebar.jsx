@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function DetailSidebar({ isOpen, onClose, entityType, entityId, title, subTitle, status, type }) {
     const [activeTab, setActiveTab] = useState('overview');
@@ -162,7 +162,7 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
                                     activities.map((activity) => (
                                         <div key={activity.id} className="relative pl-6">
                                             <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white shadow-sm ${activity.type === 'note' ? 'bg-blue-400' :
-                                                    activity.type === 'call' ? 'bg-emerald-400' : 'bg-slate-400'
+                                                activity.type === 'call' ? 'bg-emerald-400' : 'bg-slate-400'
                                                 }`}></div>
 
                                             <div className="flex items-baseline justify-between mb-1">

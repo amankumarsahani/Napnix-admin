@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Or use env var
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Team() {
     const { user } = useAuth();
