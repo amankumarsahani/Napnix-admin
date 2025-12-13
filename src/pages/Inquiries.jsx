@@ -17,8 +17,12 @@ export default function Inquiries() {
     const fetchInquiries = async () => {
         try {
             const response = await inquiriesAPI.getAll();
-            // Backend returns { success: true, data: [...] }
-            const list = response.data || response || [];
+            console.log('[Inquiries] API response:', response);
+            // Backend returns { success: true, data: [...], page, limit }
+            // inquiriesAPI.getAll() already extracts response.data from axios
+            // So response = { success, data, page, limit } where data is the array
+            const list = response?.data || [];
+            console.log('[Inquiries] Extracted list:', list);
             setInquiries(Array.isArray(list) ? list : []);
         } catch (error) {
             toast.error('Failed to load inquiries');
