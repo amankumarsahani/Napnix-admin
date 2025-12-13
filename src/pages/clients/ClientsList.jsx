@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+import { clientsAPI } from '../../api';
+import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
 
 export default function ClientsList() {
@@ -7,13 +10,6 @@ export default function ClientsList() {
     const [editingClient, setEditingClient] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
     const [formData, setFormData] = useState({
-        companyName: '',
-        // ... (rest of state initialization, kept same implicitly if I use replace carefully, but I am replacing the top and bottom. Multi replace is better here.)
-
-        // Wait, I am using single replace. I should use multi_replace.
-        // Or just replace the top import/state and the bottom return.
-        // Let's use multi_replace_file_content for ClientsList.jsx.
-
         companyName: '',
         contactName: '',
         email: '',

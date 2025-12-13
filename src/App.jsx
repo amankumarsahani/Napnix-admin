@@ -13,6 +13,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 
 import Team from './pages/admin/Team';
 import Settings from './pages/admin/Settings';
+import Templates from './pages/admin/Templates';
 
 function AppRoutes() {
   return (
@@ -31,6 +32,7 @@ function AppRoutes() {
           {/* Admin Only Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
             <Route path="inquiries" element={<Inquiries />} />
+            <Route path="templates" element={<Templates />} />
             <Route path="team" element={<Team />} />
             <Route path="settings" element={<Settings />} />
           </Route>

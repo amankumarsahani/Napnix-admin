@@ -140,3 +140,39 @@ export const inquiriesAPI = {
     },
 };
 
+export const templatesAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/email-templates', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/email-templates/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/email-templates', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/email-templates/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/email-templates/${id}`);
+        return response.data;
+    },
+
+    preview: async (id, sampleData = {}) => {
+        const response = await apiClient.post(`/email-templates/${id}/preview`, sampleData);
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await apiClient.get('/email-templates/stats');
+        return response.data;
+    },
+};

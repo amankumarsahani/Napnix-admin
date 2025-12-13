@@ -16,9 +16,8 @@ export default function Inquiries() {
 
     const fetchInquiries = async () => {
         try {
-            const response = await inquiriesAPI.getAll();
-            const payload = response.data;
-            setInquiries(Array.isArray(payload) ? payload : payload.data || []);
+            const data = await inquiriesAPI.getAll();
+            setInquiries(Array.isArray(data) ? data : data.inquiries || []);
         } catch (error) {
             toast.error('Failed to load inquiries');
             console.error('Fetch inquiries error:', error);
