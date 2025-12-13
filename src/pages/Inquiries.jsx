@@ -58,26 +58,23 @@ export default function Inquiries() {
     };
 
     const handleConvertToLead = async (inquiry) => {
-        console.log('[Convert to Lead] Starting conversion for:', inquiry);
-
-        const confirmed = window.confirm(`Convert "${inquiry.name}" to a lead?\n\nThis will:\n• Create a new lead with this contact's information\n• Mark this inquiry as "Converted"`);
-        if (!confirmed) {
-            console.log('[Convert to Lead] User cancelled');
-            return;
-        }
+        console.log('[Convert to Lead] Converting:', inquiry.name);
 
         try {
             console.log('[Convert to Lead] Calling API...');
+            toast.loading('Converting to lead...', { id: 'convert' });
+
             const result = await inquiriesAPI.convertToLead(inquiry.id, {
                 notes: inquiry.message
             });
+
             console.log('[Convert to Lead] Success:', result);
-            toast.success('Inquiry converted to lead successfully!');
+            toast.success('Inquiry converted to lead!', { id: 'convert' });
             fetchInquiries();
             setShowModal(false);
         } catch (error) {
             console.error('[Convert to Lead] Error:', error);
-            toast.error(error.response?.data?.error || 'Failed to convert to lead');
+            toast.error(error.response?.data?.error || 'Failed to convert', { id: 'convert' });
         }
     };
 
