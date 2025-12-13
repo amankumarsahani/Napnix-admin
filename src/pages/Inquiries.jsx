@@ -168,7 +168,11 @@ export default function Inquiries() {
                                                 value={inquiry.status}
                                                 onChange={(e) => {
                                                     e.stopPropagation();
-                                                    handleStatusChange(inquiry.id, e.target.value);
+                                                    if (e.target.value === 'converted') {
+                                                        handleConvertToLead(inquiry);
+                                                    } else {
+                                                        handleStatusChange(inquiry.id, e.target.value);
+                                                    }
                                                 }}
                                                 className={`px-3 py-1 text-xs font-semibold rounded-full border-0 cursor-pointer ${getStatusBadge(inquiry.status)}`}
                                                 onClick={(e) => e.stopPropagation()}
@@ -177,7 +181,7 @@ export default function Inquiries() {
                                                 <option value="new">New</option>
                                                 <option value="contacted">Contacted</option>
                                                 <option value="resolved">Resolved</option>
-                                                <option value="converted">Converted</option>
+                                                <option value="converted">→ Convert to Lead</option>
                                             </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
