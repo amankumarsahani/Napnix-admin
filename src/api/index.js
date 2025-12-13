@@ -138,6 +138,11 @@ export const inquiriesAPI = {
         const response = await apiClient.get('/inquiries/stats');
         return response.data;
     },
+
+    convertToLead: async (id, data = {}) => {
+        const response = await apiClient.post(`/inquiries/${id}/convert-to-lead`, data);
+        return response.data;
+    },
 };
 
 export const templatesAPI = {

@@ -57,11 +57,28 @@ export default function Inquiries() {
         }
     };
 
+    const handleConvertToLead = async (inquiry) => {
+        if (!window.confirm(`Convert "${inquiry.name}" to a lead?`)) return;
+
+        try {
+            const result = await inquiriesAPI.convertToLead(inquiry.id, {
+                notes: inquiry.message
+            });
+            toast.success('Inquiry converted to lead successfully!');
+            fetchInquiries();
+            setShowModal(false);
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to convert to lead');
+            console.error('Convert to lead error:', error);
+        }
+    };
+
     const getStatusBadge = (status) => {
         const styles = {
             new: 'bg-blue-100 text-blue-700',
             contacted: 'bg-yellow-100 text-yellow-700',
             resolved: 'bg-green-100 text-green-700',
+            converted: 'bg-purple-100 text-purple-700',
         };
         return styles[status] || styles.new;
     };
@@ -155,26 +172,45 @@ export default function Inquiries() {
                                                 }}
                                                 className={`px-3 py-1 text-xs font-semibold rounded-full border-0 cursor-pointer ${getStatusBadge(inquiry.status)}`}
                                                 onClick={(e) => e.stopPropagation()}
+                                                disabled={inquiry.status === 'converted'}
                                             >
                                                 <option value="new">New</option>
                                                 <option value="contacted">Contacted</option>
                                                 <option value="resolved">Resolved</option>
+                                                <option value="converted">Converted</option>
                                             </select>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                                             {formatDate(inquiry.createdAt)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedInquiry(inquiry);
-                                                    setShowModal(true);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-800 font-medium"
-                                            >
-                                                View
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedInquiry(inquiry);
+                                                        setShowModal(true);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                                >
+                                                    View
+                                                </button>
+                                                {inquiry.status !== 'converted' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleConvertToLead(inquiry);
+                                                        }}
+                                                        className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+                                                        title="Convert to Lead"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                                        </svg>
+                                                        Lead
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
