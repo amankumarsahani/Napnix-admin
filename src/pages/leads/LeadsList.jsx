@@ -191,7 +191,7 @@ export default function LeadsList() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {leads.map((lead) => (
-                                    <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                                    <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm">
@@ -225,16 +225,32 @@ export default function LeadsList() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-1">
                                                 <button
-                                                    onClick={() => handleEdit(lead)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedLead(lead);
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="View Details"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEdit(lead);
+                                                    }}
                                                     className="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
                                                     title="Edit"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(lead.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(lead.id);
+                                                    }}
                                                     className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                                     title="Delete"
                                                 >
@@ -407,9 +423,11 @@ export default function LeadsList() {
                 onClose={() => setSelectedLead(null)}
                 entityType="lead"
                 entityId={selectedLead?.id}
-                title={selectedLead?.company || selectedLead?.companyName}
+                title={selectedLead?.company || selectedLead?.companyName || selectedLead?.contactName}
                 subTitle={selectedLead?.contactName}
                 status={selectedLead?.status}
+                email={selectedLead?.email}
+                phone={selectedLead?.phone}
             />
         </div>
     );

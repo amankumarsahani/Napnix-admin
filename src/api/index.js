@@ -181,3 +181,21 @@ export const templatesAPI = {
         return response.data;
     },
 };
+
+// Activities API - for tracking notes, calls, status changes etc.
+export const activitiesAPI = {
+    getByEntity: async (entityType, entityId) => {
+        const response = await apiClient.get(`/activities/${entityType}/${entityId}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/activities', data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/activities/${id}`);
+        return response.data;
+    },
+};
