@@ -4,15 +4,8 @@ import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
 import DetailSidebar from '../../components/common/DetailSidebar';
 
-// Mock data for initial view (replace with empty array or relevant initial state if needed)
-const MOCK_LEADS = [
-    { id: 1, contactName: 'Alice Freeman', company: 'TechCorp', email: 'alice@tech.com', status: 'new', estimatedValue: 5000, score: 85 },
-    { id: 2, contactName: 'Robert Smith', company: 'Design Studio', email: 'rob@design.com', status: 'contacted', estimatedValue: 12000, score: 70 },
-    { id: 3, contactName: 'Sarah Jones', company: 'Retail Inc', email: 'sarah@retail.com', status: 'qualified', estimatedValue: 3500, score: 60 },
-];
-
 export default function LeadsList() {
-    const [leads, setLeads] = useState(MOCK_LEADS);
+    const [leads, setLeads] = useState([]);
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -36,13 +29,16 @@ export default function LeadsList() {
 
     const fetchLeads = async () => {
         try {
-            // Uncomment real API call when backend is ready
-            // const data = await leadsAPI.getAll();
-            // setLeads(Array.isArray(data) ? data : data.leads || []);
-            setLoading(false);
+            setLoading(true);
+            const response = await leadsAPI.getAll();
+            console.log('[Leads] API response:', response);
+            // Backend returns { leads: [...] }
+            const list = response?.leads || response?.data || [];
+            setLeads(Array.isArray(list) ? list : []);
         } catch (error) {
             toast.error('Failed to load leads');
-            console.error(error);
+            console.error('[Leads] Error:', error);
+        } finally {
             setLoading(false);
         }
     };
@@ -50,32 +46,39 @@ export default function LeadsList() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Simulate API call success for now
-            const newLead = { ...formData, id: Date.now(), company: formData.companyName }; // Map companyName to company for consistent keys
+            const submitData = {
+                contactName: formData.contactName,
+                company: formData.companyName,
+                email: formData.email,
+                phone: formData.phone,
+                status: formData.status,
+                leadSource: formData.source,
+                estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
+                notes: formData.notes,
+                score: formData.score || 0
+            };
 
             if (editingLead) {
-                // await leadsAPI.update(editingLead.id, formData);
-                setLeads(prev => prev.map(l => l.id === editingLead.id ? { ...newLead, id: editingLead.id } : l));
+                await leadsAPI.update(editingLead.id, submitData);
                 toast.success('Lead updated successfully');
             } else {
-                // await leadsAPI.create(formData);
-                setLeads(prev => [newLead, ...prev]);
+                await leadsAPI.create(submitData);
                 toast.success('Lead created successfully');
             }
             setShowModal(false);
             resetForm();
-            // fetchLeads(); // Refresh
+            fetchLeads();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Operation failed');
+            toast.error(error.response?.data?.error || 'Operation failed');
         }
     };
 
     const handleDelete = async (id) => {
         if (!confirm('Are you sure you want to delete this lead?')) return;
         try {
-            // await leadsAPI.delete(id);
-            setLeads(prev => prev.filter(l => l.id !== id));
+            await leadsAPI.delete(id);
             toast.success('Lead deleted successfully');
+            fetchLeads();
         } catch (error) {
             toast.error('Failed to delete lead');
         }
