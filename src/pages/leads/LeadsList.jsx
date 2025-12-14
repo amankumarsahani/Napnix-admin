@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { leadsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
-import DetailSidebar from '../../components/common/DetailSidebar';
 
 export default function LeadsList() {
     const [leads, setLeads] = useState([]);
@@ -22,6 +22,7 @@ export default function LeadsList() {
         score: 0
     });
     const [selectedLead, setSelectedLead] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchLeads();
@@ -229,7 +230,7 @@ export default function LeadsList() {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setSelectedLead(lead);
+                                                        navigate(`/leads/${lead.id}`);
                                                     }}
                                                     className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                     title="View Details"
@@ -417,18 +418,7 @@ export default function LeadsList() {
                     </div>
                 </div>
             )}
-
-            <DetailSidebar
-                isOpen={!!selectedLead}
-                onClose={() => setSelectedLead(null)}
-                entityType="lead"
-                entityId={selectedLead?.id}
-                title={selectedLead?.company || selectedLead?.companyName || selectedLead?.contactName}
-                subTitle={selectedLead?.contactName}
-                status={selectedLead?.status}
-                email={selectedLead?.email}
-                phone={selectedLead?.phone}
-            />
         </div>
     );
 }
+

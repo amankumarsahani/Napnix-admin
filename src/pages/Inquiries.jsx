@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
-import DetailSidebar from '../components/common/DetailSidebar';
 
 export default function Inquiries() {
     const [inquiries, setInquiries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [sidebarInquiry, setSidebarInquiry] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchInquiries();
@@ -157,7 +157,7 @@ export default function Inquiries() {
                                     <tr
                                         key={inquiry.id}
                                         className="hover:bg-slate-50 transition-colors cursor-pointer"
-                                        onClick={() => setSidebarInquiry(inquiry)}
+                                        onClick={() => navigate(`/inquiries/${inquiry.id}`)}
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="font-medium text-slate-900">{inquiry.name}</div>
@@ -308,16 +308,7 @@ export default function Inquiries() {
                     </div>
                 </div>
             )}
-
-            <DetailSidebar
-                isOpen={!!sidebarInquiry}
-                onClose={() => setSidebarInquiry(null)}
-                entityType="inquiry"
-                entityId={sidebarInquiry?.id}
-                title={sidebarInquiry?.name}
-                subTitle={sidebarInquiry?.company}
-                status={sidebarInquiry?.status}
-            />
         </div>
     );
 }
+

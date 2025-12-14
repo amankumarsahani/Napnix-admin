@@ -22,7 +22,7 @@ export default function Team() {
         phone: '',
         position: '',
         joinDate: '',
-        role: 'employee',
+        role: 'sales_operator',
         department: '',
         status: 'active'
     });
@@ -80,7 +80,7 @@ export default function Team() {
 
             setFormData({
                 name: '', email: '', phone: '', position: '',
-                joinDate: '', role: 'employee', department: '', status: 'active'
+                joinDate: '', role: 'sales_operator', department: '', status: 'active'
             });
             fetchMembers(); // Refresh list
         } catch (error) {
@@ -228,7 +228,8 @@ export default function Team() {
                                         value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                                         <option value="admin">Admin</option>
                                         <option value="manager">Manager</option>
-                                        <option value="employee">Employee</option>
+                                        <option value="sales_operator">Sales Operator</option>
+                                        <option value="user">User</option>
                                     </select>
                                 </div>
                             </div>

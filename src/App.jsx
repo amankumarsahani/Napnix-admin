@@ -8,7 +8,9 @@ import Dashboard from './pages/Dashboard';
 import ClientsList from './pages/clients/ClientsList';
 import ProjectsList from './pages/projects/ProjectsList';
 import LeadsList from './pages/leads/LeadsList';
+import LeadDetail from './pages/leads/LeadDetail';
 import Inquiries from './pages/Inquiries';
+import InquiryDetail from './pages/inquiries/InquiryDetail';
 import PlaceholderPage from './pages/PlaceholderPage';
 
 import Team from './pages/admin/Team';
@@ -21,17 +23,23 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
 
       {/* Protected Routes Wrapper */}
-      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'employee', 'user']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'sales_operator', 'user']} />}>
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="clients" element={<ClientsList />} />
           <Route path="projects" element={<ProjectsList />} />
+
+          {/* Leads - accessible by admin and sales_operator */}
           <Route path="leads" element={<LeadsList />} />
+          <Route path="leads/:id" element={<LeadDetail />} />
+
+          {/* Inquiries - accessible by admin and sales_operator */}
+          <Route path="inquiries" element={<Inquiries />} />
+          <Route path="inquiries/:id" element={<InquiryDetail />} />
 
           {/* Admin Only Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="inquiries" element={<Inquiries />} />
             <Route path="templates" element={<Templates />} />
             <Route path="team" element={<Team />} />
             <Route path="settings" element={<Settings />} />
@@ -52,3 +60,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
