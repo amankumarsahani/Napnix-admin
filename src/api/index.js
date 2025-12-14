@@ -218,3 +218,41 @@ export const dashboardAPI = {
     },
 };
 
+// Document Templates API
+export const documentTemplatesAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/document-templates', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/document-templates/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/document-templates', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/document-templates/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/document-templates/${id}`);
+        return response.data;
+    },
+
+    preview: async (id, variables) => {
+        const response = await apiClient.post(`/document-templates/${id}/preview`, { variables });
+        return response.data;
+    },
+
+    send: async (templateId, to, subject, variables) => {
+        const response = await apiClient.post('/document-templates/send', { templateId, to, subject, variables });
+        return response.data;
+    },
+};
+

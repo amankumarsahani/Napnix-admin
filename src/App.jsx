@@ -16,6 +16,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import Team from './pages/admin/Team';
 import Settings from './pages/admin/Settings';
 import Templates from './pages/admin/Templates';
+import Documents from './pages/admin/Documents';
 
 function AppRoutes() {
   return (
@@ -37,6 +38,9 @@ function AppRoutes() {
           {/* Inquiries - accessible by admin and sales_operator */}
           <Route path="inquiries" element={<Inquiries />} />
           <Route path="inquiries/:id" element={<InquiryDetail />} />
+
+          {/* Documents - accessible by admin and sales_operator */}
+          <Route path="documents" element={<Documents />} />
 
           {/* Admin Only Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
