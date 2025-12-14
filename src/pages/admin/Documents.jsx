@@ -17,10 +17,13 @@ export default function Documents() {
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [showSendModal, setShowSendModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
     const [variables, setVariables] = useState({});
     const [sendData, setSendData] = useState({ to: '', subject: '' });
     const [sending, setSending] = useState(false);
+    const [editData, setEditData] = useState({ name: '', description: '', category: 'sales', content: '' });
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         fetchTemplates();
@@ -54,6 +57,47 @@ export default function Documents() {
             setShowPreviewModal(true);
         } catch (error) {
             toast.error('Failed to load template');
+        }
+    };
+
+    const handleEdit = async (template) => {
+        try {
+            const fullTemplate = await documentTemplatesAPI.getById(template.id);
+            const data = fullTemplate.data;
+            setSelectedTemplate(data);
+            setEditData({
+                name: data.name || '',
+                description: data.description || '',
+                category: data.category || 'sales',
+                content: data.content || ''
+            });
+            setShowEditModal(true);
+        } catch (error) {
+            toast.error('Failed to load template for editing');
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editData.name.trim() || !editData.content.trim()) {
+            toast.error('Name and content are required');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await documentTemplatesAPI.update(selectedTemplate.id, {
+                name: editData.name,
+                description: editData.description,
+                category: editData.category,
+                content: editData.content
+            });
+            toast.success('Template updated successfully!');
+            setShowEditModal(false);
+            fetchTemplates();
+        } catch (error) {
+            toast.error('Failed to update template');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -120,11 +164,6 @@ export default function Documents() {
                     <h1 className="text-3xl font-bold text-slate-900">Document Templates</h1>
                     <p className="text-slate-500 mt-1">Personalize and send professional documents to your clients</p>
                 </div>
-                {user?.role === 'admin' && (
-                    <button className="px-4 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700">
-                        + Create Template
-                    </button>
-                )}
             </div>
 
             {/* Template Grid */}
@@ -143,6 +182,17 @@ export default function Documents() {
                                         </span>
                                     )}
                                 </div>
+                                {user?.role === 'admin' && (
+                                    <button
+                                        onClick={() => handleEdit(template)}
+                                        className="p-1 text-slate-400 hover:text-brand-600 transition-colors"
+                                        title="Edit Template"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
+                                )}
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-2">{template.name}</h3>
                             <p className="text-sm text-slate-500 line-clamp-2">{template.description}</p>
@@ -152,7 +202,7 @@ export default function Documents() {
                                 onClick={() => handlePreview(template)}
                                 className="flex-1 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
                             >
-                                Preview & Edit
+                                Preview
                             </button>
                             <button
                                 onClick={() => {
@@ -221,6 +271,92 @@ export default function Documents() {
                 </div>
             )}
 
+            {/* Edit Modal */}
+            {showEditModal && selectedTemplate && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-slate-200">
+                            <h2 className="text-xl font-bold text-slate-900">Edit Template: {selectedTemplate.name}</h2>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Template Name</label>
+                                    <input
+                                        type="text"
+                                        value={editData.name}
+                                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                                    <select
+                                        value={editData.category}
+                                        onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                    >
+                                        <option value="sales">Sales</option>
+                                        <option value="legal">Legal</option>
+                                        <option value="finance">Finance</option>
+                                        <option value="operations">Operations</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <input
+                                    type="text"
+                                    value={editData.description}
+                                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Content (HTML)
+                                    <span className="text-xs text-slate-400 ml-2">Use {"{{variable_name}}"} for dynamic fields</span>
+                                </label>
+                                <textarea
+                                    value={editData.content}
+                                    onChange={(e) => setEditData({ ...editData, content: e.target.value })}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none font-mono text-sm"
+                                    rows={15}
+                                    placeholder="<div>Your HTML content here...</div>"
+                                />
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-4">
+                                <h4 className="text-sm font-medium text-slate-700 mb-2">Preview</h4>
+                                <div
+                                    className="bg-white border border-slate-200 rounded-lg p-4 max-h-64 overflow-y-auto"
+                                    dangerouslySetInnerHTML={{ __html: editData.content }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-slate-200 flex gap-3">
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={saving}
+                                className="flex-1 px-4 py-3 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 disabled:opacity-50"
+                            >
+                                {saving ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Send Modal */}
             {showSendModal && selectedTemplate && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
@@ -268,3 +404,4 @@ export default function Documents() {
         </div>
     );
 }
+
