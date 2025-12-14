@@ -16,10 +16,10 @@ const ACTIVITY_TYPES = {
 };
 
 const STATUS_COLORS = {
-    new: 'bg-blue-100 text-blue-700',
-    contacted: 'bg-yellow-100 text-yellow-700',
-    resolved: 'bg-emerald-100 text-emerald-700',
-    converted: 'bg-green-100 text-green-700',
+    new: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400',
+    contacted: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400',
+    resolved: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400',
+    converted: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400',
 };
 
 const formatDate = (dateString) => {
@@ -153,8 +153,8 @@ export default function InquiryDetail() {
         return (
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <div className="animate-pulse space-y-6">
-                    <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-                    <div className="h-64 bg-slate-200 rounded-2xl"></div>
+                    <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
                 </div>
             </div>
         );
@@ -165,18 +165,18 @@ export default function InquiryDetail() {
     return (
         <div className="max-w-6xl mx-auto px-6 py-8">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
                 <Link to="/inquiries" className="hover:text-brand-600">Inquiries</Link>
                 <span>/</span>
-                <span className="text-slate-900 font-medium">{inquiry.name}</span>
+                <span className="text-slate-900 dark:text-white font-medium">{inquiry.name}</span>
             </div>
 
             {/* Header */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">{inquiry.name}</h1>
-                        <p className="text-slate-500 mt-1">{inquiry.company || 'No company'}</p>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{inquiry.name}</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">{inquiry.company || 'No company'}</p>
                         <div className="flex items-center gap-3 mt-4">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[inquiry.status] || 'bg-slate-100 text-slate-700'}`}>
                                 {inquiry.status}
@@ -203,7 +203,7 @@ export default function InquiryDetail() {
                         </button>
                         <button
                             onClick={() => navigate('/inquiries')}
-                            className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50"
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                             ← Back
                         </button>
@@ -215,8 +215,8 @@ export default function InquiryDetail() {
                 {/* Left: Info & Actions */}
                 <div className="space-y-6">
                     {/* Contact Info */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Contact Information</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Contact Information</h3>
                         <div className="space-y-3">
                             {inquiry.email && (
                                 <div className="flex items-center gap-3">
@@ -234,8 +234,8 @@ export default function InquiryDetail() {
                     </div>
 
                     {/* Status Update */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Update Status</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Update Status</h3>
                         <div className="grid grid-cols-2 gap-2">
                             {['new', 'contacted', 'resolved'].map(status => (
                                 <button
@@ -244,7 +244,7 @@ export default function InquiryDetail() {
                                     disabled={inquiry.status === 'converted'}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all ${inquiry.status === status
                                         ? 'bg-brand-600 text-white'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50'
                                         }`}
                                 >
                                     {status}
@@ -255,14 +255,14 @@ export default function InquiryDetail() {
 
                     {/* Assigned To */}
                     {inquiry.assignedFirstName && (
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Assigned To</h3>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Assigned To</h3>
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold">
+                                <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center font-semibold">
                                     {inquiry.assignedFirstName[0]}{inquiry.assignedLastName?.[0] || ''}
                                 </div>
                                 <div>
-                                    <p className="font-medium text-slate-900">{inquiry.assignedFirstName} {inquiry.assignedLastName}</p>
+                                    <p className="font-medium text-slate-900 dark:text-white">{inquiry.assignedFirstName} {inquiry.assignedLastName}</p>
                                 </div>
                             </div>
                         </div>
@@ -270,19 +270,19 @@ export default function InquiryDetail() {
 
                     {/* Message */}
                     {inquiry.message && (
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Original Message</h3>
-                            <p className="text-slate-600 text-sm whitespace-pre-wrap">{inquiry.message}</p>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Original Message</h3>
+                            <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-wrap">{inquiry.message}</p>
                         </div>
                     )}
 
                     {/* Meta */}
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Details</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Details</h3>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-slate-500">Received</span>
-                                <span className="text-slate-900">{formatDate(inquiry.createdAt)}</span>
+                                <span className="text-slate-500 dark:text-slate-400">Received</span>
+                                <span className="text-slate-900 dark:text-white">{formatDate(inquiry.createdAt)}</span>
                             </div>
                         </div>
                     </div>
@@ -290,14 +290,14 @@ export default function InquiryDetail() {
 
                 {/* Right: Timeline */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         {/* Tabs */}
-                        <div className="flex border-b border-slate-100">
+                        <div className="flex border-b border-slate-100 dark:border-slate-700">
                             <button
                                 onClick={() => setActiveTab('timeline')}
                                 className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'timeline'
                                     ? 'text-brand-600 border-b-2 border-brand-600'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                     }`}
                             >
                                 Timeline ({activities.length})
@@ -306,7 +306,7 @@ export default function InquiryDetail() {
                                 onClick={() => setActiveTab('add')}
                                 className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'add'
                                     ? 'text-brand-600 border-b-2 border-brand-600'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                                     }`}
                             >
                                 + Add Activity
@@ -324,7 +324,7 @@ export default function InquiryDetail() {
                                                 onClick={() => setActivityType(key)}
                                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activityType === key
                                                     ? 'bg-brand-600 text-white'
-                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                     }`}
                                             >
                                                 {val.icon} {val.label}
@@ -335,7 +335,7 @@ export default function InquiryDetail() {
                                         value={newNote}
                                         onChange={(e) => setNewNote(e.target.value)}
                                         placeholder="Add details about this activity..."
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none resize-none h-32"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none resize-none h-32 placeholder:text-slate-400"
                                     />
                                     <button
                                         type="submit"
@@ -352,7 +352,7 @@ export default function InquiryDetail() {
                                     {activities.length === 0 ? (
                                         <div className="text-center py-12">
                                             <div className="text-4xl mb-3">📭</div>
-                                            <p className="text-slate-500">No activities yet</p>
+                                            <p className="text-slate-500 dark:text-slate-400">No activities yet</p>
                                             <button
                                                 onClick={() => setActiveTab('add')}
                                                 className="mt-4 text-brand-600 font-medium hover:underline"
@@ -363,7 +363,7 @@ export default function InquiryDetail() {
                                     ) : (
                                         <div className="relative">
                                             {/* Timeline line */}
-                                            <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200"></div>
+                                            <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-600"></div>
 
                                             {activities.map((activity, index) => {
                                                 const config = ACTIVITY_TYPES[activity.type] || ACTIVITY_TYPES.note;
@@ -374,13 +374,13 @@ export default function InquiryDetail() {
                                                             {config.icon}
                                                         </div>
 
-                                                        <div className="bg-slate-50 rounded-xl p-4">
+                                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
                                                             <div className="flex items-start justify-between mb-2">
-                                                                <span className="font-medium text-slate-900">{activity.summary}</span>
+                                                                <span className="font-medium text-slate-900 dark:text-white">{activity.summary}</span>
                                                                 <span className="text-xs text-slate-400">{getRelativeTime(activity.createdAt)}</span>
                                                             </div>
                                                             {activity.details && (
-                                                                <p className="text-sm text-slate-600">{activity.details}</p>
+                                                                <p className="text-sm text-slate-600 dark:text-slate-300">{activity.details}</p>
                                                             )}
                                                         </div>
                                                     </div>

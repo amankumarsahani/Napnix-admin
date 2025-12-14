@@ -28,7 +28,7 @@ export default function LeadsKanban({ leads = [], onUpdateStatus }) {
                                 <h3 className="font-bold text-slate-700">{col.title}</h3>
                                 <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{colLeads.length}</span>
                             </div>
-                            <span className="text-xs font-semibold text-slate-400">${totalValue.toLocaleString()}</span>
+                            <span className="text-xs font-semibold text-slate-400">Rs.{totalValue.toLocaleString()}</span>
                         </div>
 
                         {/* Column Content */}
@@ -44,8 +44,8 @@ export default function LeadsKanban({ leads = [], onUpdateStatus }) {
                                             {lead.score > 0 && (
                                                 <div
                                                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${lead.score >= 80 ? 'bg-emerald-100 text-emerald-700' :
-                                                            lead.score >= 50 ? 'bg-amber-100 text-amber-700' :
-                                                                'bg-rose-100 text-rose-700'
+                                                        lead.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                                                            'bg-rose-100 text-rose-700'
                                                         }`}
                                                 >
                                                     {lead.score}
@@ -59,7 +59,7 @@ export default function LeadsKanban({ leads = [], onUpdateStatus }) {
                                         <span className="truncate">{lead.email}</span>
                                     </div>
                                     <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                                        <span className="font-bold text-slate-700">${parseFloat(lead.estimatedValue || 0).toLocaleString()}</span>
+                                        <span className="font-bold text-slate-700">Rs.{parseFloat(lead.estimatedValue || 0).toLocaleString()}</span>
                                         <div className="flex -space-x-2">
                                             <div className="w-6 h-6 rounded-full bg-brand-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-brand-600">
                                                 {lead.contactName[0]}

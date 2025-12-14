@@ -192,15 +192,15 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">Send Email</h2>
-                        <p className="text-sm text-slate-500">Choose a template and customize your message</p>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Send Email</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Choose a template and customize your message</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                        <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg className="w-5 h-5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
@@ -214,16 +214,16 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                     <div className="flex-1 overflow-y-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
                             {/* Left Panel: Templates & Documents */}
-                            <div className="border-r border-slate-200 p-6 space-y-6 bg-slate-50">
+                            <div className="border-r border-slate-200 dark:border-slate-700 p-6 space-y-6 bg-slate-50 dark:bg-slate-900">
                                 {/* Email Templates */}
                                 <div>
-                                    <h4 className="font-semibold text-slate-700 mb-3">📧 Email Templates</h4>
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">📧 Email Templates</h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         <button
                                             onClick={() => handleEmailTemplateSelect(null)}
                                             className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${!selectedEmailTemplate
-                                                    ? 'bg-brand-100 text-brand-700 border border-brand-300'
-                                                    : 'bg-white border border-slate-200 hover:border-brand-300'
+                                                ? 'bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-400 border border-brand-300 dark:border-brand-600'
+                                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:border-brand-300 dark:hover:border-brand-500 text-slate-700 dark:text-slate-300'
                                                 }`}
                                         >
                                             ✏️ Compose from scratch
@@ -233,8 +233,8 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                                 key={t.id}
                                                 onClick={() => handleEmailTemplateSelect(t)}
                                                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedEmailTemplate?.id === t.id
-                                                        ? 'bg-brand-100 text-brand-700 border border-brand-300'
-                                                        : 'bg-white border border-slate-200 hover:border-brand-300'
+                                                    ? 'bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-400 border border-brand-300 dark:border-brand-600'
+                                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:border-brand-300 dark:hover:border-brand-500 text-slate-700 dark:text-slate-300'
                                                     }`}
                                             >
                                                 {t.name}
@@ -248,14 +248,14 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
 
                                 {/* Document Attachments */}
                                 <div>
-                                    <h4 className="font-semibold text-slate-700 mb-3">📎 Attach Documents</h4>
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">📎 Attach Documents</h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         {documentTemplates.map(d => (
                                             <label
                                                 key={d.id}
                                                 className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${selectedDocuments.find(sd => sd.id === d.id)
-                                                        ? 'bg-emerald-50 border border-emerald-300'
-                                                        : 'bg-white border border-slate-200 hover:border-emerald-300'
+                                                    ? 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-600'
+                                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500'
                                                     }`}
                                             >
                                                 <input
@@ -264,7 +264,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                                     onChange={() => toggleDocumentSelection(d)}
                                                     className="w-4 h-4 text-emerald-600 rounded"
                                                 />
-                                                <span className="text-sm text-slate-700">{d.name}</span>
+                                                <span className="text-sm text-slate-700 dark:text-slate-300">{d.name}</span>
                                             </label>
                                         ))}
                                         {documentTemplates.length === 0 && (
@@ -272,7 +272,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                         )}
                                     </div>
                                     {selectedDocuments.length > 0 && (
-                                        <p className="text-xs text-emerald-600 mt-2">
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
                                             {selectedDocuments.length} document(s) will be attached
                                         </p>
                                     )}
@@ -281,18 +281,18 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                 {/* Variables */}
                                 {Object.keys(variables).length > 0 && (
                                     <div>
-                                        <h4 className="font-semibold text-slate-700 mb-3">🔤 Variables</h4>
+                                        <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">🔤 Variables</h4>
                                         <div className="space-y-2 max-h-48 overflow-y-auto">
                                             {Object.keys(variables).map(key => (
                                                 <div key={key}>
-                                                    <label className="block text-xs text-slate-500 mb-1 capitalize">
+                                                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1 capitalize">
                                                         {key.replace(/_/g, ' ')}
                                                     </label>
                                                     <input
                                                         type="text"
                                                         value={variables[key]}
                                                         onChange={(e) => handleVariableChange(key, e.target.value)}
-                                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:border-brand-500 outline-none"
+                                                        className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:border-brand-500 outline-none"
                                                         placeholder={key.replace(/_/g, ' ')}
                                                     />
                                                 </div>
@@ -306,45 +306,45 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                             <div className="lg:col-span-2 p-6 space-y-4">
                                 {/* To */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">To</label>
                                     <input
                                         type="email"
                                         value={emailData.to}
                                         onChange={(e) => setEmailData(prev => ({ ...prev, to: e.target.value }))}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none placeholder:text-slate-400"
                                         placeholder="recipient@example.com"
                                     />
                                 </div>
 
                                 {/* Subject */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
                                     <input
                                         type="text"
                                         value={emailData.subject}
                                         onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none placeholder:text-slate-400"
                                         placeholder="Email subject..."
                                     />
                                 </div>
 
                                 {/* Content */}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Content</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Content</label>
                                     <textarea
                                         value={emailData.content}
                                         onChange={(e) => setEmailData(prev => ({ ...prev, content: e.target.value }))}
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none font-mono text-sm"
+                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none font-mono text-sm placeholder:text-slate-400"
                                         rows={8}
                                         placeholder="Write your email content or select a template..."
                                     />
                                 </div>
 
                                 {/* Preview */}
-                                <div className="bg-slate-50 rounded-xl p-4">
-                                    <h4 className="text-sm font-medium text-slate-700 mb-2">Preview</h4>
+                                <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4">
+                                    <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Preview</h4>
                                     <div
-                                        className="bg-white border border-slate-200 rounded-lg p-4 max-h-48 overflow-y-auto text-sm"
+                                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg p-4 max-h-48 overflow-y-auto text-sm text-slate-900 dark:text-white"
                                         dangerouslySetInnerHTML={{
                                             __html: renderContent(emailData.content, variables) || '<p class="text-slate-400">Email preview will appear here...</p>'
                                         }}
@@ -356,10 +356,10 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                 )}
 
                 {/* Footer */}
-                <div className="p-6 border-t border-slate-200 flex gap-3 justify-end">
+                <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex gap-3 justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50"
+                        className="px-6 py-3 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
                     >
                         Cancel
                     </button>

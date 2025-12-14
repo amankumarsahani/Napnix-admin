@@ -180,10 +180,11 @@ export function RevenueTrendChart({ data }) {
                 <YAxis
                     tick={{ fontSize: 12, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => `Rs.${(value / 1000).toFixed(0)}k`}
+                    tickLine={false}
                 />
                 <Tooltip
-                    formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    formatter={(value) => [`Rs.${value.toLocaleString()}`, 'Revenue']}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                 />
                 <Line

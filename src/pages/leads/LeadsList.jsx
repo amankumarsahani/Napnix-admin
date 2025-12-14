@@ -210,7 +210,7 @@ export default function LeadsList() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
-                                            ${Number(lead.estimatedValue || 0).toLocaleString()}
+                                            Rs.{Number(lead.estimatedValue || 0).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export default function LeadsList() {
 
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Estimated Value ($)</label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Estimated Value (Rs.)</label>
                                     <input
                                         type="number"
                                         value={formData.estimatedValue}

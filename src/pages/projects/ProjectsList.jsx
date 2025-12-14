@@ -183,7 +183,7 @@ export default function ProjectsList() {
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Budget</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">${Number(project.budget || 0).toLocaleString()}</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">Rs.{Number(project.budget || 0).toLocaleString()}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Start Date</p>

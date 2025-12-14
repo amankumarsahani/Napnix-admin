@@ -5,16 +5,16 @@ import AdminStatsSection from '../components/charts/AdminStatsSection';
 
 // Mock data (replace with API calls later)
 const stats = [
-    { label: 'Total Revenue', value: '$124,500', change: '+12.5%', isPositive: true, icon: 'dollar' },
+    { label: 'Total Revenue', value: 'Rs.1,24,500', change: '+12.5%', isPositive: true, icon: 'dollar' },
     { label: 'Active Projects', value: '12', change: '+2', isPositive: true, icon: 'briefcase' },
     { label: 'New Leads', value: '45', change: '+5.2%', isPositive: true, icon: 'users' },
     { label: 'Pending Inquiries', value: '8', change: '-2', isPositive: false, icon: 'inbox' },
 ];
 
 const recentLeads = [
-    { id: 1, name: 'Alice Freeman', company: 'TechCorp', status: 'New', value: '$5,000', score: 85 },
-    { id: 2, name: 'Robert Smith', company: 'Design Studio', status: 'Negotiation', value: '$12,000', score: 92 },
-    { id: 3, name: 'Sarah Jones', company: 'Retail Inc', status: 'Contacted', value: '$3,500', score: 60 },
+    { id: 1, name: 'Alice Freeman', company: 'TechCorp', status: 'New', value: 'Rs.5,000', score: 85 },
+    { id: 2, name: 'Robert Smith', company: 'Design Studio', status: 'Negotiation', value: 'Rs.12,000', score: 92 },
+    { id: 3, name: 'Sarah Jones', company: 'Retail Inc', status: 'Contacted', value: 'Rs.3,500', score: 60 },
 ];
 
 export default function Dashboard() {

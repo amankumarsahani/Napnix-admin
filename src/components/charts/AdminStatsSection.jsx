@@ -93,7 +93,7 @@ export default function AdminStatsSection() {
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p className="text-xs text-slate-500 font-medium uppercase">Total Value</p>
                     <p className="text-2xl font-bold text-amber-600">
-                        ${(leadStats?.totalValue || 0).toLocaleString()}
+                        Rs.{(leadStats?.totalValue || 0).toLocaleString()}
                     </p>
                 </div>
             </div>
