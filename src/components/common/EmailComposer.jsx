@@ -116,15 +116,71 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
         return rendered;
     };
 
-    const toggleDocumentSelection = (doc) => {
+    const toggleDocumentSelection = async (doc) => {
+        // Toggle selection
+        let isSelected = false;
         setSelectedDocuments(prev => {
             const exists = prev.find(d => d.id === doc.id);
             if (exists) {
                 return prev.filter(d => d.id !== doc.id);
             } else {
+                isSelected = true;
                 return [...prev, doc];
             }
         });
+
+        // If selected, we need to ensure we have the variables
+        // If the doc object already has 'variables' (array) or 'content', use it
+        if (!doc.variables && !doc.content) {
+            // Need to fetch full doc details if content/vars mock missing
+            try {
+                const fullDoc = await documentTemplatesAPI.getById(doc.id);
+                doc.content = fullDoc.data.content;
+                doc.variables = fullDoc.data.variables || extractVariables(doc.content);
+            } catch (e) {
+                console.error('Failed to fetch doc details for vars');
+            }
+        }
+
+        // Extract variables if new selection
+        // We do this inside a timeout to ensure state update of selectedDocuments doesn't conflict, 
+        // though strictly React batches. But better: just calculate and set.
+
+        // Actually, we can't rely on 'isSelected' variable inside the functional update above 
+        // effectively for the async part unless we restructure.
+
+        // Let's restructure properly:
+        const prevSelected = selectedDocuments.find(d => d.id === doc.id);
+
+        if (!prevSelected) {
+            // It is being selected
+            try {
+                let content = doc.content;
+
+                // If content is missing, fetch it (since list view might not have it)
+                if (!content) {
+                    const res = await documentTemplatesAPI.getById(doc.id);
+                    content = res.data.content;
+                    // Update the local doc object in state so we don't refetch later? 
+                    // No, selectedDocuments just stores the ref.
+                }
+
+                if (content) {
+                    const extracted = extractVariables(content);
+                    setVariables(prev => {
+                        const next = { ...prev };
+                        extracted.forEach(v => {
+                            if (next[v] === undefined) {
+                                next[v] = '';
+                            }
+                        });
+                        return next;
+                    });
+                }
+            } catch (error) {
+                console.error('Error extracting variables from doc:', error);
+            }
+        }
     };
 
     const handleSend = async () => {
@@ -141,33 +197,50 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
         try {
             const renderedContent = renderContent(emailData.content, variables);
 
-            // Build final HTML with attached documents
-            let finalContent = renderedContent;
+            // Build attachments array
+            const attachments = [];
+            const processedDocs = new Set(); // Prevent duplicates
 
             if (selectedDocuments.length > 0) {
-                finalContent += '<hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">';
-                finalContent += '<h3 style="color: #475569; font-size: 14px; margin-bottom: 15px;">📎 Attached Documents</h3>';
-
+                // Fetch and render each document
+                // Note: We need to do this sequentially to handle async properly in loop
                 for (const doc of selectedDocuments) {
-                    // Fetch and render each document
+                    if (processedDocs.has(doc.id)) continue;
+                    processedDocs.add(doc.id);
+
                     try {
-                        const docRes = await documentTemplatesAPI.getById(doc.id);
-                        const docContent = renderContent(docRes.data.content, variables);
-                        finalContent += `<div style="margin-bottom: 20px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">`;
-                        finalContent += `<h4 style="color: #334155; margin: 0 0 10px;">${doc.name}</h4>`;
-                        finalContent += docContent;
-                        finalContent += '</div>';
+                        // Use existing content if available (from selection logic), or fetch
+                        let docContent = doc.content;
+                        if (!docContent) {
+                            const docRes = await documentTemplatesAPI.getById(doc.id);
+                            docContent = docRes.data.content;
+                        }
+
+                        if (docContent) {
+                            const renderedDoc = renderContent(docContent, variables);
+                            // Add as HTML attachment
+                            // Sanitize filename
+                            const filename = (doc.name || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.html';
+
+                            attachments.push({
+                                filename: filename,
+                                content: renderedDoc,
+                                contentType: 'text/html'
+                            });
+                        }
                     } catch (e) {
-                        console.error('Failed to fetch document:', doc.id);
+                        console.error('Failed to prepare document attachment:', doc.id, e);
+                        toast.error(`Failed to attach document: ${doc.name}`);
                     }
                 }
             }
 
-            // Send the email
+            // Send the email with attachments
             await emailTemplatesAPI.send({
                 to: emailData.to,
                 subject: emailData.subject,
-                html: finalContent,
+                html: renderedContent, // Only email body
+                attachments, // Pass attachments array
                 entityType,
                 entityId
             });
