@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,6 +13,7 @@ const CATEGORY_COLORS = {
 
 export default function Documents() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [templates, setTemplates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -221,7 +223,7 @@ export default function Documents() {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => handleEdit(template)}
+                                    onClick={() => navigate(`/documents/${template.id}/edit`)}
                                     className="p-1 text-slate-400 hover:text-brand-600 transition-colors"
                                     title="Edit Template"
                                 >

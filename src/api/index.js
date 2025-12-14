@@ -256,3 +256,40 @@ export const documentTemplatesAPI = {
     },
 };
 
+// Email Templates API
+export const emailTemplatesAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/email-templates', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/email-templates/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/email-templates', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/email-templates/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/email-templates/${id}`);
+        return response.data;
+    },
+
+    preview: async (id, data) => {
+        const response = await apiClient.post(`/email-templates/${id}/preview`, data);
+        return response.data;
+    },
+
+    send: async (data) => {
+        const response = await apiClient.post('/email-templates/send', data);
+        return response.data;
+    },
+};

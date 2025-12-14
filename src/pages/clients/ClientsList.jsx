@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { clientsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
 
 export default function ClientsList() {
+    const navigate = useNavigate();
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -158,13 +160,28 @@ export default function ClientsList() {
                                 <td className="px-6 py-4">
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => handleEdit(client)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/clients/${client.id}`);
+                                            }}
+                                            className="px-3 py-1 bg-brand-100 text-brand-700 rounded-lg hover:bg-brand-200 transition-colors text-sm font-medium"
+                                        >
+                                            View
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEdit(client);
+                                            }}
                                             className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
                                         >
                                             Edit
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(client.id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(client.id);
+                                            }}
                                             className="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
                                         >
                                             Delete

@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import ClientsList from './pages/clients/ClientsList';
+import ClientDetail from './pages/clients/ClientDetail';
 import ProjectsList from './pages/projects/ProjectsList';
 import LeadsList from './pages/leads/LeadsList';
 import LeadDetail from './pages/leads/LeadDetail';
@@ -17,6 +18,7 @@ import Team from './pages/admin/Team';
 import Settings from './pages/admin/Settings';
 import Templates from './pages/admin/Templates';
 import Documents from './pages/admin/Documents';
+import DocumentEdit from './pages/admin/DocumentEdit';
 
 function AppRoutes() {
   return (
@@ -29,6 +31,7 @@ function AppRoutes() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="clients" element={<ClientsList />} />
+          <Route path="clients/:id" element={<ClientDetail />} />
           <Route path="projects" element={<ProjectsList />} />
 
           {/* Leads - accessible by admin and sales_operator */}
@@ -41,6 +44,7 @@ function AppRoutes() {
 
           {/* Documents - accessible by admin and sales_operator */}
           <Route path="documents" element={<Documents />} />
+          <Route path="documents/:id/edit" element={<DocumentEdit />} />
 
           {/* Admin Only Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

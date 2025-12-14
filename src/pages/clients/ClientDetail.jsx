@@ -16,12 +16,9 @@ const ACTIVITY_TYPES = {
 };
 
 const STATUS_COLORS = {
-    new: 'bg-blue-100 text-blue-700',
-    contacted: 'bg-yellow-100 text-yellow-700',
-    qualified: 'bg-emerald-100 text-emerald-700',
-    negotiation: 'bg-purple-100 text-purple-700',
-    won: 'bg-green-100 text-green-700',
-    lost: 'bg-red-100 text-red-700',
+    active: 'bg-emerald-100 text-emerald-700',
+    inactive: 'bg-slate-100 text-slate-700',
+    pending: 'bg-yellow-100 text-yellow-700',
 };
 
 const formatDate = (dateString) => {
@@ -46,11 +43,12 @@ const getRelativeTime = (dateString) => {
     return date.toLocaleDateString();
 };
 
-export default function LeadDetail() {
+export default function ClientDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [lead, setLead] = useState(null);
+    const [client, setClient] = useState(null);
     const [activities, setActivities] = useState([]);
+    const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('timeline');
 
@@ -61,21 +59,22 @@ export default function LeadDetail() {
     const [showEmailComposer, setShowEmailComposer] = useState(false);
 
     useEffect(() => {
-        fetchLead();
+        fetchClient();
         fetchActivities();
+        fetchProjects();
     }, [id]);
 
-    const fetchLead = async () => {
+    const fetchClient = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/leads/${id}`, {
+            const res = await axios.get(`${API_URL}/clients/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setLead(res.data.lead);
+            setClient(res.data.client || res.data);
         } catch (error) {
-            console.error('Failed to fetch lead:', error);
-            toast.error('Failed to load lead details');
-            navigate('/leads');
+            console.error('Failed to fetch client:', error);
+            toast.error('Failed to load client details');
+            navigate('/clients');
         } finally {
             setLoading(false);
         }
@@ -84,7 +83,7 @@ export default function LeadDetail() {
     const fetchActivities = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/lead/${id}`, {
+            const res = await axios.get(`${API_URL}/activities/client/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
@@ -92,6 +91,18 @@ export default function LeadDetail() {
             }
         } catch (error) {
             console.error('Failed to fetch activities:', error);
+        }
+    };
+
+    const fetchProjects = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`${API_URL}/projects?clientId=${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setProjects(res.data.projects || res.data || []);
+        } catch (error) {
+            console.error('Failed to fetch projects:', error);
         }
     };
 
@@ -103,7 +114,7 @@ export default function LeadDetail() {
         try {
             const token = localStorage.getItem('token');
             await axios.post(`${API_URL}/activities`, {
-                entityType: 'lead',
+                entityType: 'client',
                 entityId: id,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
@@ -122,20 +133,6 @@ export default function LeadDetail() {
         }
     };
 
-    const handleStatusChange = async (newStatus) => {
-        try {
-            const token = localStorage.getItem('token');
-            await axios.put(`${API_URL}/leads/${id}`, { status: newStatus }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            toast.success('Status updated');
-            fetchLead();
-            fetchActivities();
-        } catch (error) {
-            toast.error('Failed to update status');
-        }
-    };
-
     if (loading) {
         return (
             <div className="max-w-6xl mx-auto px-6 py-8">
@@ -147,35 +144,30 @@ export default function LeadDetail() {
         );
     }
 
-    if (!lead) return null;
+    if (!client) return null;
 
     return (
         <div className="max-w-6xl mx-auto px-6 py-8">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
-                <Link to="/leads" className="hover:text-brand-600">Leads</Link>
+                <Link to="/clients" className="hover:text-brand-600">Clients</Link>
                 <span>/</span>
-                <span className="text-slate-900 font-medium">{lead.contactName}</span>
+                <span className="text-slate-900 font-medium">{client.companyName || client.contactName}</span>
             </div>
 
             {/* Header */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">{lead.contactName}</h1>
-                        <p className="text-slate-500 mt-1">{lead.company || 'No company'}</p>
+                        <h1 className="text-2xl font-bold text-slate-900">{client.companyName}</h1>
+                        <p className="text-slate-500 mt-1">{client.contactName}</p>
                         <div className="flex items-center gap-3 mt-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-700'}`}>
-                                {lead.status}
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[client.status] || 'bg-slate-100 text-slate-700'}`}>
+                                {client.status}
                             </span>
-                            {lead.estimatedValue && (
-                                <span className="text-emerald-600 font-semibold">
-                                    ${parseFloat(lead.estimatedValue).toLocaleString()}
-                                </span>
-                            )}
-                            {lead.score !== null && (
-                                <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium">
-                                    Score: {lead.score}
+                            {client.industry && (
+                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                                    {client.industry}
                                 </span>
                             )}
                         </div>
@@ -191,7 +183,7 @@ export default function LeadDetail() {
                             Send Email
                         </button>
                         <button
-                            onClick={() => navigate('/leads')}
+                            onClick={() => navigate('/clients')}
                             className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50"
                         >
                             ← Back
@@ -207,69 +199,48 @@ export default function LeadDetail() {
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 mb-4">Contact Information</h3>
                         <div className="space-y-3">
-                            {lead.email && (
+                            {client.email && (
                                 <div className="flex items-center gap-3">
                                     <span className="text-slate-400">✉️</span>
-                                    <a href={`mailto:${lead.email}`} className="text-brand-600 hover:underline">{lead.email}</a>
+                                    <a href={`mailto:${client.email}`} className="text-brand-600 hover:underline">{client.email}</a>
                                 </div>
                             )}
-                            {lead.phone && (
+                            {client.phone && (
                                 <div className="flex items-center gap-3">
                                     <span className="text-slate-400">📞</span>
-                                    <a href={`tel:${lead.phone}`} className="text-brand-600 hover:underline">{lead.phone}</a>
+                                    <a href={`tel:${client.phone}`} className="text-brand-600 hover:underline">{client.phone}</a>
                                 </div>
                             )}
-                            {lead.leadSource && (
+                            {client.address && (
                                 <div className="flex items-center gap-3">
                                     <span className="text-slate-400">📍</span>
-                                    <span className="text-slate-600">{lead.leadSource}</span>
+                                    <span className="text-slate-600">{client.address}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Status Update */}
+                    {/* Projects */}
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Update Status</h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            {['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost'].map(status => (
-                                <button
-                                    key={status}
-                                    onClick={() => handleStatusChange(status)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all ${lead.status === status
-                                        ? 'bg-brand-600 text-white'
-                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                        }`}
-                                >
-                                    {status}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Assigned To */}
-                    {lead.assignedFirstName && (
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Assigned To</h3>
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-semibold">
-                                    {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-slate-900">{lead.assignedFirstName} {lead.assignedLastName}</p>
-                                    <p className="text-sm text-slate-500">{lead.assignedEmail}</p>
-                                </div>
+                        <h3 className="font-semibold text-slate-900 mb-4">Projects ({projects.length})</h3>
+                        {projects.length === 0 ? (
+                            <p className="text-slate-400 text-sm">No projects yet</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {projects.slice(0, 5).map(project => (
+                                    <div key={project.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-slate-900 text-sm">{project.name}</p>
+                                            <p className="text-xs text-slate-500 capitalize">{project.status}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {projects.length > 5 && (
+                                    <p className="text-xs text-slate-500">+{projects.length - 5} more projects</p>
+                                )}
                             </div>
-                        </div>
-                    )}
-
-                    {/* Notes */}
-                    {lead.notes && (
-                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 mb-4">Notes</h3>
-                            <p className="text-slate-600 text-sm whitespace-pre-wrap">{lead.notes}</p>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     {/* Meta */}
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -277,11 +248,11 @@ export default function LeadDetail() {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-slate-500">Created</span>
-                                <span className="text-slate-900">{formatDate(lead.createdAt)}</span>
+                                <span className="text-slate-900">{formatDate(client.createdAt)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-slate-500">Updated</span>
-                                <span className="text-slate-900">{formatDate(lead.updatedAt)}</span>
+                                <span className="text-slate-900">{formatDate(client.updatedAt)}</span>
                             </div>
                         </div>
                     </div>
@@ -398,8 +369,8 @@ export default function LeadDetail() {
             <EmailComposer
                 isOpen={showEmailComposer}
                 onClose={() => setShowEmailComposer(false)}
-                recipient={{ name: lead.contactName, email: lead.email, company: lead.company }}
-                entityType="lead"
+                recipient={{ name: client.contactName, email: client.email, company: client.companyName }}
+                entityType="client"
                 entityId={id}
                 onEmailSent={() => fetchActivities()}
             />

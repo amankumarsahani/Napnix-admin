@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import EmailComposer from '../../components/common/EmailComposer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -55,6 +56,7 @@ export default function InquiryDetail() {
     const [newNote, setNewNote] = useState('');
     const [activityType, setActivityType] = useState('note');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showEmailComposer, setShowEmailComposer] = useState(false);
 
     useEffect(() => {
         fetchInquiry();
@@ -191,6 +193,15 @@ export default function InquiryDetail() {
                             </button>
                         )}
                         <button
+                            onClick={() => setShowEmailComposer(true)}
+                            className="px-4 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 flex items-center gap-2"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Send Email
+                        </button>
+                        <button
                             onClick={() => navigate('/inquiries')}
                             className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50"
                         >
@@ -232,8 +243,8 @@ export default function InquiryDetail() {
                                     onClick={() => handleStatusChange(status)}
                                     disabled={inquiry.status === 'converted'}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all ${inquiry.status === status
-                                            ? 'bg-brand-600 text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50'
+                                        ? 'bg-brand-600 text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50'
                                         }`}
                                 >
                                     {status}
@@ -285,8 +296,8 @@ export default function InquiryDetail() {
                             <button
                                 onClick={() => setActiveTab('timeline')}
                                 className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'timeline'
-                                        ? 'text-brand-600 border-b-2 border-brand-600'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'text-brand-600 border-b-2 border-brand-600'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 Timeline ({activities.length})
@@ -294,8 +305,8 @@ export default function InquiryDetail() {
                             <button
                                 onClick={() => setActiveTab('add')}
                                 className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'add'
-                                        ? 'text-brand-600 border-b-2 border-brand-600'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'text-brand-600 border-b-2 border-brand-600'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 + Add Activity
@@ -312,8 +323,8 @@ export default function InquiryDetail() {
                                                 type="button"
                                                 onClick={() => setActivityType(key)}
                                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activityType === key
-                                                        ? 'bg-brand-600 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    ? 'bg-brand-600 text-white'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                                     }`}
                                             >
                                                 {val.icon} {val.label}
@@ -383,6 +394,16 @@ export default function InquiryDetail() {
                     </div>
                 </div>
             </div>
+
+            {/* Email Composer Modal */}
+            <EmailComposer
+                isOpen={showEmailComposer}
+                onClose={() => setShowEmailComposer(false)}
+                recipient={{ name: inquiry.name, email: inquiry.email, company: inquiry.company }}
+                entityType="inquiry"
+                entityId={id}
+                onEmailSent={() => fetchActivities()}
+            />
         </div>
     );
 }
