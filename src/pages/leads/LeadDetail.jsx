@@ -140,8 +140,8 @@ export default function LeadDetail() {
         return (
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <div className="animate-pulse space-y-6">
-                    <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-                    <div className="h-64 bg-slate-200 rounded-2xl"></div>
+                    <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
                 </div>
             </div>
         );
@@ -152,29 +152,29 @@ export default function LeadDetail() {
     return (
         <div className="max-w-6xl mx-auto px-6 py-8">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
                 <Link to="/leads" className="hover:text-brand-600">Leads</Link>
                 <span>/</span>
-                <span className="text-slate-900 font-medium">{lead.contactName}</span>
+                <span className="text-slate-900 dark:text-white font-medium">{lead.contactName}</span>
             </div>
 
             {/* Header */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">{lead.contactName}</h1>
-                        <p className="text-slate-500 mt-1">{lead.company || 'No company'}</p>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{lead.contactName}</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">{lead.company || 'No company'}</p>
                         <div className="flex items-center gap-3 mt-4">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-700'}`}>
                                 {lead.status}
                             </span>
                             {lead.estimatedValue && (
-                                <span className="text-emerald-600 font-semibold">
+                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
                                     ${parseFloat(lead.estimatedValue).toLocaleString()}
                                 </span>
                             )}
                             {lead.score !== null && (
-                                <span className="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium">
+                                <span className="px-2 py-1 bg-amber-50 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
                                     Score: {lead.score}
                                 </span>
                             )}
@@ -192,7 +192,7 @@ export default function LeadDetail() {
                         </button>
                         <button
                             onClick={() => navigate('/leads')}
-                            className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50"
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                         >
                             ← Back
                         </button>

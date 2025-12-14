@@ -111,44 +111,44 @@ export default function Inquiries() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Contact Inquiries</h1>
-                    <p className="text-slate-600 mt-1">Manage contact form submissions from your website</p>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Contact Inquiries</h1>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1">Manage contact form submissions from your website</p>
                 </div>
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-slate-600 dark:text-slate-400">
                     Total: <span className="font-semibold">{inquiries.length}</span>
                 </div>
             </div>
 
             {/* Inquiries Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-slate-50 border-b border-slate-200">
+                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Name
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Email
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Company
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Date
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {inquiries.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                         No inquiries found
                                     </td>
                                 </tr>
@@ -156,17 +156,17 @@ export default function Inquiries() {
                                 inquiries.map((inquiry) => (
                                     <tr
                                         key={inquiry.id}
-                                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                                        className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                                         onClick={() => navigate(`/inquiries/${inquiry.id}`)}
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-medium text-slate-900">{inquiry.name}</div>
+                                            <div className="font-medium text-slate-900 dark:text-white">{inquiry.name}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-600">{inquiry.email}</div>
+                                            <div className="text-sm text-slate-600 dark:text-slate-300">{inquiry.email}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-600">{inquiry.company || '-'}</div>
+                                            <div className="text-sm text-slate-600 dark:text-slate-300">{inquiry.company || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <select
@@ -189,7 +189,7 @@ export default function Inquiries() {
                                                 <option value="converted">→ Convert to Lead</option>
                                             </select>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
                                             {formatDate(inquiry.createdAt)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">

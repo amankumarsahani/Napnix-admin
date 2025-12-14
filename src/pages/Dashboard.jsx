@@ -160,8 +160,8 @@ export default function Dashboard() {
                     {canViewRevenue && (
                         <div className="glass-panel p-6 rounded-3xl">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-slate-800">Revenue Overview</h2>
-                                <select className="bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-1 outline-none">
+                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">Revenue Overview</h2>
+                                <select className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-1 outline-none">
                                     <option>This Year</option>
                                     <option>Last Year</option>
                                 </select>
@@ -169,19 +169,19 @@ export default function Dashboard() {
                             <div className="h-64 flex items-end justify-between gap-2 px-4">
                                 {/* Mock Bar Chart */}
                                 {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 50, 95].map((h, i) => (
-                                    <div key={i} className="w-full bg-brand-100 rounded-t-lg relative group h-full flex flex-col justify-end">
+                                    <div key={i} className="w-full bg-brand-100 dark:bg-brand-900/30 rounded-t-lg relative group h-full flex flex-col justify-end">
                                         <div
                                             style={{ height: `${h}%` }}
                                             className="w-full bg-gradient-to-t from-brand-500 to-brand-400 rounded-t-lg opacity-80 group-hover:opacity-100 transition-all duration-300 relative"
                                         >
-                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-600 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                                 ${h}k
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="flex justify-between mt-4 text-xs text-slate-400 font-medium">
+                            <div className="flex justify-between mt-4 text-xs text-slate-400 dark:text-slate-500 font-medium">
                                 {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
                                     <span key={m}>{m}</span>
                                 ))}
@@ -192,13 +192,13 @@ export default function Dashboard() {
                     {/* Recent Projects/Leads Table */}
                     <div className="glass-panel p-6 rounded-3xl">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-slate-800">Recent Leads</h2>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leads</h2>
                             <Link to="/leads" className="text-sm text-brand-600 font-semibold hover:text-brand-700">View All</Link>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                    <tr className="text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
                                         <th className="pb-3 pl-2">Contact</th>
                                         <th className="pb-3">Value</th>
                                         <th className="pb-3">Status</th>
@@ -207,36 +207,36 @@ export default function Dashboard() {
                                 </thead>
                                 <tbody className="text-sm">
                                     {recentLeads.map((lead) => (
-                                        <tr key={lead.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0">
+                                        <tr key={lead.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0">
                                             <td className="py-4 pl-2">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
                                                         {lead.name[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-slate-800">{lead.name}</p>
-                                                        <p className="text-xs text-slate-500">{lead.company}</p>
+                                                        <p className="font-semibold text-slate-800 dark:text-white">{lead.name}</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{lead.company}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-4 font-medium text-slate-600">{lead.value}</td>
+                                            <td className="py-4 font-medium text-slate-600 dark:text-slate-300">{lead.value}</td>
                                             <td className="py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status === 'New' ? 'bg-blue-100 text-blue-700' :
-                                                    lead.status === 'Negotiation' ? 'bg-amber-100 text-amber-700' :
-                                                        'bg-slate-100 text-slate-700'
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status === 'New' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
+                                                    lead.status === 'Negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
+                                                        'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                                                     }`}>
                                                     {lead.status}
                                                 </span>
                                             </td>
                                             <td className="py-4 text-right pr-2">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full ${lead.score > 80 ? 'bg-emerald-500' : lead.score > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
                                                             style={{ width: `${lead.score}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="font-bold text-slate-700">{lead.score}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{lead.score}</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -250,23 +250,23 @@ export default function Dashboard() {
                 {/* Right: Notifications & Quick Actions */}
                 <div className="space-y-8">
                     <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4">Quick Actions</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h2>
                         <div className="grid grid-cols-2 gap-3">
                             {currentActions.map(action => (
-                                <button key={action.id} className="p-3 rounded-xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all group flex flex-col items-center justify-center gap-2 text-center">
-                                    <div className={`w-10 h-10 rounded-full bg-${action.color}-100 text-${action.color}-600 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                                <button key={action.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-brand-200 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all group flex flex-col items-center justify-center gap-2 text-center">
+                                    <div className={`w-10 h-10 rounded-full bg-${action.color}-100 dark:bg-${action.color}-900/50 text-${action.color}-600 dark:text-${action.color}-400 flex items-center justify-center group-hover:scale-110 transition-transform`}>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
                                         </svg>
                                     </div>
-                                    <span className={`text-xs font-semibold text-slate-600 group-hover:text-${action.color}-700`}>{action.label}</span>
+                                    <span className={`text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-${action.color}-700 dark:group-hover:text-${action.color}-400`}>{action.label}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 mb-4">Pending Tasks</h2>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Pending Tasks</h2>
                         <div className="space-y-4">
                             {[
                                 { title: 'Review detailed project proposal', time: '2h ago', urgent: true },
@@ -275,13 +275,13 @@ export default function Dashboard() {
                             ].map((task, i) => (
                                 <div key={i} className="flex gap-3 items-start group">
                                     <div className="mt-1">
-                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
+                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 dark:bg-slate-700" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-700 group-hover:text-brand-600 transition-colors cursor-pointer">{task.title}</p>
+                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-brand-600 transition-colors cursor-pointer">{task.title}</p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-slate-400">{task.time}</span>
-                                            {task.urgent && <span className="text-[10px] font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded">URGENT</span>}
+                                            <span className="text-xs text-slate-400 dark:text-slate-500">{task.time}</span>
+                                            {task.urgent && <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded">URGENT</span>}
                                         </div>
                                     </div>
                                 </div>

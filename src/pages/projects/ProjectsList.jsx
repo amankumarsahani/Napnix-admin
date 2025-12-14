@@ -131,8 +131,8 @@ export default function ProjectsList() {
         <div>
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-                    <p className="text-gray-600 mt-1">{projects.length} total projects</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
+                    <p className="text-gray-600 dark:text-slate-400 mt-1">{projects.length} total projects</p>
                 </div>
                 <button
                     onClick={() => {
@@ -147,11 +147,11 @@ export default function ProjectsList() {
 
             <div className="grid grid-cols-1 gap-6">
                 {projects.map((project) => (
-                    <div key={project.id} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-slate-700">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex-1">
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">{project.name}</h3>
-                                <p className="text-gray-600 text-sm mb-3">{project.description}</p>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h3>
+                                <p className="text-gray-600 dark:text-slate-400 text-sm mb-3">{project.description}</p>
                                 <div className="flex flex-wrap gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)}`}>
                                         {project.status}
@@ -159,7 +159,7 @@ export default function ProjectsList() {
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(project.priority)}`}>
                                         {project.priority} priority
                                     </span>
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300">
                                         {project.clientName || 'No client'}
                                     </span>
                                 </div>
@@ -167,13 +167,13 @@ export default function ProjectsList() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => handleEdit(project)}
-                                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
+                                    className="px-4 py-2 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors font-medium"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     onClick={() => handleDelete(project.id)}
-                                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                                    className="px-4 py-2 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 transition-colors font-medium"
                                 >
                                     Delete
                                 </button>
@@ -182,18 +182,18 @@ export default function ProjectsList() {
 
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div>
-                                <p className="text-xs text-gray-500 mb-1">Budget</p>
-                                <p className="font-semibold text-gray-900">${Number(project.budget || 0).toLocaleString()}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Budget</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">${Number(project.budget || 0).toLocaleString()}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500 mb-1">Start Date</p>
-                                <p className="font-semibold text-gray-900">
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Start Date</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">
                                     {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500 mb-1">End Date</p>
-                                <p className="font-semibold text-gray-900">
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">End Date</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">
                                     {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}
                                 </p>
                             </div>
@@ -201,10 +201,10 @@ export default function ProjectsList() {
 
                         <div>
                             <div className="flex justify-between text-sm mb-2">
-                                <span className="text-gray-600">Progress</span>
-                                <span className="font-semibold text-gray-900">{project.progress}%</span>
+                                <span className="text-gray-600 dark:text-slate-400">Progress</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">{project.progress}%</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                                 <div
                                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all"
                                     style={{ width: `${project.progress}%` }}
@@ -215,7 +215,7 @@ export default function ProjectsList() {
                 ))}
 
                 {projects.length === 0 && (
-                    <div className="bg-white rounded-2xl shadow-lg p-12 text-center text-gray-500">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 text-center text-gray-500 dark:text-slate-400 border border-transparent dark:border-slate-700">
                         <p className="text-lg mb-2">No projects yet</p>
                         <p className="text-sm">Click "Add Project" to create your first project</p>
                     </div>
@@ -225,35 +225,35 @@ export default function ProjectsList() {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold mb-6">{editingProject ? 'Edit Project' : 'Add New Project'}</h2>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
+                        <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{editingProject ? 'Edit Project' : 'Add New Project'}</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Project Name *</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Project Name *</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Description</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     rows="3"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Client</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Client</label>
                                     <select
                                         value={formData.clientId}
                                         onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="">Select client</option>
                                         {clients.map((client) => (
@@ -264,11 +264,11 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Status</label>
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="planning">Planning</option>
                                         <option value="in-progress">In Progress</option>
@@ -277,11 +277,11 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Priority</label>
                                     <select
                                         value={formData.priority}
                                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
@@ -289,35 +289,35 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Budget</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Budget</label>
                                     <input
                                         type="number"
                                         value={formData.budget}
                                         onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Start Date</label>
                                     <input
                                         type="date"
                                         value={formData.startDate}
                                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">End Date</label>
                                     <input
                                         type="date"
                                         value={formData.endDate}
                                         onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Progress: {formData.progress}%</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Progress: {formData.progress}%</label>
                                 <input
                                     type="range"
                                     min="0"
@@ -340,7 +340,7 @@ export default function ProjectsList() {
                                         setShowModal(false);
                                         resetForm();
                                     }}
-                                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-all"
+                                    className="px-6 py-3 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-slate-500 transition-all"
                                 >
                                     Cancel
                                 </button>
