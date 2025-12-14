@@ -70,11 +70,11 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                 setEmailData(prev => ({
                     ...prev,
                     subject: fullTemplate.subject || template.name,
-                    content: fullTemplate.htmlContent || fullTemplate.content || ''
+                    content: fullTemplate.html_content || fullTemplate.htmlContent || fullTemplate.content || ''
                 }));
 
                 // Extract and set variables
-                const extractedVars = extractVariables(fullTemplate.htmlContent || fullTemplate.content || '');
+                const extractedVars = extractVariables(fullTemplate.html_content || fullTemplate.htmlContent || fullTemplate.content || '');
                 const newVars = {};
                 extractedVars.forEach(v => {
                     // Keep existing values or set empty
