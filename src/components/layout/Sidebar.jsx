@@ -1,9 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useState } from 'react';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
+    const { theme, toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -120,7 +122,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             )}
 
             {/* Sidebar */}
-            <div className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            <div className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 }`}>
                 {/* Header */}
                 <div className="p-6">
@@ -132,16 +134,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 </svg>
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Nexspire</h1>
-                                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Enterprise</p>
+                                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Nexspire</h1>
+                                <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest">Enterprise</p>
                             </div>
                         </div>
                         {/* Close button for mobile */}
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="lg:hidden p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         >
-                            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -150,7 +152,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                 {/* Navigation */}
                 <nav className="flex-1 px-4 py-2 overflow-y-auto custom-scrollbar">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Main Menu</p>
+                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 px-2">Main Menu</p>
                     <div className="space-y-1">
                         {filteredNavItems.map((item) => (
                             <NavLink
@@ -160,7 +162,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 className={({ isActive }) =>
                                     `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative ${isActive
                                         ? 'bg-brand-600 text-white shadow-md shadow-brand-500/20'
-                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                                     }`
                                 }
                             >
@@ -177,32 +179,45 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     </div>
                 </nav>
 
-                {/* Footer / User */}
-                <div className="p-4 border-t border-slate-100">
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                {/* Footer - Theme Toggle & Logout */}
+                <div className="p-4 border-t border-slate-100 dark:border-slate-700 space-y-3">
+                    {/* Theme Toggle */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center font-bold text-brand-700 text-xs">
-                                {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || 'A'}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-bold text-sm text-slate-900 truncate flex items-center gap-2">
-                                    {user?.firstName ? `${user.firstName} ${user.lastName || ''}` : 'Admin User'}
-                                    {user?.role === 'admin' && (
-                                        <span className="bg-brand-100 text-brand-700 text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider">Admin</span>
-                                    )}
-                                </p>
-                                <p className="text-xs text-slate-500 truncate">{user?.email || 'admin@nexspire.com'}</p>
-                            </div>
+                            {isDark ? (
+                                <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                                </svg>
+                            )}
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {isDark ? 'Dark Mode' : 'Light Mode'}
+                            </span>
                         </div>
                         <button
-                            onClick={handleLogout}
-                            className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-600 rounded-lg text-xs font-semibold transition-all shadow-sm"
+                            onClick={toggleTheme}
+                            className={`relative w-12 h-6 rounded-full transition-colors ${isDark ? 'bg-brand-600' : 'bg-slate-300'}`}
                         >
-                            Log Out
+                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDark ? 'translate-x-7' : 'translate-x-1'}`} />
                         </button>
                     </div>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Log Out
+                    </button>
                 </div>
             </div>
         </>
     );
 }
+

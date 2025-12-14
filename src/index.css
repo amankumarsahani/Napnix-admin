@@ -33,16 +33,16 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased text-slate-800 bg-slate-100;
+    @apply font-sans antialiased text-slate-800 bg-slate-100 dark:text-slate-100 dark:bg-slate-950;
   }
 }
 
 .glass-panel {
-  @apply bg-white border border-slate-200 shadow-sm;
+  @apply bg-white border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700;
 }
 
 .glass-card {
-  @apply bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300;
+  @apply bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 dark:bg-slate-800 dark:border-slate-700;
 }
 
 @keyframes shimmer {
@@ -61,13 +61,35 @@
 }
 
 .btn-secondary {
-  @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98];
+  @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700;
 }
 
 .btn-danger {
-  @apply bg-white text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98];
+  @apply bg-white text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-rose-900/30;
 }
 
 .btn-ghost {
-  @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900;
+  @apply text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white;
+}
+
+/* Dark mode text utilities */
+.dark-text {
+  @apply text-slate-900 dark:text-white;
+}
+
+.dark-text-secondary {
+  @apply text-slate-600 dark:text-slate-300;
+}
+
+.dark-text-muted {
+  @apply text-slate-500 dark:text-slate-400;
+}
+
+/* Card utilities */
+.card {
+  @apply bg-white border border-slate-100 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700;
+}
+
+.card-hover {
+  @apply bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 dark:bg-slate-800 dark:border-slate-700;
 }
