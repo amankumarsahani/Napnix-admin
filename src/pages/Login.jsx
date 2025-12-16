@@ -48,7 +48,7 @@ export default function Login() {
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-400/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
 
             <div className="relative w-full max-w-md">
-                <div className="glass-panel rounded-3xl p-8 md:p-10 relative overflow-hidden">
+                <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-8 md:p-10 relative overflow-hidden">
                     {/* Decorative shimmer */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50" />
 
