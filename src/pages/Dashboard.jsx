@@ -2,28 +2,67 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import AdminStatsSection from '../components/charts/AdminStatsSection';
+import { dashboardAPI } from '../api';
+import toast from 'react-hot-toast';
 
-// Mock data (replace with API calls later)
-const stats = [
-    { label: 'Total Revenue', value: 'Rs.1,24,500', change: '+12.5%', isPositive: true, icon: 'dollar' },
-    { label: 'Active Projects', value: '12', change: '+2', isPositive: true, icon: 'briefcase' },
-    { label: 'New Leads', value: '45', change: '+5.2%', isPositive: true, icon: 'users' },
-    { label: 'Pending Inquiries', value: '8', change: '-2', isPositive: false, icon: 'inbox' },
-];
-
-const recentLeads = [
-    { id: 1, name: 'Alice Freeman', company: 'TechCorp', status: 'New', value: 'Rs.5,000', score: 85 },
-    { id: 2, name: 'Robert Smith', company: 'Design Studio', status: 'Negotiation', value: 'Rs.12,000', score: 92 },
-    { id: 3, name: 'Sarah Jones', company: 'Retail Inc', status: 'Contacted', value: 'Rs.3,500', score: 60 },
-];
+// Mock data removed - fetching from API
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(true);
+    const [stats, setStats] = useState([]);
+    const [recentLeads, setRecentLeads] = useState([]);
 
     useEffect(() => {
-        // Simulate loading
-        setTimeout(() => setIsLoading(false), 800);
+        const fetchDashboardData = async () => {
+            try {
+                const [statsData, activityData] = await Promise.all([
+                    dashboardAPI.getStats(),
+                    dashboardAPI.getRecentActivity()
+                ]);
+
+                const transformedStats = [
+                    {
+                        label: 'Total Revenue',
+                        value: `Rs.${(statsData.revenue || 0).toLocaleString()}`,
+                        change: '+0%',
+                        isPositive: true,
+                        icon: 'dollar'
+                    },
+                    {
+                        label: 'Active Projects',
+                        value: statsData.activeProjects || 0,
+                        change: '+0',
+                        isPositive: true,
+                        icon: 'briefcase'
+                    },
+                    {
+                        label: 'New Leads',
+                        value: statsData.newLeads || 0,
+                        change: `${statsData.totalLeads || 0} Total`,
+                        isPositive: true,
+                        icon: 'users'
+                    },
+                    {
+                        label: 'Pending Inquiries',
+                        value: statsData.pendingInquiries || 0,
+                        change: 'Action Needed',
+                        isPositive: false,
+                        icon: 'inbox'
+                    },
+                ];
+
+                setStats(transformedStats);
+                setRecentLeads(activityData.recentLeads || []);
+            } catch (error) {
+                console.error('Dashboard error:', error);
+                toast.error('Failed to load dashboard data');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
     }, []);
 
     const getIcon = (type) => {
@@ -219,12 +258,14 @@ export default function Dashboard() {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="py-4 font-medium text-slate-600 dark:text-slate-300">{lead.value}</td>
+                                            <td className="py-4 font-medium text-slate-600 dark:text-slate-300">
+                                                Rs.{Number(lead.value || lead.estimatedValue || 0).toLocaleString()}
+                                            </td>
                                             <td className="py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status === 'New' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
-                                                    lead.status === 'Negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status?.toLowerCase() === 'new' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
+                                                    lead.status?.toLowerCase() === 'negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
                                                         'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                                    }`}>
+                                                    } capitalize`}>
                                                     {lead.status}
                                                 </span>
                                             </td>

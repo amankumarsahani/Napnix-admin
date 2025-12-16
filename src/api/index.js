@@ -207,20 +207,15 @@ export const activitiesAPI = {
 
 // Dashboard API - for admin dashboard stats
 export const dashboardAPI = {
-    getLeadStats: async () => {
-        const response = await apiClient.get('/leads/stats');
+    getStats: async () => {
+        const response = await apiClient.get('/dashboard/stats');
         return response.data;
     },
 
-    getInquiryStats: async () => {
-        const response = await apiClient.get('/inquiries/stats');
+    getRecentActivity: async () => {
+        const response = await apiClient.get('/dashboard/recent');
         return response.data;
-    },
-
-    getAssignableUsers: async () => {
-        const response = await apiClient.get('/leads/assignable-users');
-        return response.data;
-    },
+    }
 };
 
 // Document Templates API

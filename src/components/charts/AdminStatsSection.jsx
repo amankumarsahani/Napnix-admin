@@ -18,12 +18,23 @@ export default function AdminStatsSection() {
 
     const fetchStats = async () => {
         try {
-            const [leadsRes, inquiriesRes] = await Promise.all([
-                dashboardAPI.getLeadStats(),
-                dashboardAPI.getInquiryStats()
-            ]);
-            setLeadStats(leadsRes);
-            setInquiryStats(inquiriesRes?.data || inquiriesRes);
+            const stats = await dashboardAPI.getStats();
+
+            // Map aggregated stats to component expected structure
+            setLeadStats({
+                total: stats.totalLeads,
+                newLeads: stats.newLeads,
+                qualified: stats.qualifiedLeads,
+                won: stats.wonLeads,
+                totalValue: stats.leadTotalValue,
+                ...stats.leadsByStatus // Spread status counts for charts
+            });
+
+            setInquiryStats({
+                total: stats.totalInquiries,
+                ...stats.inquiriesByStatus
+            });
+
         } catch (error) {
             console.error('Failed to fetch stats:', error);
             // Don't show error toast - might not have permission
