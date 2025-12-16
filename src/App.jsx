@@ -55,6 +55,9 @@ function AppRoutes() {
           </Route>
         </Route>
       </Route>
+
+      {/* Catch-all 404 - redirect to login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
@@ -65,10 +68,44 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppRoutes />
-          <Toaster position="top-right" />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#4f46e5',
+                color: '#ffffff',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                fontSize: '14px',
+                fontWeight: '500',
+                boxShadow: '0 10px 25px -5px rgba(79, 70, 229, 0.4)',
+              },
+              success: {
+                style: {
+                  background: '#10b981',
+                  boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4)',
+                },
+                iconTheme: {
+                  primary: '#ffffff',
+                  secondary: '#10b981',
+                },
+              },
+              error: {
+                style: {
+                  background: '#ef4444',
+                  boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.4)',
+                },
+                iconTheme: {
+                  primary: '#ffffff',
+                  secondary: '#ef4444',
+                },
+                duration: 5000,
+              },
+            }}
+          />
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
   );
 }
-
