@@ -97,6 +97,11 @@ export const leadsAPI = {
         return response.data;
     },
 
+    bulkCreate: async (leads) => {
+        const response = await apiClient.post('/leads/bulk-create', { leads });
+        return response.data;
+    },
+
     update: async (id, data) => {
         const response = await apiClient.put(`/leads/${id}`, data);
         return response.data;

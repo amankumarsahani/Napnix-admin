@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leadsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
+import Papa from 'papaparse';
 
 export default function LeadsList() {
     const [leads, setLeads] = useState([]);
@@ -10,6 +11,8 @@ export default function LeadsList() {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingLead, setEditingLead] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
         companyName: '',
         contactName: '',
@@ -41,6 +44,71 @@ export default function LeadsList() {
             console.error('[Leads] Error:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                try {
+                    const parsedLeads = results.data.map(row => ({
+                        company: row.Company || row.company,
+                        contactName: row.Contact || row.contactName,
+                        email: row.Email || row.email,
+                        phone: row.Phone || row.phone,
+                        status: 'new', // Default status
+                        source: 'CSV Import',
+                        estimatedValue: parseFloat(row.Value || row.estimatedValue) || 0,
+                        notes: row.Notes || row.notes,
+                        score: parseInt(row.Score || row.score) || 0
+                    })).filter(l => l.contactName); // Ensure required field
+
+                    if (parsedLeads.length === 0) {
+                        toast.error('No valid leads found in CSV');
+                        return;
+                    }
+
+                    const response = await leadsAPI.bulkCreate(parsedLeads);
+                    toast.success(response.message || `Successfully imported leads`);
+                    fetchLeads();
+                } catch (error) {
+                    toast.error('Failed to import leads');
+                    console.error('Import error:', error);
+                } finally {
+                    setIsImporting(false);
+                    event.target.value = null; // Reset input
+                }
+            },
+            error: (error) => {
+                toast.error('Failed to parse CSV file');
+                console.error('CSV Parse error:', error);
+                setIsImporting(false);
+                event.target.value = null;
+            }
+        });
+    };
+
+    const handleDownloadTemplate = () => {
+        const headers = ['Company', 'Contact', 'Email', 'Phone', 'Value', 'Notes', 'Score'];
+        const sample = ['Acme Corp', 'John Doe', 'john@example.com', '555-0123', '5000', 'Potential big client', '80'];
+        const csvContent = [headers.join(','), sample.join(',')].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'leads_template.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     };
 
@@ -143,6 +211,13 @@ export default function LeadsList() {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track your sales opportunities.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept=".csv"
+                        className="hidden"
+                    />
                     <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
                         <button
                             onClick={() => setViewMode('list')}
@@ -159,16 +234,39 @@ export default function LeadsList() {
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
                         </button>
                     </div>
-                    <button
-                        onClick={() => {
-                            resetForm();
-                            setShowModal(true);
-                        }}
-                        className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        Add Lead
-                    </button>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleDownloadTemplate}
+                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
+                            title="Download Template"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            <span className="hidden sm:inline">Template</span>
+                        </button>
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isImporting}
+                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
+                        >
+                            {isImporting ? (
+                                <div className="w-4 h-4 border-2 border-slate-400 border-t-brand-600 rounded-full animate-spin" />
+                            ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            )}
+                            <span className="hidden sm:inline">Import CSV</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                resetForm();
+                                setShowModal(true);
+                            }}
+                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            <span className="hidden sm:inline">Add Lead</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
