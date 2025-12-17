@@ -25,7 +25,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        // Only redirect to login for 401 errors on non-auth endpoints
+        // Don't redirect if the error is from login/signin attempt (let the component handle it)
+        const isAuthEndpoint = error.config?.url?.includes('/auth/signin') ||
+            error.config?.url?.includes('/auth/login');
+
+        if (error.response?.status === 401 && !isAuthEndpoint) {
             // Unauthorized - clear token and redirect to login
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -36,3 +41,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+

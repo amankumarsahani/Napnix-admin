@@ -97,6 +97,11 @@ export const leadsAPI = {
         return response.data;
     },
 
+    bulkCreate: async (leads) => {
+        const response = await apiClient.post('/leads/bulk-create', { leads });
+        return response.data;
+    },
+
     update: async (id, data) => {
         const response = await apiClient.put(`/leads/${id}`, data);
         return response.data;
@@ -212,20 +217,15 @@ export const activitiesAPI = {
 
 // Dashboard API - for admin dashboard stats
 export const dashboardAPI = {
-    getLeadStats: async () => {
-        const response = await apiClient.get('/leads/stats');
+    getStats: async () => {
+        const response = await apiClient.get('/dashboard/stats');
         return response.data;
     },
 
-    getInquiryStats: async () => {
-        const response = await apiClient.get('/inquiries/stats');
+    getRecentActivity: async () => {
+        const response = await apiClient.get('/dashboard/recent');
         return response.data;
-    },
-
-    getAssignableUsers: async () => {
-        const response = await apiClient.get('/leads/assignable-users');
-        return response.data;
-    },
+    }
 };
 
 // Document Templates API
