@@ -111,6 +111,16 @@ export const leadsAPI = {
         const response = await apiClient.get('/leads/stats');
         return response.data;
     },
+
+    assign: async (id, assignedTo) => {
+        const response = await apiClient.patch(`/leads/${id}/assign`, { assignedTo });
+        return response.data;
+    },
+
+    getAssignableUsers: async () => {
+        const response = await apiClient.get('/leads/assignable-users');
+        return response.data;
+    },
 };
 
 export const inquiriesAPI = {

@@ -185,6 +185,7 @@ export default function LeadsList() {
                                 <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                     <th className="px-6 py-4">Company / Contact</th>
                                     <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Assigned To</th>
                                     <th className="px-6 py-4">Value</th>
                                     <th className="px-6 py-4">Heat Score</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
@@ -208,6 +209,18 @@ export default function LeadsList() {
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(lead.status)} capitalize`}>
                                                 {lead.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {lead.assignedFirstName ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-semibold">
+                                                        {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
+                                                    </div>
+                                                    <span className="text-sm text-slate-700 dark:text-slate-300">{lead.assignedFirstName}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 text-sm">Unassigned</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
                                             Rs.{Number(lead.estimatedValue || 0).toLocaleString()}

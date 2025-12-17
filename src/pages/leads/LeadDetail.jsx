@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
+import { useAuth } from '../../contexts/AuthContext';
+import { leadsAPI } from '../../api';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -49,6 +51,7 @@ const getRelativeTime = (dateString) => {
 export default function LeadDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [lead, setLead] = useState(null);
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -60,10 +63,42 @@ export default function LeadDetail() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showEmailComposer, setShowEmailComposer] = useState(false);
 
+    // Assignment
+    const [assignableUsers, setAssignableUsers] = useState([]);
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    const isAdmin = user?.role === 'admin';
+
     useEffect(() => {
         fetchLead();
         fetchActivities();
-    }, [id]);
+        if (isAdmin) {
+            fetchAssignableUsers();
+        }
+    }, [id, isAdmin]);
+
+    const fetchAssignableUsers = async () => {
+        try {
+            const response = await leadsAPI.getAssignableUsers();
+            setAssignableUsers(response.data || []);
+        } catch (error) {
+            console.error('Failed to fetch assignable users:', error);
+        }
+    };
+
+    const handleAssign = async (assignedTo) => {
+        if (!assignedTo) return;
+        setIsAssigning(true);
+        try {
+            await leadsAPI.assign(id, assignedTo);
+            toast.success('Lead reassigned successfully');
+            fetchLead();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to reassign lead');
+        } finally {
+            setIsAssigning(false);
+        }
+    };
 
     const fetchLead = async () => {
         try {
@@ -248,10 +283,11 @@ export default function LeadDetail() {
                     </div>
 
                     {/* Assigned To */}
-                    {lead.assignedFirstName && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Assigned To</h3>
-                            <div className="flex items-center gap-3">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Assigned To</h3>
+
+                        {lead.assignedFirstName ? (
+                            <div className="flex items-center gap-3 mb-4">
                                 <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center font-semibold">
                                     {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
                                 </div>
@@ -260,8 +296,33 @@ export default function LeadDetail() {
                                     <p className="text-sm text-slate-500 dark:text-slate-400">{lead.assignedEmail}</p>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <p className="text-slate-500 dark:text-slate-400 mb-4">No one assigned</p>
+                        )}
+
+                        {/* Reassign dropdown (admin only) */}
+                        {isAdmin && (
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
+                                <label className="block text-sm text-slate-600 dark:text-slate-400 mb-2">Reassign to:</label>
+                                <select
+                                    onChange={(e) => handleAssign(e.target.value)}
+                                    disabled={isAssigning}
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none disabled:opacity-50"
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Select a team member...</option>
+                                    {assignableUsers.map(u => (
+                                        <option key={u.id} value={u.id} disabled={u.id === lead.assignedTo}>
+                                            {u.firstName} {u.lastName} ({u.role})
+                                        </option>
+                                    ))}
+                                </select>
+                                {isAssigning && (
+                                    <p className="text-xs text-brand-600 mt-2">Reassigning...</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Notes */}
                     {lead.notes && (
