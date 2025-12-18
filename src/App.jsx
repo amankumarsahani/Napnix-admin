@@ -20,6 +20,7 @@ import Settings from './pages/admin/Settings';
 import Templates from './pages/admin/Templates';
 import Documents from './pages/admin/Documents';
 import DocumentEdit from './pages/admin/DocumentEdit';
+import Tenants from './pages/tenants/Tenants';
 
 function AppRoutes() {
   return (
@@ -52,6 +53,7 @@ function AppRoutes() {
             <Route path="templates" element={<Templates />} />
             <Route path="team" element={<Team />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="tenants" element={<Tenants />} />
           </Route>
         </Route>
       </Route>

@@ -303,3 +303,79 @@ export const emailTemplatesAPI = {
         return response.data;
     },
 };
+
+// Tenants API (Master Admin)
+export const tenantsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/tenants', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/tenants/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/tenants', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.patch(`/tenants/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/tenants/${id}`);
+        return response.data;
+    },
+
+    provision: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/provision`);
+        return response.data;
+    },
+
+    start: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/start`);
+        return response.data;
+    },
+
+    stop: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/stop`);
+        return response.data;
+    },
+
+    restart: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/restart`);
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await apiClient.get('/tenants/stats');
+        return response.data;
+    },
+};
+
+// Plans API
+export const plansAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/plans');
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/plans/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/plans', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.patch(`/plans/${id}`, data);
+        return response.data;
+    },
+};
