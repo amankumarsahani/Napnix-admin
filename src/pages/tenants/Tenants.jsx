@@ -162,7 +162,7 @@ const Tenants = () => {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
-                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}.nexcrm.in</div>
+                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}.crm-api.nexspiresolutions.co.in</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -337,7 +337,7 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 placeholder="acme-corp"
                             />
                             <span className="px-3 py-2 bg-slate-100 dark:bg-slate-600 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg text-slate-500 dark:text-slate-400 text-sm">
-                                .nexcrm.in
+                                .crm-api.nexspiresolutions.co.in
                             </span>
                         </div>
                     </div>
