@@ -162,7 +162,7 @@ const Tenants = () => {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
-                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}.crm-api.nexspiresolutions.co.in</div>
+                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}-crm-api.nexspiresolutions.co.in</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
