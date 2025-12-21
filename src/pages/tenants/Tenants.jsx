@@ -382,12 +382,13 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 onChange={handleChange}
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             >
-                                <option value="general">General</option>
-                                <option value="real_estate">Real Estate</option>
+                                <option value="general">General CRM</option>
+                                <option value="ecommerce">E-Commerce</option>
+                                <option value="realestate">Real Estate</option>
+                                <option value="services">Services (Salon, Spa, etc.)</option>
                                 <option value="healthcare">Healthcare</option>
                                 <option value="education">Education</option>
-                                <option value="finance">Finance</option>
-                                <option value="retail">Retail</option>
+                                <option value="hospitality">Hospitality</option>
                             </select>
                         </div>
 
