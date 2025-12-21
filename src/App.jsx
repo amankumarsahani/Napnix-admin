@@ -21,6 +21,7 @@ import Templates from './pages/admin/Templates';
 import Documents from './pages/admin/Documents';
 import DocumentEdit from './pages/admin/DocumentEdit';
 import Tenants from './pages/tenants/Tenants';
+import ApiDocumentation from './pages/admin/ApiDocumentation';
 
 function AppRoutes() {
   return (
@@ -54,6 +55,7 @@ function AppRoutes() {
             <Route path="team" element={<Team />} />
             <Route path="settings" element={<Settings />} />
             <Route path="tenants" element={<Tenants />} />
+            <Route path="api-docs" element={<ApiDocumentation />} />
           </Route>
         </Route>
       </Route>
