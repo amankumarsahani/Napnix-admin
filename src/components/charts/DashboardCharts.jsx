@@ -143,15 +143,15 @@ export function ConversionRateCard({ inquiryStats, leadStats }) {
 
     return (
         <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-5 rounded-xl border border-indigo-100">
-                <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">Inquiry → Lead</p>
-                <p className="text-3xl font-bold text-indigo-700">{conversionRate}%</p>
-                <p className="text-sm text-slate-500 mt-1">{convertedInquiries} of {totalInquiries}</p>
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Inquiry → Lead</p>
+                <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">{conversionRate}%</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{convertedInquiries} of {totalInquiries}</p>
             </div>
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 rounded-xl border border-emerald-100">
-                <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">Lead Win Rate</p>
-                <p className="text-3xl font-bold text-emerald-700">{winRate}%</p>
-                <p className="text-sm text-slate-500 mt-1">{wonLeads} of {totalLeads}</p>
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Lead Win Rate</p>
+                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{winRate}%</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{wonLeads} of {totalLeads}</p>
             </div>
         </div>
     );

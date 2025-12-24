@@ -41,38 +41,45 @@ export default function Login() {
     };
 
     return (
-
-        <div className="min-h-screen bg-gradient-to-br from-brand-50 via-brand-100 to-accent-100 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-brand-50 via-brand-100 to-accent-100 dark:from-slate-950 dark:via-slate-900 dark:to-brand-950 flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300">
             {/* Ambient Background Elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-400/20 rounded-full blur-[120px] animate-pulse" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-400/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-400/20 dark:bg-brand-500/10 rounded-full blur-[120px] animate-pulse" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent-400/20 dark:bg-accent-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+
+            {/* Additional glow for dark mode */}
+            <div className="hidden dark:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-brand-600/5 rounded-full blur-[100px]" />
 
             <div className="relative w-full max-w-md">
-                <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-8 md:p-10 relative overflow-hidden">
-                    {/* Decorative shimmer */}
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-50" />
+                {/* Card with glassmorphism for dark mode */}
+                <div className="bg-white/95 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 shadow-2xl dark:shadow-brand-500/5 rounded-3xl p-8 md:p-10 relative overflow-hidden transition-all duration-300">
+                    {/* Decorative shimmer - top border glow */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500/50 dark:via-brand-400/30 to-transparent" />
 
-                    <div className="text-center mb-10">
-                        <div className="w-20 h-20 bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-glow transform rotate-3 hover:rotate-6 transition-transform duration-300">
+                    {/* Subtle corner glow for dark mode */}
+                    <div className="hidden dark:block absolute -top-20 -right-20 w-40 h-40 bg-brand-500/20 rounded-full blur-3xl" />
+                    <div className="hidden dark:block absolute -bottom-20 -left-20 w-40 h-40 bg-accent-500/20 rounded-full blur-3xl" />
+
+                    <div className="text-center mb-10 relative">
+                        <div className="w-20 h-20 bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-brand-500/30 dark:shadow-brand-500/20 transform rotate-3 hover:rotate-6 transition-transform duration-300">
                             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+                        <h1 className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
                             Nexspire
-                            <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent ml-2">Admin</span>
+                            <span className="bg-gradient-to-r from-brand-600 to-accent-600 dark:from-brand-400 dark:to-accent-400 bg-clip-text text-transparent ml-2">Admin</span>
                         </h1>
-                        <p className="text-slate-500 mt-3 font-medium">Enterprise Management Portal</p>
+                        <p className="text-slate-500 dark:text-slate-400 mt-3 font-medium">Enterprise Management Portal</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6 relative">
                         <div className="space-y-2">
-                            <label htmlFor="email" className="block text-sm font-semibold text-slate-700 ml-1">
+                            <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                 Email Credentials
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg className="h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-brand-500 dark:group-focus-within:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                                     </svg>
                                 </div>
@@ -81,7 +88,7 @@ export default function Login() {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
                                     placeholder="name@nexspire.com"
                                     required
                                 />
@@ -89,12 +96,12 @@ export default function Login() {
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="password" className="block text-sm font-semibold text-slate-700 ml-1">
+                            <label htmlFor="password" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                 Access Key
                             </label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg className="h-5 w-5 text-slate-400 group-focus-within:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg className="h-5 w-5 text-slate-400 dark:text-slate-500 group-focus-within:text-brand-500 dark:group-focus-within:text-brand-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
                                 </div>
@@ -103,14 +110,14 @@ export default function Login() {
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-11 pr-12 py-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+                                    className="block w-full pl-11 pr-12 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
                                     placeholder="••••••••"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                     tabIndex={-1}
                                 >
                                     {showPassword ? (
@@ -130,7 +137,7 @@ export default function Login() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-brand-500/30 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                            className="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-brand-500/30 dark:shadow-brand-500/20 transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>
@@ -146,11 +153,12 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-                        <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Protected System</p>
+                    <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700/50 text-center">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">Protected System</p>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

@@ -58,7 +58,7 @@ export default function AdminStatsSection() {
         <div className="space-y-6">
             {/* Conversion Rates */}
             <div className="glass-panel p-6 rounded-2xl">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Conversion Overview</h3>
+                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Conversion Overview</h3>
                 <ConversionRateCard inquiryStats={inquiryStats} leadStats={leadStats} />
             </div>
 
@@ -67,7 +67,7 @@ export default function AdminStatsSection() {
                 {/* Lead Status Chart */}
                 <div className="glass-panel p-6 rounded-2xl">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-800">Leads by Status</h3>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">Leads by Status</h3>
                         <span className="text-sm text-slate-500">
                             Total: {leadStats?.total || 0}
                         </span>
@@ -78,7 +78,7 @@ export default function AdminStatsSection() {
                 {/* Inquiry Status Chart */}
                 <div className="glass-panel p-6 rounded-2xl">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-800">Inquiries by Status</h3>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">Inquiries by Status</h3>
                         <span className="text-sm text-slate-500">
                             Total: {inquiryStats?.total || 0}
                         </span>
@@ -89,21 +89,21 @@ export default function AdminStatsSection() {
 
             {/* Quick Stats Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase">New Leads</p>
-                    <p className="text-2xl font-bold text-brand-600">{leadStats?.newLeads || 0}</p>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">New Leads</p>
+                    <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">{leadStats?.newLeads || 0}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase">Qualified</p>
-                    <p className="text-2xl font-bold text-purple-600">{leadStats?.qualified || 0}</p>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Qualified</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{leadStats?.qualified || 0}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase">Won</p>
-                    <p className="text-2xl font-bold text-emerald-600">{leadStats?.won || 0}</p>
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Won</p>
+                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{leadStats?.won || 0}</p>
                 </div>
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase">Total Value</p>
-                    <p className="text-2xl font-bold text-amber-600">
+                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Total Value</p>
+                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                         Rs.{(leadStats?.totalValue || 0).toLocaleString()}
                     </p>
                 </div>
