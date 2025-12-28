@@ -355,6 +355,16 @@ export const tenantsAPI = {
         const response = await apiClient.get('/tenants/stats');
         return response.data;
     },
+
+    getLogs: async (id, lines = 100) => {
+        const response = await apiClient.get(`/tenants/${id}/logs`, { params: { lines } });
+        return response.data;
+    },
+
+    fullDelete: async (id, options = {}) => {
+        const response = await apiClient.delete(`/tenants/${id}/full-delete`, { data: options });
+        return response.data;
+    },
 };
 
 // Plans API
