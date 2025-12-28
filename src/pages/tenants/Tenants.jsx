@@ -16,7 +16,10 @@ const Tenants = () => {
         fetchData();
     }, []);
 
-    const fetchData = async () => {
+    const fetchData = async (retryCount = 0) => {
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2 seconds
+
         try {
             setLoading(true);
             const [tenantsRes, plansRes, statsRes] = await Promise.all([
@@ -28,10 +31,20 @@ const Tenants = () => {
             setPlans(plansRes.data || []);
             setStats(statsRes.data);
         } catch (error) {
+            console.error('Fetch tenants error:', error);
+
+            // Retry if connection failed (tunnel restart can cause this)
+            if (retryCount < maxRetries) {
+                console.log(`Retrying fetch... (${retryCount + 1}/${maxRetries})`);
+                setTimeout(() => fetchData(retryCount + 1), retryDelay);
+                return; // Don't set loading to false yet
+            }
+
             toast.error('Failed to fetch tenants');
-            console.error(error);
         } finally {
-            setLoading(false);
+            if (retryCount >= maxRetries || retryCount === 0) {
+                setLoading(false);
+            }
         }
     };
 
