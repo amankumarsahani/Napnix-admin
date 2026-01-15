@@ -487,6 +487,7 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 <option value="healthcare">Healthcare</option>
                                 <option value="education">Education</option>
                                 <option value="hospitality">Hospitality</option>
+                                <option value="legal">Legal (Law Firm)</option>
                             </select>
                         </div>
 
