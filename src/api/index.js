@@ -446,6 +446,11 @@ export const campaignsAPI = {
         const response = await apiClient.get('/campaigns/stats');
         return response.data;
     },
+
+    getTemplates: async () => {
+        const response = await apiClient.get('/campaigns/templates');
+        return response.data;
+    },
 };
 
 // SMTP Accounts API (Email Configuration)
