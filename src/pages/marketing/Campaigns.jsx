@@ -105,19 +105,19 @@ const Campaigns = () => {
             {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalCampaigns || 0}</div>
+                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total_campaigns || 0}</div>
                         <div className="text-sm text-slate-500 dark:text-slate-400">Total Campaigns</div>
                     </div>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                        <div className="text-2xl font-bold text-emerald-600">{stats.totalSent || 0}</div>
+                        <div className="text-2xl font-bold text-emerald-600">{stats.total_sent || 0}</div>
                         <div className="text-sm text-slate-500 dark:text-slate-400">Emails Sent</div>
                     </div>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                        <div className="text-2xl font-bold text-blue-600">{stats.totalOpened || 0}</div>
+                        <div className="text-2xl font-bold text-blue-600">{stats.total_opened || 0}</div>
                         <div className="text-sm text-slate-500 dark:text-slate-400">Opened</div>
                     </div>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                        <div className="text-2xl font-bold text-purple-600">{stats.overallOpenRate || 0}%</div>
+                        <div className="text-2xl font-bold text-purple-600">{stats.overall_open_rate || 0}%</div>
                         <div className="text-sm text-slate-500 dark:text-slate-400">Open Rate</div>
                     </div>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
@@ -164,21 +164,21 @@ const Campaigns = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {campaign.totalRecipients || 0}
+                                            {campaign.total_recipients || 0}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {campaign.sentCount || 0}
+                                            {campaign.sent_count || 0}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {campaign.openedCount || 0}
-                                            {campaign.sentCount > 0 && (
+                                            {campaign.opened_count || 0}
+                                            {campaign.sent_count > 0 && (
                                                 <span className="text-xs text-slate-400 ml-1">
-                                                    ({((campaign.openedCount / campaign.sentCount) * 100).toFixed(1)}%)
+                                                    ({((campaign.opened_count / campaign.sent_count) * 100).toFixed(1)}%)
                                                 </span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
-                                            {campaign.clickedCount || 0}
+                                            {campaign.clicked_count || 0}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -262,21 +262,51 @@ const Campaigns = () => {
 
 // Campaign Modal Component
 const CampaignModal = ({ campaign, onClose, onSaved }) => {
+    const [templates, setTemplates] = useState([]);
     const [formData, setFormData] = useState({
         name: campaign?.name || '',
         subject: campaign?.subject || '',
-        previewText: campaign?.previewText || '',
-        htmlContent: campaign?.htmlContent || '',
-        audienceType: campaign?.audienceType || 'all_leads',
-        customEmails: campaign?.customEmails || '',
-        rateLimitPerHour: campaign?.rateLimitPerHour || 50,
-        delayBetweenEmails: campaign?.delayBetweenEmails || 3
+        preview_text: campaign?.preview_text || '',
+        html_content: campaign?.html_content || '',
+        template_id: campaign?.template_id || '',
+        audience_type: campaign?.audience_type || 'all_leads',
+        custom_emails: campaign?.custom_emails || '',
+        rate_limit_per_hour: campaign?.rate_limit_per_hour || 50,
+        delay_between_emails: campaign?.delay_between_emails || 3
     });
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        loadTemplates();
+    }, []);
+
+    const loadTemplates = async () => {
+        try {
+            const res = await campaignsAPI.getTemplates();
+            setTemplates(res.data || []);
+        } catch (error) {
+            console.error('Failed to load templates:', error);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleTemplateSelect = async (templateId) => {
+        if (!templateId) {
+            setFormData(prev => ({ ...prev, template_id: '' }));
+            return;
+        }
+
+        setFormData(prev => ({ ...prev, template_id: templateId }));
+
+        // Find selected template and pre-fill subject if available
+        const template = templates.find(t => t.id === parseInt(templateId));
+        if (template?.subject && !formData.subject) {
+            setFormData(prev => ({ ...prev, subject: template.subject }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -330,6 +360,26 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            Email Template
+                        </label>
+                        <select
+                            name="template_id"
+                            value={formData.template_id}
+                            onChange={(e) => handleTemplateSelect(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                        >
+                            <option value="">-- No Template (Custom HTML) --</option>
+                            {templates.map(template => (
+                                <option key={template.id} value={template.id}>
+                                    {template.name} {template.category ? `(${template.category})` : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="mt-1 text-xs text-slate-500">Select a template or write custom HTML below</p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Email Subject *
                         </label>
                         <input
@@ -350,8 +400,8 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         </label>
                         <input
                             type="text"
-                            name="previewText"
-                            value={formData.previewText}
+                            name="preview_text"
+                            value={formData.preview_text}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             placeholder="Short preview shown in inbox..."
@@ -363,8 +413,8 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             Audience
                         </label>
                         <select
-                            name="audienceType"
-                            value={formData.audienceType}
+                            name="audience_type"
+                            value={formData.audience_type}
                             onChange={handleChange}
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                         >
@@ -374,14 +424,14 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         </select>
                     </div>
 
-                    {formData.audienceType === 'custom' && (
+                    {formData.audience_type === 'custom' && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Email Addresses (one per line)
                             </label>
                             <textarea
-                                name="customEmails"
-                                value={formData.customEmails}
+                                name="custom_emails"
+                                value={formData.custom_emails}
                                 onChange={handleChange}
                                 rows={4}
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
@@ -390,19 +440,21 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         </div>
                     )}
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Email Content (HTML)
-                        </label>
-                        <textarea
-                            name="htmlContent"
-                            value={formData.htmlContent}
-                            onChange={handleChange}
-                            rows={10}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-sm"
-                            placeholder="<h1>Hello {{name}}!</h1>&#10;<p>Your email content here...</p>"
-                        />
-                    </div>
+                    {!formData.template_id && (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Email Content (HTML)
+                            </label>
+                            <textarea
+                                name="html_content"
+                                value={formData.html_content}
+                                onChange={handleChange}
+                                rows={10}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-sm"
+                                placeholder="<h1>Hello {{name}}!</h1>&#10;<p>Your email content here...</p>"
+                            />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -411,8 +463,8 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             </label>
                             <input
                                 type="number"
-                                name="rateLimitPerHour"
-                                value={formData.rateLimitPerHour}
+                                name="rate_limit_per_hour"
+                                value={formData.rate_limit_per_hour}
                                 onChange={handleChange}
                                 min={1}
                                 max={500}
@@ -425,8 +477,8 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             </label>
                             <input
                                 type="number"
-                                name="delayBetweenEmails"
-                                value={formData.delayBetweenEmails}
+                                name="delay_between_emails"
+                                value={formData.delay_between_emails}
                                 onChange={handleChange}
                                 min={1}
                                 max={60}
