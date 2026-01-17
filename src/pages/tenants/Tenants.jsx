@@ -155,6 +155,7 @@ const Tenants = () => {
                         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
                             <tr className="text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                 <th className="px-6 py-4">Tenant</th>
+                                <th className="px-6 py-4">Industry</th>
                                 <th className="px-6 py-4">Plan</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Process</th>
@@ -165,7 +166,7 @@ const Tenants = () => {
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                             {tenants.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                                         No tenants yet. Create your first tenant!
                                     </td>
                                 </tr>
@@ -177,6 +178,11 @@ const Tenants = () => {
                                                 <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
                                                 <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}-crm-api.nexspiresolutions.co.in</div>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
+                                                {tenant.industry_type || 'general'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">
@@ -276,6 +282,9 @@ const Tenants = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-2 mb-4">
+                                <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
+                                    {tenant.industry_type || 'general'}
+                                </span>
                                 <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">
                                     {tenant.plan_name || 'Starter'}
                                 </span>
