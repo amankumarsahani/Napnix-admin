@@ -448,3 +448,36 @@ export const campaignsAPI = {
     },
 };
 
+// SMTP Accounts API (Email Configuration)
+export const smtpAccountsAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/smtp-accounts');
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/smtp-accounts/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/smtp-accounts', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/smtp-accounts/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/smtp-accounts/${id}`);
+        return response.data;
+    },
+
+    test: async (id) => {
+        const response = await apiClient.post(`/smtp-accounts/${id}/test`);
+        return response.data;
+    },
+};
+
