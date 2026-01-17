@@ -23,6 +23,7 @@ import DocumentEdit from './pages/admin/DocumentEdit';
 import Tenants from './pages/tenants/Tenants';
 import TenantDetail from './pages/tenants/TenantDetail';
 import ApiDocumentation from './pages/admin/ApiDocumentation';
+import Campaigns from './pages/marketing/Campaigns';
 
 function AppRoutes() {
   return (
@@ -57,6 +58,7 @@ function AppRoutes() {
             <Route path="settings" element={<Settings />} />
             <Route path="tenants" element={<Tenants />} />
             <Route path="tenants/:id" element={<TenantDetail />} />
+            <Route path="campaigns" element={<Campaigns />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
           </Route>
         </Route>

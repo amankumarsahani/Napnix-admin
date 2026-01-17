@@ -389,3 +389,62 @@ export const plansAPI = {
         return response.data;
     },
 };
+
+// Campaigns API (Email Marketing)
+export const campaignsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/campaigns', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/campaigns/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/campaigns', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/campaigns/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/campaigns/${id}`);
+        return response.data;
+    },
+
+    start: async (id) => {
+        const response = await apiClient.post(`/campaigns/${id}/send`);
+        return response.data;
+    },
+
+    pause: async (id) => {
+        const response = await apiClient.post(`/campaigns/${id}/pause`);
+        return response.data;
+    },
+
+    resume: async (id) => {
+        const response = await apiClient.post(`/campaigns/${id}/resume`);
+        return response.data;
+    },
+
+    getStats: async (id) => {
+        const response = await apiClient.get(`/campaigns/${id}/stats`);
+        return response.data;
+    },
+
+    getRecipients: async (id, params = {}) => {
+        const response = await apiClient.get(`/campaigns/${id}/recipients`, { params });
+        return response.data;
+    },
+
+    getDashboardStats: async () => {
+        const response = await apiClient.get('/campaigns/stats');
+        return response.data;
+    },
+};
+
