@@ -326,7 +326,8 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
         audience_type: campaign?.audience_type || 'all_leads',
         custom_emails: campaign?.custom_emails || '',
         rate_limit_per_hour: campaign?.rate_limit_per_hour || 50,
-        delay_between_emails: campaign?.delay_between_emails || 3
+        delay_between_emails: campaign?.delay_between_emails || 3,
+        auto_enroll: campaign?.auto_enroll || false
     });
     const [loading, setLoading] = useState(false);
 
@@ -494,6 +495,28 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             <option value="custom">Custom Emails (Paste or Upload)</option>
                         </select>
                     </div>
+
+                    {/* Auto-Enroll Toggle - only for All Leads or All Clients */}
+                    {(formData.audience_type === 'all_leads' || formData.audience_type === 'all_clients') && (
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <input
+                                type="checkbox"
+                                id="auto_enroll"
+                                name="auto_enroll"
+                                checked={formData.auto_enroll}
+                                onChange={(e) => setFormData(prev => ({ ...prev, auto_enroll: e.target.checked }))}
+                                className="w-4 h-4 rounded text-brand-600"
+                            />
+                            <div>
+                                <label htmlFor="auto_enroll" className="text-sm font-medium text-slate-900 dark:text-white cursor-pointer">
+                                    Auto-enroll new contacts
+                                </label>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    New {formData.audience_type === 'all_leads' ? 'leads' : 'clients'} will automatically receive this campaign
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {formData.audience_type === 'custom' && (
                         <div className="space-y-3">
