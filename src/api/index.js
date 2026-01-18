@@ -451,6 +451,15 @@ export const campaignsAPI = {
         const response = await apiClient.get('/campaigns/templates');
         return response.data;
     },
+
+    parseEmails: async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post('/campaigns/parse-emails', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data;
+    },
 };
 
 // SMTP Accounts API (Email Configuration)
