@@ -22,66 +22,98 @@ import toast from 'react-hot-toast';
 
 const TriggerNode = ({ data, selected }) => (
     <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-green-500'
-        } bg-green-50 dark:bg-green-900/30`}>
+        } bg-white dark:bg-slate-800`}>
         <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <polygon points="5 3 19 12 5 21 5 3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
-            <span className="text-xs font-semibold text-green-700 dark:text-green-300 uppercase">Trigger</span>
+            <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">Trigger</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-green-500" />
+        <Handle
+            type="source"
+            position={Position.Bottom}
+            className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-slate-800"
+        />
     </div>
 );
 
 const ActionNode = ({ data, selected }) => (
     <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-blue-500'
-        } bg-blue-50 dark:bg-blue-900/30`}>
-        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-blue-500" />
+        } bg-white dark:bg-slate-800`}>
+        <Handle
+            type="target"
+            position={Position.Top}
+            className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-slate-800"
+        />
         <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
-            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 uppercase">Action</span>
+            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">Action</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
         {data.actionType && (
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{data.actionType}</div>
         )}
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-blue-500" />
+        <Handle
+            type="source"
+            position={Position.Bottom}
+            className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-slate-800"
+        />
     </div>
 );
 
 const ConditionNode = ({ data, selected }) => (
     <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-amber-500'
-        } bg-amber-50 dark:bg-amber-900/30`}>
-        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-amber-500" />
+        } bg-white dark:bg-slate-800`}>
+        <Handle
+            type="target"
+            position={Position.Top}
+            className="w-3 h-3 !bg-amber-500 !border-2 !border-white dark:!border-slate-800"
+        />
         <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
-            <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase">Condition</span>
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">Condition</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
         <div className="flex justify-between mt-2 text-xs">
-            <span className="text-green-600">Yes</span>
-            <span className="text-red-600">No</span>
+            <span className="text-green-600 font-medium">Yes</span>
+            <span className="text-red-600 font-medium">No</span>
         </div>
-        <Handle type="source" position={Position.Bottom} id="yes" style={{ left: '25%' }} className="w-3 h-3 !bg-green-500" />
-        <Handle type="source" position={Position.Bottom} id="no" style={{ left: '75%' }} className="w-3 h-3 !bg-red-500" />
+        <Handle
+            type="source"
+            position={Position.Bottom}
+            id="yes"
+            style={{ left: '25%' }}
+            className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-slate-800"
+        />
+        <Handle
+            type="source"
+            position={Position.Bottom}
+            id="no"
+            style={{ left: '75%' }}
+            className="w-3 h-3 !bg-red-500 !border-2 !border-white dark:!border-slate-800"
+        />
     </div>
 );
 
 const DelayNode = ({ data, selected }) => (
     <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-purple-500'
-        } bg-purple-50 dark:bg-purple-900/30`}>
-        <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-purple-500" />
+        } bg-white dark:bg-slate-800`}>
+        <Handle
+            type="target"
+            position={Position.Top}
+            className="w-3 h-3 !bg-purple-500 !border-2 !border-white dark:!border-slate-800"
+        />
         <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,10 +121,14 @@ const DelayNode = ({ data, selected }) => (
                     <polyline points="12 6 12 12 16 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
-            <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase">Delay</span>
+            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase">Delay</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-purple-500" />
+        <Handle
+            type="source"
+            position={Position.Bottom}
+            className="w-3 h-3 !bg-purple-500 !border-2 !border-white dark:!border-slate-800"
+        />
     </div>
 );
 
@@ -258,7 +294,7 @@ const WorkflowEditor = () => {
     };
 
     return (
-        <div className="flex h-[calc(100vh-80px)]">
+        <div className="flex h-[calc(100vh-80px)] overflow-hidden">
             {/* Left Sidebar - Node Palette */}
             <div className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Nodes</h3>
@@ -329,7 +365,7 @@ const WorkflowEditor = () => {
             </div>
 
             {/* Main Canvas */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col relative">
                 {/* Top Bar */}
                 <div className="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -353,7 +389,7 @@ const WorkflowEditor = () => {
                         {selectedNode && (
                             <button
                                 onClick={deleteSelectedNode}
-                                className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium border border-red-200 dark:border-red-900/50"
                             >
                                 Delete Node
                             </button>
@@ -361,7 +397,7 @@ const WorkflowEditor = () => {
                         <button
                             onClick={saveWorkflow}
                             disabled={saving}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors font-medium shadow-sm"
                         >
                             {saving ? 'Saving...' : 'Save Workflow'}
                         </button>
@@ -378,12 +414,31 @@ const WorkflowEditor = () => {
                         onConnect={onConnect}
                         onNodeClick={onNodeClick}
                         nodeTypes={nodeTypes}
+                        colorMode="system"
                         fitView
-                        className="bg-slate-50 dark:bg-slate-900"
+                        className="bg-slate-50 dark:bg-[#0f172a]"
                     >
-                        <Controls />
-                        <MiniMap />
-                        <Background variant="dots" gap={12} size={1} />
+                        <Controls className="!bg-white dark:!bg-slate-800 !border-slate-200 dark:!border-slate-700 !shadow-lg rounded-lg overflow-hidden" />
+                        <MiniMap
+                            className="!bg-white dark:!bg-slate-800 !border-slate-200 dark:!border-slate-700 !shadow-lg rounded-lg"
+                            nodeColor={(node) => {
+                                switch (node.type) {
+                                    case 'trigger': return '#22c55e';
+                                    case 'action': return '#3b82f6';
+                                    case 'condition': return '#f59e0b';
+                                    case 'delay': return '#a855f7';
+                                    default: return '#eee';
+                                }
+                            }}
+                            maskColor="rgba(0, 0, 0, 0.1)"
+                        />
+                        <Background
+                            variant="dots"
+                            gap={16}
+                            size={1}
+                            color="#94a3b8"
+                            className="opacity-20 dark:opacity-10"
+                        />
                     </ReactFlow>
                 </div>
             </div>
