@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
@@ -9,27 +9,51 @@ const Campaigns = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [actionLoading, setActionLoading] = useState({});
+    const [autoRefresh, setAutoRefresh] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const intervalRef = useRef(null);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    // Fetch data function
+    const fetchData = useCallback(async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const [campaignsRes, statsRes] = await Promise.all([
                 campaignsAPI.getAll(),
                 campaignsAPI.getDashboardStats()
             ]);
             setCampaigns(campaignsRes.data || []);
             setStats(statsRes.data);
+            setLastUpdated(new Date());
         } catch (error) {
             console.error('Fetch campaigns error:', error);
-            toast.error('Failed to fetch campaigns');
+            if (showLoading) toast.error('Failed to fetch campaigns');
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
-    };
+    }, []);
+
+    // Initial load
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Auto-refresh polling when campaigns are sending
+    useEffect(() => {
+        const hasActiveCampaigns = campaigns.some(c => c.status === 'sending');
+
+        if (autoRefresh && hasActiveCampaigns) {
+            // Refresh every 10 seconds when campaigns are sending
+            intervalRef.current = setInterval(() => {
+                fetchData(false); // Silent refresh
+            }, 10000);
+        }
+
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [autoRefresh, campaigns, fetchData]);
 
     const handleAction = async (campaignId, action) => {
         setActionLoading(prev => ({ ...prev, [campaignId]: action }));
@@ -82,6 +106,8 @@ const Campaigns = () => {
         );
     }
 
+    const hasActiveCampaigns = campaigns.some(c => c.status === 'sending');
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -90,15 +116,41 @@ const Campaigns = () => {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Email Campaigns</h1>
                     <p className="text-slate-500 dark:text-slate-400">Send bulk emails to leads and clients</p>
                 </div>
-                <button
-                    onClick={() => { setSelectedCampaign(null); setShowCreateModal(true); }}
-                    className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    New Campaign
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* Live indicator when campaigns are sending */}
+                    {hasActiveCampaigns && autoRefresh && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-full">
+                            <span className="relative flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
+                            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">Live</span>
+                        </div>
+                    )}
+                    {lastUpdated && (
+                        <span className="text-xs text-slate-400">
+                            Updated {lastUpdated.toLocaleTimeString()}
+                        </span>
+                    )}
+                    <button
+                        onClick={() => fetchData()}
+                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Refresh"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => { setSelectedCampaign(null); setShowCreateModal(true); }}
+                        className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Campaign
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -437,23 +489,75 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         >
                             <option value="all_leads">All Leads</option>
                             <option value="all_clients">All Clients</option>
-                            <option value="custom">Custom Emails</option>
+                            <option value="custom">Custom Emails (Paste or Upload)</option>
                         </select>
                     </div>
 
                     {formData.audience_type === 'custom' && (
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Email Addresses (one per line)
-                            </label>
-                            <textarea
-                                name="custom_emails"
-                                value={formData.custom_emails}
-                                onChange={handleChange}
-                                rows={4}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                placeholder="email1@example.com&#10;email2@example.com"
-                            />
+                        <div className="space-y-3">
+                            {/* File Upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Upload Email List (Excel/CSV)
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="file"
+                                        id="emailFile"
+                                        accept=".csv,.xlsx,.xls"
+                                        onChange={async (e) => {
+                                            const file = e.target.files[0];
+                                            if (!file) return;
+                                            try {
+                                                const result = await campaignsAPI.parseEmails(file);
+                                                if (result.success && result.data.emailsText) {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        custom_emails: result.data.emailsText
+                                                    }));
+                                                    toast.success(`Loaded ${result.data.total} emails from file`);
+                                                }
+                                            } catch (err) {
+                                                toast.error('Failed to parse file');
+                                            }
+                                            e.target.value = '';
+                                        }}
+                                        className="hidden"
+                                    />
+                                    <label
+                                        htmlFor="emailFile"
+                                        className="flex-1 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
+                                    >
+                                        <svg className="w-6 h-6 mx-auto text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                                            Click to upload CSV or Excel file
+                                        </span>
+                                    </label>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">File should have columns: email, name (name is optional)</p>
+                            </div>
+
+                            {/* Manual Entry */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Or paste email addresses (one per line)
+                                </label>
+                                <textarea
+                                    name="custom_emails"
+                                    value={formData.custom_emails}
+                                    onChange={handleChange}
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    placeholder="john@example.com&#10;Jane Doe <jane@example.com>&#10;support@company.com"
+                                />
+                                {formData.custom_emails && (
+                                    <p className="mt-1 text-xs text-emerald-600">
+                                        {formData.custom_emails.split('\n').filter(e => e.trim()).length} email(s) loaded
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
 
