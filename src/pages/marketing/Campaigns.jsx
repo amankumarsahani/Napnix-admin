@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 const Campaigns = () => {
+    const navigate = useNavigate();
     const [campaigns, setCampaigns] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -203,10 +205,10 @@ const Campaigns = () => {
                                 </tr>
                             ) : (
                                 campaigns.map((campaign) => (
-                                    <tr key={campaign.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                    <tr key={campaign.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => navigate(`/campaigns/${campaign.id}`)}>
                                         <td className="px-6 py-4">
                                             <div>
-                                                <div className="font-semibold text-slate-900 dark:text-white">{campaign.name}</div>
+                                                <div className="font-semibold text-slate-900 dark:text-white hover:text-brand-600">{campaign.name}</div>
                                                 <div className="text-sm text-slate-500 dark:text-slate-400">{campaign.subject}</div>
                                             </div>
                                         </td>
