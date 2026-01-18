@@ -27,6 +27,7 @@ import Campaigns from './pages/marketing/Campaigns';
 import CampaignDetail from './pages/marketing/CampaignDetail';
 import SmtpAccounts from './pages/marketing/SmtpAccounts';
 import Workflows from './pages/marketing/Workflows';
+import WorkflowEditor from './pages/marketing/WorkflowEditor';
 
 function AppRoutes() {
   return (
@@ -65,9 +66,9 @@ function AppRoutes() {
             <Route path="campaigns/:id" element={<CampaignDetail />} />
             <Route path="smtp-accounts" element={<SmtpAccounts />} />
             <Route path="workflows" element={<Workflows />} />
-            <Route path="workflows/new" element={<Workflows />} />
+            <Route path="workflows/new" element={<WorkflowEditor />} />
             <Route path="workflows/:id" element={<Workflows />} />
-            <Route path="workflows/:id/edit" element={<Workflows />} />
+            <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
           </Route>
         </Route>

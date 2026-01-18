@@ -173,7 +173,7 @@ const Workflows = () => {
                     <p className="text-slate-500 dark:text-slate-400">Create automated workflows to streamline your processes</p>
                 </div>
                 <button
-                    onClick={() => toast('Workflow editor coming soon!')}
+                    onClick={() => navigate('/workflows/new')}
                     className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
                 >
                     <Icons.Plus />
@@ -244,7 +244,7 @@ const Workflows = () => {
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No workflows yet</h3>
                     <p className="text-slate-500 dark:text-slate-400 mb-4">Create your first automation workflow to get started</p>
                     <button
-                        onClick={() => toast('Workflow editor coming soon!')}
+                        onClick={() => navigate('/workflows/new')}
                         className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
                     >
                         Create Workflow
@@ -324,7 +324,7 @@ const Workflows = () => {
                                                 <Icons.Play />
                                             </button>
                                             <button
-                                                onClick={() => toast('Editor coming soon!')}
+                                                onClick={() => navigate(`/workflows/${workflow.id}/edit`)}
                                                 className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                 title="Edit"
                                             >
