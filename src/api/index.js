@@ -495,3 +495,55 @@ export const smtpAccountsAPI = {
     },
 };
 
+// Workflows API (Automation)
+export const workflowsAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/workflows');
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/workflows/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/workflows', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/workflows/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/workflows/${id}`);
+        return response.data;
+    },
+
+    toggle: async (id) => {
+        const response = await apiClient.patch(`/workflows/${id}/toggle`);
+        return response.data;
+    },
+
+    test: async (id, testData) => {
+        const response = await apiClient.post(`/workflows/${id}/test`, { testData });
+        return response.data;
+    },
+
+    getExecutions: async (id, params = {}) => {
+        const response = await apiClient.get(`/workflows/${id}/executions`, { params });
+        return response.data;
+    },
+
+    getExecutionLogs: async (executionId) => {
+        const response = await apiClient.get(`/workflows/executions/${executionId}/logs`);
+        return response.data;
+    },
+
+    getNodeTypes: async () => {
+        const response = await apiClient.get('/workflows/meta/node-types');
+        return response.data;
+    }
+};
