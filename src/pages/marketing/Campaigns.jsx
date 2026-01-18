@@ -296,18 +296,26 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
 
     const handleTemplateSelect = async (templateId) => {
         if (!templateId) {
-            setFormData(prev => ({ ...prev, template_id: '' }));
+            setFormData(prev => ({ ...prev, template_id: '', subject: '', preview_text: '' }));
             return;
         }
 
-        setFormData(prev => ({ ...prev, template_id: templateId }));
-
-        // Find selected template and pre-fill subject if available
+        // Find selected template and populate fields
         const template = templates.find(t => t.id === parseInt(templateId));
-        if (template?.subject && !formData.subject) {
-            setFormData(prev => ({ ...prev, subject: template.subject }));
+        if (template) {
+            setFormData(prev => ({
+                ...prev,
+                template_id: templateId,
+                subject: template.subject || prev.subject,
+                preview_text: template.description || ''  // Use description as preview hint
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, template_id: templateId }));
         }
     };
+
+    // Get selected template info
+    const selectedTemplate = templates.find(t => t.id === parseInt(formData.template_id));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -375,7 +383,16 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                 </option>
                             ))}
                         </select>
-                        <p className="mt-1 text-xs text-slate-500">Select a template or write custom HTML below</p>
+                        {selectedTemplate && (
+                            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
+                                    <span className="font-medium">Template selected:</span> {selectedTemplate.name}
+                                </p>
+                                {selectedTemplate.description && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">{selectedTemplate.description}</p>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div>
