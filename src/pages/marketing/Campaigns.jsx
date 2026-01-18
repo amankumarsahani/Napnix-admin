@@ -234,7 +234,7 @@ const Campaigns = () => {
                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
                                             {campaign.clicked_count || 0}
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
                                                 {campaign.status === 'draft' && (
                                                     <button
