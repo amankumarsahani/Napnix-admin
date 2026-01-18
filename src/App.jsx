@@ -24,6 +24,7 @@ import Tenants from './pages/tenants/Tenants';
 import TenantDetail from './pages/tenants/TenantDetail';
 import ApiDocumentation from './pages/admin/ApiDocumentation';
 import Campaigns from './pages/marketing/Campaigns';
+import CampaignDetail from './pages/marketing/CampaignDetail';
 import SmtpAccounts from './pages/marketing/SmtpAccounts';
 
 function AppRoutes() {
@@ -60,6 +61,7 @@ function AppRoutes() {
             <Route path="tenants" element={<Tenants />} />
             <Route path="tenants/:id" element={<TenantDetail />} />
             <Route path="campaigns" element={<Campaigns />} />
+            <Route path="campaigns/:id" element={<CampaignDetail />} />
             <Route path="smtp-accounts" element={<SmtpAccounts />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
           </Route>
