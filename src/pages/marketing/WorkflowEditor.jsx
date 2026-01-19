@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     ReactFlow,
@@ -13,7 +13,7 @@ import {
     Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { workflowsAPI } from '../../api';
+import { workflowsAPI, emailTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 // ============================================
@@ -188,6 +188,20 @@ const WorkflowEditor = () => {
     const [saving, setSaving] = useState(false);
     const [selectedNode, setSelectedNode] = useState(null);
     const [showNodeConfig, setShowNodeConfig] = useState(false);
+    const [emailTemplates, setEmailTemplates] = useState([]);
+
+    // Fetch email templates on mount
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                const res = await emailTemplatesAPI.getAll();
+                setEmailTemplates(res.data || res.templates || []);
+            } catch (error) {
+                console.log('Failed to fetch templates');
+            }
+        };
+        fetchTemplates();
+    }, []);
 
     // Initial nodes and edges
     const initialNodes = isNew ? [
@@ -480,6 +494,53 @@ const WorkflowEditor = () => {
                         {/* Action-specific config */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_email' && (
                             <>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Email Template
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.template_id || ''}
+                                        onChange={(e) => {
+                                            const templateId = e.target.value;
+                                            if (templateId) {
+                                                const template = emailTemplates.find(t => t.id == templateId);
+                                                if (template) {
+                                                    setNodes(nds => nds.map(n =>
+                                                        n.id === selectedNode.id
+                                                            ? {
+                                                                ...n, data: {
+                                                                    ...n.data, config: {
+                                                                        ...n.data.config,
+                                                                        template_id: parseInt(templateId),
+                                                                        subject: template.subject,
+                                                                        body: template.body || template.html_content || template.content
+                                                                    }
+                                                                }
+                                                            }
+                                                            : n
+                                                    ));
+                                                }
+                                            } else {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, template_id: null } } }
+                                                        : n
+                                                ));
+                                            }
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Custom (enter below)</option>
+                                        {emailTemplates.map(t => (
+                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                        ))}
+                                    </select>
+                                    {emailTemplates.length === 0 ? (
+                                        <p className="text-xs text-amber-500 mt-1">No templates found. Go to Templates to create one.</p>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-1">Select a template or write custom content</p>
+                                    )}
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                         Email Subject
