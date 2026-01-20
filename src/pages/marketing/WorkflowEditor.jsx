@@ -191,6 +191,10 @@ const WorkflowEditor = () => {
     const [isLoading, setIsLoading] = useState(!isNew);
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [showNodeConfig, setShowNodeConfig] = useState(false);
+    const [localConfig, setLocalConfig] = useState({});
+    const [localLabel, setLocalLabel] = useState('');
+    const [isApplyingConfig, setIsApplyingConfig] = useState(false);
+
 
 
     const [emailTemplates, setEmailTemplates] = useState([]);
@@ -217,6 +221,21 @@ const WorkflowEditor = () => {
             navigate('/workflows');
         }
     }, [id, isNew]);
+
+    // Synchronize local state when selected node changes
+    useEffect(() => {
+        if (selectedNodeId) {
+            const node = nodes.find(n => n.id === selectedNodeId);
+            if (node) {
+                setLocalConfig(node.data.config || {});
+                setLocalLabel(node.data.label || '');
+            }
+        } else {
+            setLocalConfig({});
+            setLocalLabel('');
+        }
+    }, [selectedNodeId]);
+
 
     const fetchWorkflow = async () => {
         try {
@@ -346,7 +365,25 @@ const WorkflowEditor = () => {
     };
 
     // Save workflow
+    const applyNodeConfig = useCallback(() => {
+        if (!selectedNodeId) return;
+
+        setIsApplyingConfig(true);
+        setNodes(nds => nds.map(n =>
+            n.id === selectedNodeId
+                ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } }
+                : n
+        ));
+
+        // Show success feedback
+        setTimeout(() => {
+            setIsApplyingConfig(false);
+            toast.success('Configuration applied');
+        }, 300);
+    }, [selectedNodeId, localLabel, localConfig, setNodes]);
+
     const saveWorkflow = async () => {
+
         if (id === 'undefined') {
             toast.error('Cannot save: Invalid ID');
             return;
@@ -585,14 +622,8 @@ const WorkflowEditor = () => {
                             </label>
                             <input
                                 type="text"
-                                value={selectedNode.data.label}
-                                onChange={(e) => {
-                                    setNodes(nds => nds.map(n =>
-                                        n.id === selectedNode.id
-                                            ? { ...n, data: { ...n.data, label: e.target.value } }
-                                            : n
-                                    ));
-                                }}
+                                value={localLabel}
+                                onChange={(e) => setLocalLabel(e.target.value)}
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
@@ -613,14 +644,8 @@ const WorkflowEditor = () => {
                                         Filter by Source
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.source_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, source_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.source_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, source_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">All Sources</option>
@@ -638,14 +663,8 @@ const WorkflowEditor = () => {
                                         Filter by Initial Status
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.status_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, status_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.status_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, status_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">Any Status</option>
@@ -672,14 +691,8 @@ const WorkflowEditor = () => {
                                         Filter by Client Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.client_type_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, client_type_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.client_type_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, client_type_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">All Client Types</option>
@@ -694,14 +707,8 @@ const WorkflowEditor = () => {
                                         Filter by Source
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.source_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, source_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.source_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, source_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">All Sources</option>
@@ -727,14 +734,8 @@ const WorkflowEditor = () => {
                                         From Status
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.from_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, from_status: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.from_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">Any Status</option>
@@ -753,14 +754,8 @@ const WorkflowEditor = () => {
                                         To Status
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.to_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, to_status: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.to_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">Any Status</option>
@@ -790,14 +785,8 @@ const WorkflowEditor = () => {
                                         From Status
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.from_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, from_status: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.from_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">Any Status</option>
@@ -814,14 +803,8 @@ const WorkflowEditor = () => {
                                         To Status
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.to_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, to_status: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.to_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">Any Status</option>
@@ -838,14 +821,8 @@ const WorkflowEditor = () => {
                                         Filter by Client Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.client_type_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, client_type_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.client_type_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, client_type_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">All Client Types</option>
@@ -870,14 +847,8 @@ const WorkflowEditor = () => {
                                         Schedule Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.schedule_type || 'daily'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_type: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.schedule_type || 'daily'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, schedule_type: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="once">One-time</option>
@@ -892,31 +863,19 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="time"
-                                        value={selectedNode.data.config?.schedule_time || '09:00'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_time: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.schedule_time || '09:00'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, schedule_time: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     />
                                 </div>
-                                {selectedNode.data.config?.schedule_type === 'weekly' && (
+                                {localConfig?.schedule_type === 'weekly' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Day of Week
                                         </label>
                                         <select
-                                            value={selectedNode.data.config?.day_of_week || 'monday'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, day_of_week: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.day_of_week || 'monday'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, day_of_week: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         >
                                             <option value="monday">Monday</option>
@@ -929,20 +888,14 @@ const WorkflowEditor = () => {
                                         </select>
                                     </div>
                                 )}
-                                {selectedNode.data.config?.schedule_type === 'monthly' && (
+                                {localConfig?.schedule_type === 'monthly' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Day of Month
                                         </label>
                                         <select
-                                            value={selectedNode.data.config?.day_of_month || '1'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, day_of_month: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.day_of_month || '1'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, day_of_month: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         >
                                             {[...Array(28)].map((_, i) => (
@@ -952,21 +905,15 @@ const WorkflowEditor = () => {
                                         <p className="text-xs text-slate-400 mt-1">Limited to 28 to avoid issues with short months</p>
                                     </div>
                                 )}
-                                {selectedNode.data.config?.schedule_type === 'once' && (
+                                {localConfig?.schedule_type === 'once' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Date
                                         </label>
                                         <input
                                             type="date"
-                                            value={selectedNode.data.config?.schedule_date || ''}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_date: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.schedule_date || ''}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, schedule_date: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         />
                                     </div>
@@ -976,14 +923,8 @@ const WorkflowEditor = () => {
                                         Target Entities
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.target_entity || 'all_leads'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, target_entity: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.target_entity || 'all_leads'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, target_entity: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="all_leads">All Active Leads</option>
@@ -1012,14 +953,8 @@ const WorkflowEditor = () => {
                                         Target Entity Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.target_type || 'leads'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, target_type: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.target_type || 'leads'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, target_type: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="leads">Leads</option>
@@ -1034,14 +969,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.filter_query || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, filter_query: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.filter_query || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, filter_query: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="status:qualified AND source:website"
                                     />
@@ -1058,33 +987,21 @@ const WorkflowEditor = () => {
                                         Email Template
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.template_id || ''}
+                                        value={localConfig?.template_id || ''}
                                         onChange={(e) => {
                                             const templateId = e.target.value;
                                             if (templateId) {
                                                 const template = emailTemplates.find(t => t.id == templateId);
                                                 if (template) {
-                                                    setNodes(nds => nds.map(n =>
-                                                        n.id === selectedNode.id
-                                                            ? {
-                                                                ...n, data: {
-                                                                    ...n.data, config: {
-                                                                        ...n.data.config,
-                                                                        template_id: parseInt(templateId),
-                                                                        subject: template.subject,
-                                                                        body: template.body || template.html_content || template.content
-                                                                    }
-                                                                }
-                                                            }
-                                                            : n
-                                                    ));
+                                                    setLocalConfig({
+                                                        ...localConfig,
+                                                        template_id: parseInt(templateId),
+                                                        subject: template.subject,
+                                                        body: template.body || template.html_content || template.content
+                                                    });
                                                 }
                                             } else {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, template_id: null } } }
-                                                        : n
-                                                ));
+                                                setLocalConfig({ ...localConfig, template_id: null });
                                             }
                                         }}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
@@ -1106,14 +1023,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.subject || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, subject: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.subject || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, subject: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="Welcome {{contact_name}}!"
                                     />
@@ -1124,14 +1035,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={4}
-                                        value={selectedNode.data.config?.body || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, body: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.body || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, body: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="Hello {{contact_name}}, ..."
                                     />
@@ -1152,14 +1057,12 @@ const WorkflowEditor = () => {
                                         Update Status To
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.new_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_status: e.target.value, updates: { ...n.data.config?.updates, status: e.target.value } } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.new_status || ''}
+                                        onChange={(e) => setLocalConfig({
+                                            ...localConfig,
+                                            new_status: e.target.value,
+                                            updates: { ...localConfig?.updates, status: e.target.value }
+                                        })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">-- No change --</option>
@@ -1177,14 +1080,12 @@ const WorkflowEditor = () => {
                                         Update Source To
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.new_source || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_source: e.target.value, updates: { ...n.data.config?.updates, source: e.target.value } } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.new_source || ''}
+                                        onChange={(e) => setLocalConfig({
+                                            ...localConfig,
+                                            new_source: e.target.value,
+                                            updates: { ...localConfig?.updates, source: e.target.value }
+                                        })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">-- No change --</option>
@@ -1201,14 +1102,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.add_tags || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, add_tags: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.add_tags || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, add_tags: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="hot-lead, follow-up"
                                     />
@@ -1229,14 +1124,12 @@ const WorkflowEditor = () => {
                                         Update Status To
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.new_status || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_status: e.target.value, updates: { ...n.data.config?.updates, status: e.target.value } } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.new_status || ''}
+                                        onChange={(e) => setLocalConfig({
+                                            ...localConfig,
+                                            new_status: e.target.value,
+                                            updates: { ...localConfig?.updates, status: e.target.value }
+                                        })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">-- No change --</option>
@@ -1252,14 +1145,12 @@ const WorkflowEditor = () => {
                                         Update Client Type To
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.new_client_type || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_client_type: e.target.value, updates: { ...n.data.config?.updates, client_type: e.target.value } } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.new_client_type || ''}
+                                        onChange={(e) => setLocalConfig({
+                                            ...localConfig,
+                                            new_client_type: e.target.value,
+                                            updates: { ...localConfig?.updates, client_type: e.target.value }
+                                        })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">-- No change --</option>
@@ -1274,14 +1165,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.add_tags || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, add_tags: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.add_tags || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, add_tags: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="vip, priority"
                                     />
@@ -1303,14 +1188,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.title || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, title: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.title || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, title: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="Follow up with {{contact_name}}"
                                     />
@@ -1321,14 +1200,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={2}
-                                        value={selectedNode.data.config?.description || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, description: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.description || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, description: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="Task details..."
                                     />
@@ -1338,14 +1211,8 @@ const WorkflowEditor = () => {
                                         Priority
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.priority || 'medium'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, priority: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.priority || 'medium'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, priority: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="low">Low</option>
@@ -1362,25 +1229,13 @@ const WorkflowEditor = () => {
                                         <input
                                             type="number"
                                             min="1"
-                                            value={selectedNode.data.config?.due_in_value || 1}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, due_in_value: parseInt(e.target.value) } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.due_in_value || 1}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, due_in_value: parseInt(e.target.value) })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         />
                                         <select
-                                            value={selectedNode.data.config?.due_in_unit || 'days'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, due_in_unit: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.due_in_unit || 'days'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, due_in_unit: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         >
                                             <option value="hours">Hours</option>
@@ -1405,14 +1260,8 @@ const WorkflowEditor = () => {
                                         Assignment Method
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.assignment_method || 'round_robin'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, assignment_method: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.assignment_method || 'round_robin'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, assignment_method: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="round_robin">Round Robin</option>
@@ -1421,21 +1270,15 @@ const WorkflowEditor = () => {
                                         <option value="random">Random</option>
                                     </select>
                                 </div>
-                                {selectedNode.data.config?.assignment_method === 'specific_user' && (
+                                {localConfig?.assignment_method === 'specific_user' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             User ID or Email
                                         </label>
                                         <input
                                             type="text"
-                                            value={selectedNode.data.config?.specific_user || ''}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, specific_user: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.specific_user || ''}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, specific_user: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             placeholder="user@example.com"
                                         />
@@ -1447,14 +1290,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.team_filter || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, team_filter: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.team_filter || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, team_filter: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="sales"
                                     />
@@ -1527,14 +1364,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.title || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, title: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.title || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, title: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="New lead assigned to you"
                                     />
@@ -1545,14 +1376,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={2}
-                                        value={selectedNode.data.config?.message || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, message: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.message || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, message: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="{{contact_name}} from {{company}} needs follow-up"
                                     />
@@ -1562,14 +1387,8 @@ const WorkflowEditor = () => {
                                         Send To
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.send_to || 'assigned_user'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, send_to: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.send_to || 'assigned_user'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, send_to: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="assigned_user">Assigned User</option>
@@ -1595,14 +1414,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="url"
-                                        value={selectedNode.data.config?.url || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, url: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.url || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="https://api.example.com/webhook"
                                     />
@@ -1612,14 +1425,8 @@ const WorkflowEditor = () => {
                                         HTTP Method
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.method || 'POST'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, method: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.method || 'POST'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, method: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="POST">POST</option>
@@ -1634,14 +1441,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={2}
-                                        value={selectedNode.data.config?.headers_json || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, headers_json: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.headers_json || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, headers_json: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
                                         placeholder='{"Authorization": "Bearer xxx"}'
                                     />
@@ -1652,14 +1453,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={3}
-                                        value={selectedNode.data.config?.custom_payload || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, custom_payload: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.custom_payload || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, custom_payload: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
                                         placeholder="Leave empty to send entity data"
                                     />
@@ -1689,14 +1484,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={4}
-                                        value={selectedNode.data.config?.prompt || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, prompt: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.prompt || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, prompt: e.target.value })}
                                         placeholder="e.g. Analyze this lead: {{name}} from {{company}}"
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                     />
@@ -1711,14 +1500,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={selectedNode.data.config?.system_message || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, system_message: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.system_message || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, system_message: e.target.value })}
                                         placeholder="e.g. You are an expert sales analyst."
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                     />
@@ -1730,14 +1513,8 @@ const WorkflowEditor = () => {
                                             AI Model
                                         </label>
                                         <select
-                                            value={selectedNode.data.config?.model || 'gpt-4o-mini'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, model: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.model || 'gpt-4o-mini'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                         >
                                             <option value="gpt-4o-mini">GPT-4o Mini</option>
@@ -1752,14 +1529,8 @@ const WorkflowEditor = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            value={selectedNode.data.config?.output_variable || 'ai_response'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, output_variable: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.output_variable || 'ai_response'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, output_variable: e.target.value })}
                                             placeholder="variable_name"
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                         />
@@ -1770,14 +1541,8 @@ const WorkflowEditor = () => {
                                     <input
                                         type="checkbox"
                                         id="strict_mode"
-                                        checked={selectedNode.data.config?.strict_mode || false}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, strict_mode: e.target.checked } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        checked={localConfig?.strict_mode || false}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, strict_mode: e.target.checked })}
                                         className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                                     />
                                     <label htmlFor="strict_mode" className="text-sm text-slate-600 dark:text-slate-400">
@@ -1802,14 +1567,8 @@ const WorkflowEditor = () => {
                                         Delay Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.delay_type || 'duration'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, delay_type: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.delay_type || 'duration'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, delay_type: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="duration">Wait for duration</option>
@@ -1818,7 +1577,7 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
 
-                                {(!selectedNode.data.config?.delay_type || selectedNode.data.config?.delay_type === 'duration') && (
+                                {(!localConfig?.delay_type || localConfig?.delay_type === 'duration') && (
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -1827,14 +1586,8 @@ const WorkflowEditor = () => {
                                             <input
                                                 type="number"
                                                 min="1"
-                                                value={selectedNode.data.config?.value || 1}
-                                                onChange={(e) => {
-                                                    setNodes(nds => nds.map(n =>
-                                                        n.id === selectedNode.id
-                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, value: parseInt(e.target.value) } } }
-                                                            : n
-                                                    ));
-                                                }}
+                                                value={localConfig?.value || 1}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, value: parseInt(e.target.value) })}
                                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             />
                                         </div>
@@ -1843,14 +1596,8 @@ const WorkflowEditor = () => {
                                                 Unit
                                             </label>
                                             <select
-                                                value={selectedNode.data.config?.unit || 'hours'}
-                                                onChange={(e) => {
-                                                    setNodes(nds => nds.map(n =>
-                                                        n.id === selectedNode.id
-                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, unit: e.target.value } } }
-                                                            : n
-                                                    ));
-                                                }}
+                                                value={localConfig?.unit || 'hours'}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, unit: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             >
                                                 <option value="minutes">Minutes</option>
@@ -1862,42 +1609,30 @@ const WorkflowEditor = () => {
                                     </div>
                                 )}
 
-                                {selectedNode.data.config?.delay_type === 'until_time' && (
+                                {localConfig?.delay_type === 'until_time' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Wait Until Time
                                         </label>
                                         <input
                                             type="time"
-                                            value={selectedNode.data.config?.until_time || '09:00'}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, until_time: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.until_time || '09:00'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, until_time: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         />
                                         <p className="text-xs text-slate-400 mt-1">Wait until this time (next occurrence if already passed)</p>
                                     </div>
                                 )}
 
-                                {selectedNode.data.config?.delay_type === 'until_day' && (
+                                {localConfig?.delay_type === 'until_day' && (
                                     <>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                                 Wait Until Day
                                             </label>
                                             <select
-                                                value={selectedNode.data.config?.until_day || 'monday'}
-                                                onChange={(e) => {
-                                                    setNodes(nds => nds.map(n =>
-                                                        n.id === selectedNode.id
-                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, until_day: e.target.value } } }
-                                                            : n
-                                                    ));
-                                                }}
+                                                value={localConfig?.until_day || 'monday'}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, until_day: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             >
                                                 <option value="monday">Monday</option>
@@ -1915,14 +1650,8 @@ const WorkflowEditor = () => {
                                             </label>
                                             <input
                                                 type="time"
-                                                value={selectedNode.data.config?.at_time || '09:00'}
-                                                onChange={(e) => {
-                                                    setNodes(nds => nds.map(n =>
-                                                        n.id === selectedNode.id
-                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, at_time: e.target.value } } }
-                                                            : n
-                                                    ));
-                                                }}
+                                                value={localConfig?.at_time || '09:00'}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, at_time: e.target.value })}
                                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             />
                                         </div>
@@ -1933,14 +1662,8 @@ const WorkflowEditor = () => {
                                     <input
                                         type="checkbox"
                                         id="skip_weekends"
-                                        checked={selectedNode.data.config?.skip_weekends || false}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, skip_weekends: e.target.checked } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        checked={localConfig?.skip_weekends || false}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, skip_weekends: e.target.checked })}
                                         className="w-4 h-4 rounded border-slate-300"
                                     />
                                     <label htmlFor="skip_weekends" className="text-sm text-slate-600 dark:text-slate-300">
@@ -1965,14 +1688,8 @@ const WorkflowEditor = () => {
                                         Field to Check
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.field || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, field: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.field || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, field: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="">-- Select Field --</option>
@@ -1996,21 +1713,15 @@ const WorkflowEditor = () => {
                                         </optgroup>
                                     </select>
                                 </div>
-                                {selectedNode.data.config?.field === 'custom' && (
+                                {localConfig?.field === 'custom' && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Custom Field Name
                                         </label>
                                         <input
                                             type="text"
-                                            value={selectedNode.data.config?.custom_field || ''}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, custom_field: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.custom_field || ''}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, custom_field: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                             placeholder="custom_field_name"
                                         />
@@ -2021,14 +1732,8 @@ const WorkflowEditor = () => {
                                         Operator
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.operator || 'equals'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, operator: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.operator || 'equals'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, operator: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <optgroup label="Text Comparisons">
@@ -2057,25 +1762,19 @@ const WorkflowEditor = () => {
                                         </optgroup>
                                     </select>
                                 </div>
-                                {!['is_empty', 'is_not_empty', 'is_null', 'is_not_null'].includes(selectedNode.data.config?.operator) && (
+                                {!['is_empty', 'is_not_empty', 'is_null', 'is_not_null'].includes(localConfig?.operator) && (
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                            {['in_list', 'not_in_list'].includes(selectedNode.data.config?.operator)
+                                            {['in_list', 'not_in_list'].includes(localConfig?.operator)
                                                 ? 'Values (comma-separated)'
                                                 : 'Value'}
                                         </label>
                                         <input
                                             type="text"
-                                            value={selectedNode.data.config?.value || ''}
-                                            onChange={(e) => {
-                                                setNodes(nds => nds.map(n =>
-                                                    n.id === selectedNode.id
-                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, value: e.target.value } } }
-                                                        : n
-                                                ));
-                                            }}
+                                            value={localConfig?.value || ''}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, value: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                            placeholder={['in_list', 'not_in_list'].includes(selectedNode.data.config?.operator)
+                                            placeholder={['in_list', 'not_in_list'].includes(localConfig?.operator)
                                                 ? 'qualified, proposal_sent, won'
                                                 : 'qualified'}
                                         />
@@ -2085,14 +1784,8 @@ const WorkflowEditor = () => {
                                     <input
                                         type="checkbox"
                                         id="case_insensitive"
-                                        checked={selectedNode.data.config?.case_insensitive || false}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, case_insensitive: e.target.checked } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        checked={localConfig?.case_insensitive || false}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, case_insensitive: e.target.checked })}
                                         className="w-4 h-4 rounded border-slate-300"
                                     />
                                     <label htmlFor="case_insensitive" className="text-sm text-slate-600 dark:text-slate-300">
@@ -2121,6 +1814,29 @@ const WorkflowEditor = () => {
                                 {'{{id}}, {{email}}, {{contact_name}}, {{company}}, {{status}}, {{source}}'}
                             </code>
                         </div>
+
+                        <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={applyNodeConfig}
+                                disabled={isApplyingConfig}
+                                className="w-full px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
+                            >
+                                {isApplyingConfig ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Applying...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <span>Apply Configuration</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             )}
