@@ -232,17 +232,30 @@ const WorkflowEditor = () => {
                 setEdges(data.canvas_data.edges || []);
             } else if (data.nodes) {
                 // Map legacy structure to React Flow format if needed
-                const formattedNodes = data.nodes.map(n => ({
-                    id: String(n.node_uid || `${n.node_type}-${n.id}`),
-                    type: n.node_type,
-                    position: { x: n.position_x || 250, y: n.position_y || 100 },
-                    data: {
-                        label: n.label,
-                        actionType: n.action_type,
-                        triggerType: n.trigger_type,
-                        config: n.config || {}
+                const formattedNodes = data.nodes.map(n => {
+                    // Safety check for config JSON
+                    let config = n.config || {};
+                    if (typeof config === 'string') {
+                        try {
+                            config = JSON.parse(config);
+                        } catch (e) {
+                            console.error('Failed to parse node config:', e);
+                            config = {};
+                        }
                     }
-                }));
+
+                    return {
+                        id: String(n.node_uid || `${n.node_type}-${n.id}`),
+                        type: n.node_type,
+                        position: { x: n.position_x || 250, y: n.position_y || 100 },
+                        data: {
+                            label: n.label,
+                            actionType: n.node_type === 'action' ? n.action_type : null,
+                            triggerType: n.node_type === 'trigger' ? (n.trigger_type || n.action_type) : null,
+                            config: config
+                        }
+                    };
+                });
                 setNodes(formattedNodes);
 
                 // Map connections to edges
