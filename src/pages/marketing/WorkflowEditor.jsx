@@ -565,6 +565,120 @@ const WorkflowEditor = () => {
                             />
                         </div>
 
+                        {/* Trigger-specific config: Lead Created */}
+                        {selectedNode.type === 'trigger' && selectedNode.data.triggerType === 'lead_created' && (
+                            <>
+                                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                    <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                                        Triggers when a new lead is created
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter by Source
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.source_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, source_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">All Sources</option>
+                                        <option value="website">Website</option>
+                                        <option value="referral">Referral</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="cold_outreach">Cold Outreach</option>
+                                        <option value="advertisement">Advertisement</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all leads</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter by Initial Status
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.status_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, status_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="proposal_sent">Proposal Sent</option>
+                                        <option value="negotiating">Negotiating</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Trigger-specific config: Client Created */}
+                        {selectedNode.type === 'trigger' && selectedNode.data.triggerType === 'client_created' && (
+                            <>
+                                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                    <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                                        Triggers when a new client is created
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter by Client Type
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.client_type_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, client_type_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">All Client Types</option>
+                                        <option value="individual">Individual</option>
+                                        <option value="business">Business</option>
+                                        <option value="enterprise">Enterprise</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all clients</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter by Source
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.source_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, source_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">All Sources</option>
+                                        <option value="conversion">Lead Conversion</option>
+                                        <option value="direct">Direct Signup</option>
+                                        <option value="referral">Referral</option>
+                                        <option value="import">Imported</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
                         {/* Action-specific config */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_email' && (
                             <>
