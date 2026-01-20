@@ -1637,56 +1637,183 @@ const WorkflowEditor = () => {
                         )}
 
                         {selectedNode.type === 'delay' && (
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                        Duration
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={selectedNode.data.config?.value || 1}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, value: parseInt(e.target.value) } } }
-                                                    : n
-                                            ));
-                                        }}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                    />
+                            <>
+                                <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+                                    <p className="text-sm text-cyan-700 dark:text-cyan-400 font-medium">
+                                        Pauses workflow execution
+                                    </p>
+                                    <p className="text-xs text-cyan-600 dark:text-cyan-500 mt-1">
+                                        The workflow will wait before continuing to the next step
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                        Unit
+                                        Delay Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.unit || 'hours'}
+                                        value={selectedNode.data.config?.delay_type || 'duration'}
                                         onChange={(e) => {
                                             setNodes(nds => nds.map(n =>
                                                 n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, unit: e.target.value } } }
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, delay_type: e.target.value } } }
                                                     : n
                                             ));
                                         }}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
-                                        <option value="minutes">Minutes</option>
-                                        <option value="hours">Hours</option>
-                                        <option value="days">Days</option>
+                                        <option value="duration">Wait for duration</option>
+                                        <option value="until_time">Wait until specific time</option>
+                                        <option value="until_day">Wait until day of week</option>
                                     </select>
                                 </div>
-                            </div>
+
+                                {(!selectedNode.data.config?.delay_type || selectedNode.data.config?.delay_type === 'duration') && (
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                Duration
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                value={selectedNode.data.config?.value || 1}
+                                                onChange={(e) => {
+                                                    setNodes(nds => nds.map(n =>
+                                                        n.id === selectedNode.id
+                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, value: parseInt(e.target.value) } } }
+                                                            : n
+                                                    ));
+                                                }}
+                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                Unit
+                                            </label>
+                                            <select
+                                                value={selectedNode.data.config?.unit || 'hours'}
+                                                onChange={(e) => {
+                                                    setNodes(nds => nds.map(n =>
+                                                        n.id === selectedNode.id
+                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, unit: e.target.value } } }
+                                                            : n
+                                                    ));
+                                                }}
+                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            >
+                                                <option value="minutes">Minutes</option>
+                                                <option value="hours">Hours</option>
+                                                <option value="days">Days</option>
+                                                <option value="weeks">Weeks</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedNode.data.config?.delay_type === 'until_time' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Wait Until Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={selectedNode.data.config?.until_time || '09:00'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, until_time: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        />
+                                        <p className="text-xs text-slate-400 mt-1">Wait until this time (next occurrence if already passed)</p>
+                                    </div>
+                                )}
+
+                                {selectedNode.data.config?.delay_type === 'until_day' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                Wait Until Day
+                                            </label>
+                                            <select
+                                                value={selectedNode.data.config?.until_day || 'monday'}
+                                                onChange={(e) => {
+                                                    setNodes(nds => nds.map(n =>
+                                                        n.id === selectedNode.id
+                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, until_day: e.target.value } } }
+                                                            : n
+                                                    ));
+                                                }}
+                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            >
+                                                <option value="monday">Monday</option>
+                                                <option value="tuesday">Tuesday</option>
+                                                <option value="wednesday">Wednesday</option>
+                                                <option value="thursday">Thursday</option>
+                                                <option value="friday">Friday</option>
+                                                <option value="saturday">Saturday</option>
+                                                <option value="sunday">Sunday</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                At Time
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={selectedNode.data.config?.at_time || '09:00'}
+                                                onChange={(e) => {
+                                                    setNodes(nds => nds.map(n =>
+                                                        n.id === selectedNode.id
+                                                            ? { ...n, data: { ...n.data, config: { ...n.data.config, at_time: e.target.value } } }
+                                                            : n
+                                                    ));
+                                                }}
+                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="flex items-center gap-2 p-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                    <input
+                                        type="checkbox"
+                                        id="skip_weekends"
+                                        checked={selectedNode.data.config?.skip_weekends || false}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, skip_weekends: e.target.checked } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-4 h-4 rounded border-slate-300"
+                                    />
+                                    <label htmlFor="skip_weekends" className="text-sm text-slate-600 dark:text-slate-300">
+                                        Skip weekends (resume on Monday)
+                                    </label>
+                                </div>
+                            </>
                         )}
 
                         {selectedNode.type === 'condition' && (
                             <>
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                                        Splits workflow based on condition
+                                    </p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                                        TRUE path continues, FALSE path stops or takes alternate route
+                                    </p>
+                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                        Field
+                                        Field to Check
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={selectedNode.data.config?.field || ''}
                                         onChange={(e) => {
                                             setNodes(nds => nds.map(n =>
@@ -1696,9 +1823,48 @@ const WorkflowEditor = () => {
                                             ));
                                         }}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                        placeholder="status"
-                                    />
+                                    >
+                                        <option value="">-- Select Field --</option>
+                                        <optgroup label="Lead/Client Fields">
+                                            <option value="status">Status</option>
+                                            <option value="source">Source</option>
+                                            <option value="email">Email</option>
+                                            <option value="company">Company</option>
+                                            <option value="contact_name">Contact Name</option>
+                                            <option value="phone">Phone</option>
+                                            <option value="client_type">Client Type</option>
+                                        </optgroup>
+                                        <optgroup label="Numeric Fields">
+                                            <option value="value">Deal Value</option>
+                                            <option value="score">Lead Score</option>
+                                            <option value="days_since_created">Days Since Created</option>
+                                            <option value="days_since_contact">Days Since Last Contact</option>
+                                        </optgroup>
+                                        <optgroup label="Custom">
+                                            <option value="custom">Custom Field...</option>
+                                        </optgroup>
+                                    </select>
                                 </div>
+                                {selectedNode.data.config?.field === 'custom' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Custom Field Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={selectedNode.data.config?.custom_field || ''}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, custom_field: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            placeholder="custom_field_name"
+                                        />
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                         Operator
@@ -1714,32 +1880,86 @@ const WorkflowEditor = () => {
                                         }}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
-                                        <option value="equals">Equals</option>
-                                        <option value="not_equals">Not Equals</option>
-                                        <option value="contains">Contains</option>
-                                        <option value="greater_than">Greater Than</option>
-                                        <option value="less_than">Less Than</option>
-                                        <option value="is_empty">Is Empty</option>
-                                        <option value="is_not_empty">Is Not Empty</option>
+                                        <optgroup label="Text Comparisons">
+                                            <option value="equals">Equals</option>
+                                            <option value="not_equals">Not Equals</option>
+                                            <option value="contains">Contains</option>
+                                            <option value="not_contains">Does Not Contain</option>
+                                            <option value="starts_with">Starts With</option>
+                                            <option value="ends_with">Ends With</option>
+                                        </optgroup>
+                                        <optgroup label="Numeric Comparisons">
+                                            <option value="greater_than">Greater Than</option>
+                                            <option value="less_than">Less Than</option>
+                                            <option value="greater_or_equal">Greater or Equal</option>
+                                            <option value="less_or_equal">Less or Equal</option>
+                                        </optgroup>
+                                        <optgroup label="Existence Checks">
+                                            <option value="is_empty">Is Empty</option>
+                                            <option value="is_not_empty">Is Not Empty</option>
+                                            <option value="is_null">Is Null</option>
+                                            <option value="is_not_null">Is Not Null</option>
+                                        </optgroup>
+                                        <optgroup label="List Checks">
+                                            <option value="in_list">In List</option>
+                                            <option value="not_in_list">Not In List</option>
+                                        </optgroup>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                        Value
-                                    </label>
+                                {!['is_empty', 'is_not_empty', 'is_null', 'is_not_null'].includes(selectedNode.data.config?.operator) && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            {['in_list', 'not_in_list'].includes(selectedNode.data.config?.operator)
+                                                ? 'Values (comma-separated)'
+                                                : 'Value'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={selectedNode.data.config?.value || ''}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, value: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            placeholder={['in_list', 'not_in_list'].includes(selectedNode.data.config?.operator)
+                                                ? 'qualified, proposal_sent, won'
+                                                : 'qualified'}
+                                        />
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-2 p-2 bg-slate-100 dark:bg-slate-700 rounded">
                                     <input
-                                        type="text"
-                                        value={selectedNode.data.config?.value || ''}
+                                        type="checkbox"
+                                        id="case_insensitive"
+                                        checked={selectedNode.data.config?.case_insensitive || false}
                                         onChange={(e) => {
                                             setNodes(nds => nds.map(n =>
                                                 n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, value: e.target.value } } }
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, case_insensitive: e.target.checked } } }
                                                     : n
                                             ));
                                         }}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                        placeholder="qualified"
+                                        className="w-4 h-4 rounded border-slate-300"
                                     />
+                                    <label htmlFor="case_insensitive" className="text-sm text-slate-600 dark:text-slate-300">
+                                        Case insensitive comparison
+                                    </label>
+                                </div>
+                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 mt-2">
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Branch Paths:</p>
+                                    <div className="flex gap-4">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                            <span className="text-xs text-slate-600 dark:text-slate-400">TRUE - Condition met</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                            <span className="text-xs text-slate-600 dark:text-slate-400">FALSE - Not met</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         )}
