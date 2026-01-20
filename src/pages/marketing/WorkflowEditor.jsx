@@ -268,7 +268,7 @@ const WorkflowEditor = () => {
             id: 'trigger-1',
             type: 'trigger',
             position: { x: 250, y: 50 },
-            data: { label: 'Lead Created', triggerType: 'lead_created' }
+            data: { label: 'Lead Created', triggerType: 'lead_created', config: {} }
         }
     ] : [];
 
@@ -565,8 +565,11 @@ const WorkflowEditor = () => {
                             />
                         </div>
 
+                        {/* Debug: Log selectedNode when it's a trigger */}
+                        {selectedNode.type === 'trigger' && console.log('Trigger node selected:', selectedNode.id, 'triggerType:', selectedNode.data.triggerType, 'data:', selectedNode.data)}
+
                         {/* Trigger-specific config: Lead Created */}
-                        {selectedNode.type === 'trigger' && selectedNode.data.triggerType === 'lead_created' && (
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'lead_created' || selectedNode.data.label === 'Lead Created') && (
                             <>
                                 <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                     <p className="text-sm text-green-700 dark:text-green-400 font-medium">
