@@ -143,13 +143,13 @@ const CampaignDetail = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                <StatCard label="Total Recipients" value={campaign.total_recipients || 0} />
-                <StatCard label="Sent" value={campaign.sent_count || 0} color="emerald" />
-                <StatCard label="Opened" value={campaign.opened_count || 0} subtext={`${openRate}%`} color="blue" />
-                <StatCard label="Clicked" value={campaign.clicked_count || 0} subtext={`${clickRate}%`} color="purple" />
-                <StatCard label="Bounced" value={campaign.bounced_count || 0} subtext={`${bounceRate}%`} color="rose" />
+                <StatCard label="Total Recipients" value={campaign.total_recipients || 0} onClick={() => setFilter('all')} active={filter === 'all'} />
+                <StatCard label="Sent" value={campaign.sent_count || 0} color="emerald" onClick={() => setFilter('sent')} active={filter === 'sent'} />
+                <StatCard label="Opened" value={campaign.opened_count || 0} subtext={`${openRate}%`} color="blue" onClick={() => setFilter('sent')} active={filter === 'sent'} />
+                <StatCard label="Clicked" value={campaign.clicked_count || 0} subtext={`${clickRate}%`} color="purple" onClick={() => setFilter('sent')} active={filter === 'sent'} />
+                <StatCard label="Bounced" value={campaign.bounced_count || 0} subtext={`${bounceRate}%`} color="rose" onClick={() => setFilter('bounced')} active={filter === 'bounced'} />
                 <StatCard label="Unsubscribed" value={campaign.unsubscribed_count || 0} color="orange" />
-                <StatCard label="Failed" value={campaign.failed_count || 0} color="red" />
+                <StatCard label="Failed" value={campaign.failed_count || 0} color="red" onClick={() => setFilter('failed')} active={filter === 'failed'} />
             </div>
 
             {/* Progress Bar */}
@@ -215,8 +215,8 @@ const CampaignDetail = () => {
                                         <th className="px-4 py-3 text-left">Recipient</th>
                                         <th className="px-4 py-3 text-left">Status</th>
                                         <th className="px-4 py-3 text-left">Sent At</th>
-                                        <th className="px-4 py-3 text-left">Opened</th>
-                                        <th className="px-4 py-3 text-left">Clicked</th>
+                                        <th className="px-4 py-3 text-left">Opened / IP</th>
+                                        <th className="px-4 py-3 text-left">Clicked / IP</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -240,18 +240,28 @@ const CampaignDetail = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 {recipient.opened_at ? (
-                                                    <span className="text-emerald-600 text-sm">
-                                                        {new Date(recipient.opened_at).toLocaleString()}
-                                                    </span>
+                                                    <div>
+                                                        <div className="text-emerald-600 text-sm">
+                                                            {new Date(recipient.opened_at).toLocaleString()}
+                                                        </div>
+                                                        {recipient.open_ip && (
+                                                            <div className="text-xs text-slate-400 font-mono">{recipient.open_ip}</div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
                                                 {recipient.clicked_at ? (
-                                                    <span className="text-blue-600 text-sm">
-                                                        {new Date(recipient.clicked_at).toLocaleString()}
-                                                    </span>
+                                                    <div>
+                                                        <div className="text-blue-600 text-sm">
+                                                            {new Date(recipient.clicked_at).toLocaleString()}
+                                                        </div>
+                                                        {recipient.click_ip && (
+                                                            <div className="text-xs text-slate-400 font-mono">{recipient.click_ip}</div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-slate-400">-</span>
                                                 )}
@@ -292,7 +302,7 @@ const CampaignDetail = () => {
 };
 
 // Stat Card Component
-const StatCard = ({ label, value, subtext, color = 'slate' }) => {
+const StatCard = ({ label, value, subtext, color = 'slate', onClick, active }) => {
     const colors = {
         slate: 'text-slate-900 dark:text-white',
         emerald: 'text-emerald-600',
@@ -304,7 +314,13 @@ const StatCard = ({ label, value, subtext, color = 'slate' }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div
+            onClick={onClick}
+            className={`cursor-pointer transition-all duration-200 bg-white dark:bg-slate-800 rounded-xl p-4 border ${active
+                    ? 'border-brand-500 ring-1 ring-brand-500 shadow-md'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
+                }`}
+        >
             <div className={`text-2xl font-bold ${colors[color]}`}>{value}</div>
             {subtext && <span className="text-xs text-slate-400 ml-1">({subtext})</span>}
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{label}</div>
