@@ -186,6 +186,7 @@ const WorkflowEditor = () => {
     const [workflowName, setWorkflowName] = useState('New Workflow');
     const [workflowDescription, setWorkflowDescription] = useState('');
     const [saving, setSaving] = useState(false);
+    const [isLoading, setIsLoading] = useState(!isNew);
     const [selectedNode, setSelectedNode] = useState(null);
     const [showNodeConfig, setShowNodeConfig] = useState(false);
     const [emailTemplates, setEmailTemplates] = useState([]);
@@ -202,6 +203,63 @@ const WorkflowEditor = () => {
         };
         fetchTemplates();
     }, []);
+
+    // Fetch workflow data if editing existing
+    useEffect(() => {
+        if (!isNew && id && id !== 'undefined') {
+            fetchWorkflow();
+        } else if (id === 'undefined') {
+            toast.error('Invalid workflow access');
+            navigate('/workflows');
+        }
+    }, [id, isNew]);
+
+    const fetchWorkflow = async () => {
+        try {
+            setIsLoading(true);
+            const res = await workflowsAPI.getById(id);
+            const data = res.data || res;
+
+            setWorkflowName(data.name || 'Untitled Workflow');
+            setWorkflowDescription(data.description || '');
+
+            if (data.canvas_data) {
+                setNodes(data.canvas_data.nodes || []);
+                setEdges(data.canvas_data.edges || []);
+            } else if (data.nodes) {
+                // Map legacy structure to React Flow format if needed
+                const formattedNodes = data.nodes.map(n => ({
+                    id: n.node_uid || `${n.node_type}-${n.id}`,
+                    type: n.node_type,
+                    position: { x: n.position_x || 250, y: n.position_y || 100 },
+                    data: {
+                        label: n.label,
+                        actionType: n.action_type,
+                        triggerType: n.trigger_type,
+                        config: n.config || {}
+                    }
+                }));
+                setNodes(formattedNodes);
+
+                // Map connections to edges
+                if (data.connections) {
+                    const formattedEdges = data.connections.map((c, idx) => ({
+                        id: `edge-${idx}`,
+                        source: c.source,
+                        target: c.target,
+                        sourceHandle: c.source_handle,
+                        markerEnd: { type: MarkerType.ArrowClosed }
+                    }));
+                    setEdges(formattedEdges);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch workflow:', error);
+            toast.error('Failed to load workflow data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Initial nodes and edges
     const initialNodes = isNew ? [
@@ -258,6 +316,10 @@ const WorkflowEditor = () => {
 
     // Save workflow
     const saveWorkflow = async () => {
+        if (id === 'undefined') {
+            toast.error('Cannot save: Invalid ID');
+            return;
+        }
         if (!workflowName.trim()) {
             toast.error('Please enter a workflow name');
             return;
@@ -306,6 +368,17 @@ const WorkflowEditor = () => {
             setSaving(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-80px)] items-center justify-center bg-slate-50 dark:bg-slate-900">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
+                    <p className="text-slate-500 font-medium">Loading Workflow...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-[calc(100vh-80px)] overflow-hidden">

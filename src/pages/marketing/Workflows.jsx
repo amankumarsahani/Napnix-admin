@@ -324,7 +324,13 @@ const Workflows = () => {
                                                 <Icons.Play />
                                             </button>
                                             <button
-                                                onClick={() => navigate(`/workflows/${workflow.id}/edit`)}
+                                                onClick={() => {
+                                                    if (workflow.id) {
+                                                        navigate(`/workflows/${workflow.id}/edit`);
+                                                    } else {
+                                                        toast.error('Cannot edit: Missing workflow ID');
+                                                    }
+                                                }}
                                                 className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                 title="Edit"
                                             >
