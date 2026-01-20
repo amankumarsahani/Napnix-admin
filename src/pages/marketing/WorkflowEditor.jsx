@@ -181,7 +181,8 @@ const NODE_PALETTE = {
 const WorkflowEditor = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const isNew = id === 'new';
+    const isNew = !id || id === 'new';
+    console.log('WorkflowEditor: id =', id, 'isNew =', isNew);
 
     const [workflowName, setWorkflowName] = useState('New Workflow');
     const [workflowDescription, setWorkflowDescription] = useState('');
