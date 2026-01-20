@@ -233,7 +233,7 @@ const WorkflowEditor = () => {
             } else if (data.nodes) {
                 // Map legacy structure to React Flow format if needed
                 const formattedNodes = data.nodes.map(n => ({
-                    id: n.node_uid || `${n.node_type}-${n.id}`,
+                    id: String(n.node_uid || `${n.node_type}-${n.id}`),
                     type: n.node_type,
                     position: { x: n.position_x || 250, y: n.position_y || 100 },
                     data: {
@@ -247,17 +247,18 @@ const WorkflowEditor = () => {
 
                 // Map connections to edges
                 if (data.connections && data.connections.length > 0) {
+                    console.log('Raw connections from backend:', data.connections);
                     const formattedEdges = data.connections.map((c, idx) => ({
-                        id: c.id || `edge-${c.source}-${c.target}-${idx}`,
-                        source: c.source,
-                        target: c.target,
-                        sourceHandle: c.source_handle || 'default',
+                        id: String(c.id || `edge-${c.source}-${c.target}-${idx}`),
+                        source: String(c.source),
+                        target: String(c.target),
+                        sourceHandle: c.source_handle === 'default' ? null : c.source_handle,
                         type: 'smoothstep',
                         animated: true,
                         style: { strokeWidth: 2, stroke: '#10b981' },
                         markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
                     }));
-                    console.log('Loaded edges:', formattedEdges);
+                    console.log('Formatted edges for React Flow:', formattedEdges);
                     setEdges(formattedEdges);
                 }
             }
