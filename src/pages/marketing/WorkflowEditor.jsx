@@ -192,8 +192,7 @@ const WorkflowEditor = () => {
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [showNodeConfig, setShowNodeConfig] = useState(false);
 
-    // Derive selectedNode from nodes to keep it in sync
-    const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
+
     const [emailTemplates, setEmailTemplates] = useState([]);
 
     // Fetch email templates on mount
@@ -282,6 +281,9 @@ const WorkflowEditor = () => {
 
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+    // Derive selectedNode from nodes to keep it in sync
+    const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
     const onConnect = useCallback((params) => {
         setEdges((eds) => addEdge({
