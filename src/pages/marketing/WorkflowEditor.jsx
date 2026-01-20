@@ -234,28 +234,34 @@ const WorkflowEditor = () => {
                 // Map legacy structure to React Flow format if needed
                 const formattedNodes = data.nodes.map(n => {
                     // Safety check for config JSON
-                    let config = n.config || {};
-                    if (typeof config === 'string') {
-                        try {
-                            config = JSON.parse(config);
-                        } catch (e) {
-                            console.error('Failed to parse node config:', e);
-                            config = {};
+                    let nodeConfig = {};
+                    try {
+                        if (n.config) {
+                            nodeConfig = typeof n.config === 'string' ? JSON.parse(n.config) : n.config;
+                        } else if (n.data?.config) {
+                            nodeConfig = typeof n.data.config === 'string' ? JSON.parse(n.data.config) : n.data.config;
                         }
+                    } catch (e) {
+                        console.error('Failed to parse node config for node:', n.node_uid, e);
+                        nodeConfig = {};
                     }
 
                     return {
                         id: String(n.node_uid || `${n.node_type}-${n.id}`),
-                        type: n.node_type,
-                        position: { x: n.position_x || 250, y: n.position_y || 100 },
+                        type: n.node_type || 'action',
+                        position: {
+                            x: parseFloat(n.position_x) || 250,
+                            y: parseFloat(n.position_y) || 100
+                        },
                         data: {
-                            label: n.label,
-                            actionType: n.node_type === 'action' ? n.action_type : null,
-                            triggerType: n.node_type === 'trigger' ? (n.trigger_type || n.action_type) : null,
-                            config: config
+                            label: n.label || n.data?.label || '',
+                            actionType: n.action_type || n.data?.actionType || null,
+                            triggerType: n.trigger_type || n.data?.triggerType || (n.node_type === 'trigger' ? n.action_type : null),
+                            config: nodeConfig
                         }
                     };
                 });
+                console.log('Formatted nodes for React Flow:', formattedNodes);
                 setNodes(formattedNodes);
 
                 // Map connections to edges
