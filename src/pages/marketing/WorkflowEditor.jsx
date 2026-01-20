@@ -682,6 +682,149 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* Trigger-specific config: Lead Status Changed */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'lead_status_changed' || selectedNode.data.label === 'Lead Status Changed') && (
+                            <>
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                                        Triggers when a lead's status changes
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        From Status
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.from_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, from_status: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="proposal_sent">Proposal Sent</option>
+                                        <option value="negotiating">Negotiating</option>
+                                        <option value="won">Won</option>
+                                        <option value="lost">Lost</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">The status the lead is changing FROM</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        To Status
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.to_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, to_status: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="proposal_sent">Proposal Sent</option>
+                                        <option value="negotiating">Negotiating</option>
+                                        <option value="won">Won</option>
+                                        <option value="lost">Lost</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">The status the lead is changing TO</p>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Trigger-specific config: Client Status Changed */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'client_status_changed' || selectedNode.data.label === 'Client Status Changed') && (
+                            <>
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                                        Triggers when a client's status changes
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        From Status
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.from_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, from_status: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="suspended">Suspended</option>
+                                        <option value="churned">Churned</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">The status the client is changing FROM</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        To Status
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.to_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, to_status: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="suspended">Suspended</option>
+                                        <option value="churned">Churned</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">The status the client is changing TO</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter by Client Type
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.client_type_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, client_type_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">All Client Types</option>
+                                        <option value="individual">Individual</option>
+                                        <option value="business">Business</option>
+                                        <option value="enterprise">Enterprise</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
                         {/* Action-specific config */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_email' && (
                             <>
