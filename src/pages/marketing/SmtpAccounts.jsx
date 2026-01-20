@@ -213,6 +213,24 @@ const SmtpModal = ({ account, onClose, onSaved }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Client-side validation
+        const hostRegex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])|(\d{1,3}\.){3}\d{1,3}$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!hostRegex.test(formData.host)) {
+            return toast.error('Invalid SMTP host format');
+        }
+        if (formData.port < 1 || formData.port > 65535) {
+            return toast.error('Port must be between 1 and 65535');
+        }
+        if (!emailRegex.test(formData.from_email)) {
+            return toast.error('Invalid From Email format');
+        }
+        if (formData.username.includes('@') && !emailRegex.test(formData.username)) {
+            return toast.error('Invalid Username format (should be an email)');
+        }
+
         setLoading(true);
         try {
             const data = { ...formData };
