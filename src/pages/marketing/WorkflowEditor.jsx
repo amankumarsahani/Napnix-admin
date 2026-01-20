@@ -1107,6 +1107,535 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* Action: Update Lead */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'update_lead' && (
+                            <>
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">
+                                        Updates fields on the lead
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Update Status To
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.new_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_status: e.target.value, updates: { ...n.data.config?.updates, status: e.target.value } } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">-- No change --</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="proposal_sent">Proposal Sent</option>
+                                        <option value="negotiating">Negotiating</option>
+                                        <option value="won">Won</option>
+                                        <option value="lost">Lost</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Update Source To
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.new_source || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_source: e.target.value, updates: { ...n.data.config?.updates, source: e.target.value } } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">-- No change --</option>
+                                        <option value="website">Website</option>
+                                        <option value="referral">Referral</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="cold_outreach">Cold Outreach</option>
+                                        <option value="advertisement">Advertisement</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Add Tags (comma-separated)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.add_tags || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, add_tags: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="hot-lead, follow-up"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Update Client */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'update_client' && (
+                            <>
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">
+                                        Updates fields on the client
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Update Status To
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.new_status || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_status: e.target.value, updates: { ...n.data.config?.updates, status: e.target.value } } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">-- No change --</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="suspended">Suspended</option>
+                                        <option value="churned">Churned</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Update Client Type To
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.new_client_type || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, new_client_type: e.target.value, updates: { ...n.data.config?.updates, client_type: e.target.value } } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">-- No change --</option>
+                                        <option value="individual">Individual</option>
+                                        <option value="business">Business</option>
+                                        <option value="enterprise">Enterprise</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Add Tags (comma-separated)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.add_tags || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, add_tags: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="vip, priority"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Create Task */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'create_task' && (
+                            <>
+                                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                    <p className="text-sm text-orange-700 dark:text-orange-400 font-medium">
+                                        Creates a new task
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Task Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.title || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, title: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="Follow up with {{contact_name}}"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Task Description
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={selectedNode.data.config?.description || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, description: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="Task details..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Priority
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.priority || 'medium'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, priority: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Due In
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={selectedNode.data.config?.due_in_value || 1}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, due_in_value: parseInt(e.target.value) } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        />
+                                        <select
+                                            value={selectedNode.data.config?.due_in_unit || 'days'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, due_in_unit: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        >
+                                            <option value="hours">Hours</option>
+                                            <option value="days">Days</option>
+                                            <option value="weeks">Weeks</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Assign User */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'assign_user' && (
+                            <>
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                    <p className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">
+                                        Assigns an owner/user to the entity
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Assignment Method
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.assignment_method || 'round_robin'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, assignment_method: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="round_robin">Round Robin</option>
+                                        <option value="least_busy">Least Busy</option>
+                                        <option value="specific_user">Specific User</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </div>
+                                {selectedNode.data.config?.assignment_method === 'specific_user' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            User ID or Email
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={selectedNode.data.config?.specific_user || ''}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, specific_user: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            placeholder="user@example.com"
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Team/Department Filter
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.team_filter || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, team_filter: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="sales"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Only assign to users in this team</p>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Add Note */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'add_note' && (
+                            <>
+                                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                                    <p className="text-sm text-yellow-700 dark:text-yellow-400 font-medium">
+                                        Adds a note to the entity
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Note Content
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={selectedNode.data.config?.content || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, content: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="Automated note: {{contact_name}} was qualified via workflow"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Note Type
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.note_type || 'general'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, note_type: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="general">General</option>
+                                        <option value="call">Call Note</option>
+                                        <option value="meeting">Meeting Note</option>
+                                        <option value="system">System Note</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Send Notification */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_notification' && (
+                            <>
+                                <div className="p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+                                    <p className="text-sm text-pink-700 dark:text-pink-400 font-medium">
+                                        Sends an in-app or push notification
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Notification Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.title || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, title: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="New lead assigned to you"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Notification Message
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={selectedNode.data.config?.message || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, message: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="{{contact_name}} from {{company}} needs follow-up"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Send To
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.send_to || 'assigned_user'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, send_to: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="assigned_user">Assigned User</option>
+                                        <option value="all_admins">All Admins</option>
+                                        <option value="team">Specific Team</option>
+                                        <option value="specific_user">Specific User</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Webhook */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'webhook' && (
+                            <>
+                                <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600">
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                        Sends data to an external URL
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Webhook URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={selectedNode.data.config?.url || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, url: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="https://api.example.com/webhook"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        HTTP Method
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.method || 'POST'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, method: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="POST">POST</option>
+                                        <option value="PUT">PUT</option>
+                                        <option value="PATCH">PATCH</option>
+                                        <option value="GET">GET</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Headers (JSON)
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={selectedNode.data.config?.headers_json || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, headers_json: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
+                                        placeholder='{"Authorization": "Bearer xxx"}'
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Custom Payload (JSON)
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={selectedNode.data.config?.custom_payload || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, custom_payload: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
+                                        placeholder="Leave empty to send entity data"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Leave empty to send all entity data automatically</p>
+                                </div>
+                            </>
+                        )}
+
                         {selectedNode.type === 'delay' && (
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
