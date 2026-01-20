@@ -164,7 +164,8 @@ const NODE_PALETTE = {
         { id: 'assign_user', label: 'Assign User', type: 'action', actionType: 'assign_user' },
         { id: 'add_note', label: 'Add Note', type: 'action', actionType: 'add_note' },
         { id: 'send_notification', label: 'Send Notification', type: 'action', actionType: 'send_notification' },
-        { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' }
+        { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
+        { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' }
     ],
     conditions: [
         { id: 'condition', label: 'If/Else Condition', type: 'condition' }
@@ -188,8 +189,11 @@ const WorkflowEditor = () => {
     const [workflowDescription, setWorkflowDescription] = useState('');
     const [saving, setSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(!isNew);
-    const [selectedNode, setSelectedNode] = useState(null);
+    const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [showNodeConfig, setShowNodeConfig] = useState(false);
+
+    // Derive selectedNode from nodes to keep it in sync
+    const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
     const [emailTemplates, setEmailTemplates] = useState([]);
 
     // Fetch email templates on mount
@@ -243,14 +247,18 @@ const WorkflowEditor = () => {
                 setNodes(formattedNodes);
 
                 // Map connections to edges
-                if (data.connections) {
+                if (data.connections && data.connections.length > 0) {
                     const formattedEdges = data.connections.map((c, idx) => ({
-                        id: `edge-${idx}`,
+                        id: c.id || `edge-${c.source}-${c.target}-${idx}`,
                         source: c.source,
                         target: c.target,
-                        sourceHandle: c.source_handle,
-                        markerEnd: { type: MarkerType.ArrowClosed }
+                        sourceHandle: c.source_handle || 'default',
+                        type: 'smoothstep',
+                        animated: true,
+                        style: { strokeWidth: 2, stroke: '#10b981' },
+                        markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
                     }));
+                    console.log('Loaded edges:', formattedEdges);
                     setEdges(formattedEdges);
                 }
             }
@@ -284,7 +292,7 @@ const WorkflowEditor = () => {
     }, [setEdges]);
 
     const onNodeClick = useCallback((event, node) => {
-        setSelectedNode(node);
+        setSelectedNodeId(node.id);
         setShowNodeConfig(true);
     }, []);
 
@@ -307,10 +315,10 @@ const WorkflowEditor = () => {
 
     // Delete selected node
     const deleteSelectedNode = () => {
-        if (selectedNode) {
-            setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
-            setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id));
-            setSelectedNode(null);
+        if (selectedNodeId) {
+            setNodes((nds) => nds.filter((n) => n.id !== selectedNodeId));
+            setEdges((eds) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+            setSelectedNodeId(null);
             setShowNodeConfig(false);
         }
     };
@@ -342,12 +350,14 @@ const WorkflowEditor = () => {
                     node_uid: n.id,
                     node_type: n.type,
                     action_type: n.data.actionType || null,
+                    trigger_type: n.data.triggerType || null,
                     label: n.data.label,
                     config: n.data.config || {},
                     position_x: Math.round(n.position.x),
                     position_y: Math.round(n.position.y)
                 })),
-                connections: edges.map(e => ({
+                connections: edges.map((e, idx) => ({
+                    id: e.id || `edge-${idx}`,
                     source: e.source,
                     target: e.target,
                     source_handle: e.sourceHandle || 'default'
@@ -1632,6 +1642,125 @@ const WorkflowEditor = () => {
                                         placeholder="Leave empty to send entity data"
                                     />
                                     <p className="text-xs text-slate-400 mt-1">Leave empty to send all entity data automatically</p>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: AI Assistant */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_assistant' && (
+                            <>
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">AI Assistant</span>
+                                    </div>
+                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                                        Use AI to analyze data, score leads, or generate content.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        AI Prompt / Instructions
+                                    </label>
+                                    <textarea
+                                        rows={4}
+                                        value={selectedNode.data.config?.prompt || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, prompt: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        placeholder="e.g. Analyze this lead: {{name}} from {{company}}"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                    <p className="mt-1 text-[10px] text-slate-400">
+                                        Use {'{{variable}}'} to inject dynamic data.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        System Message
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.system_message || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, system_message: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        placeholder="e.g. You are an expert sales analyst."
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            AI Model
+                                        </label>
+                                        <select
+                                            value={selectedNode.data.config?.model || 'gpt-4o-mini'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, model: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        >
+                                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                            <option value="gpt-4o">GPT-4o</option>
+                                            <option value="gemini-1.5-flash">Gemini Flash</option>
+                                            <option value="gemini-1.5-pro">Gemini Pro</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Store Result In
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={selectedNode.data.config?.output_variable || 'ai_response'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, output_variable: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            placeholder="variable_name"
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="strict_mode"
+                                        checked={selectedNode.data.config?.strict_mode || false}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, strict_mode: e.target.checked } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                                    />
+                                    <label htmlFor="strict_mode" className="text-sm text-slate-600 dark:text-slate-400">
+                                        Strict Mode (Fail workflow on AI error)
+                                    </label>
                                 </div>
                             </>
                         )}
