@@ -825,6 +825,199 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* Trigger-specific config: Scheduled */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'scheduled' || selectedNode.data.label === 'Scheduled') && (
+                            <>
+                                <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                    <p className="text-sm text-purple-700 dark:text-purple-400 font-medium">
+                                        Triggers on a scheduled time
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Schedule Type
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.schedule_type || 'daily'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_type: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="once">One-time</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Time (24-hour format)
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={selectedNode.data.config?.schedule_time || '09:00'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_time: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    />
+                                </div>
+                                {selectedNode.data.config?.schedule_type === 'weekly' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Day of Week
+                                        </label>
+                                        <select
+                                            value={selectedNode.data.config?.day_of_week || 'monday'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, day_of_week: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        >
+                                            <option value="monday">Monday</option>
+                                            <option value="tuesday">Tuesday</option>
+                                            <option value="wednesday">Wednesday</option>
+                                            <option value="thursday">Thursday</option>
+                                            <option value="friday">Friday</option>
+                                            <option value="saturday">Saturday</option>
+                                            <option value="sunday">Sunday</option>
+                                        </select>
+                                    </div>
+                                )}
+                                {selectedNode.data.config?.schedule_type === 'monthly' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Day of Month
+                                        </label>
+                                        <select
+                                            value={selectedNode.data.config?.day_of_month || '1'}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, day_of_month: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        >
+                                            {[...Array(28)].map((_, i) => (
+                                                <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-slate-400 mt-1">Limited to 28 to avoid issues with short months</p>
+                                    </div>
+                                )}
+                                {selectedNode.data.config?.schedule_type === 'once' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Date
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={selectedNode.data.config?.schedule_date || ''}
+                                            onChange={(e) => {
+                                                setNodes(nds => nds.map(n =>
+                                                    n.id === selectedNode.id
+                                                        ? { ...n, data: { ...n.data, config: { ...n.data.config, schedule_date: e.target.value } } }
+                                                        : n
+                                                ));
+                                            }}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Target Entities
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.target_entity || 'all_leads'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, target_entity: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="all_leads">All Active Leads</option>
+                                        <option value="all_clients">All Active Clients</option>
+                                        <option value="new_leads">New Leads (last 7 days)</option>
+                                        <option value="inactive_leads">Inactive Leads (30+ days)</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">Which entities to run this workflow on</p>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Trigger-specific config: Manual */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'manual' || selectedNode.data.label === 'Manual Trigger') && (
+                            <>
+                                <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600">
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                        Manually triggered workflow
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Run this workflow on-demand from the workflows list
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Target Entity Type
+                                    </label>
+                                    <select
+                                        value={selectedNode.data.config?.target_type || 'leads'}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, target_type: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="leads">Leads</option>
+                                        <option value="clients">Clients</option>
+                                        <option value="selected">Selected Entities Only</option>
+                                    </select>
+                                    <p className="text-xs text-slate-400 mt-1">When triggered, run on these entities</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Filter Query (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedNode.data.config?.filter_query || ''}
+                                        onChange={(e) => {
+                                            setNodes(nds => nds.map(n =>
+                                                n.id === selectedNode.id
+                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, filter_query: e.target.value } } }
+                                                    : n
+                                            ));
+                                        }}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="status:qualified AND source:website"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Filter entities before running</p>
+                                </div>
+                            </>
+                        )}
+
                         {/* Action-specific config */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_email' && (
                             <>
