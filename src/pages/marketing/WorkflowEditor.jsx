@@ -560,9 +560,21 @@ const WorkflowEditor = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <div
-                            onClick={() => {
-                                console.log('[WorkflowEditor] Toggle isActive:', !isActive);
-                                setIsActive(!isActive);
+                            onClick={async () => {
+                                const newActive = !isActive;
+                                setIsActive(newActive);
+                                console.log('[WorkflowEditor] Toggle isActive:', newActive);
+
+                                if (!isNew && id && id !== 'new') {
+                                    try {
+                                        await workflowsAPI.toggle(id);
+                                        toast.success(`Workflow ${newActive ? 'activated' : 'deactivated'}`);
+                                    } catch (error) {
+                                        console.error('Failed to toggle workflow:', error);
+                                        setIsActive(!newActive);
+                                        toast.error('Failed to update workflow status');
+                                    }
+                                }
                             }}
                             className="flex items-center gap-2 mr-4 bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         >
