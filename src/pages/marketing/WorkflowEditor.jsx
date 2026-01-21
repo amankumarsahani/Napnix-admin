@@ -153,6 +153,8 @@ const NODE_PALETTE = {
         { id: 'client_created', label: 'Client Created', type: 'trigger' },
         { id: 'lead_status_changed', label: 'Lead Status Changed', type: 'trigger' },
         { id: 'client_status_changed', label: 'Client Status Changed', type: 'trigger' },
+        { id: 'inquiry_created', label: 'Inquiry Created', type: 'trigger' },
+        { id: 'inquiry_status_updated', label: 'Inquiry Status Updated', type: 'trigger' },
         { id: 'scheduled', label: 'Scheduled', type: 'trigger' },
         { id: 'manual', label: 'Manual Trigger', type: 'trigger' }
     ],
@@ -163,6 +165,8 @@ const NODE_PALETTE = {
         { id: 'create_task', label: 'Create Task', type: 'action', actionType: 'create_task' },
         { id: 'assign_user', label: 'Assign User', type: 'action', actionType: 'assign_user' },
         { id: 'add_note', label: 'Add Note', type: 'action', actionType: 'add_note' },
+        { id: 'update_inquiry', label: 'Update Inquiry', type: 'action', actionType: 'update_inquiry' },
+        { id: 'assign_inquiry', label: 'Assign Inquiry', type: 'action', actionType: 'assign_inquiry' },
         { id: 'send_notification', label: 'Send Notification', type: 'action', actionType: 'send_notification' },
         { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
         { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' }
@@ -873,8 +877,63 @@ const WorkflowEditor = () => {
                                     >
                                         <option value="">All Client Types</option>
                                         <option value="individual">Individual</option>
-                                        <option value="business">Business</option>
-                                        <option value="enterprise">Enterprise</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Trigger-specific config: Inquiry Created */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'inquiry_created' || selectedNode.data.label === 'Inquiry Created') && (
+                            <>
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+                                        Triggers when a new inquiry is submitted
+                                    </p>
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic text-center p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
+                                    No additional filters needed for this trigger.
+                                </div>
+                            </>
+                        )}
+
+                        {/* Trigger-specific config: Inquiry Status Updated */}
+                        {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'inquiry_status_updated' || selectedNode.data.label === 'Inquiry Status Updated') && (
+                            <>
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                                        Triggers when an inquiry's status changes
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        From Status
+                                    </label>
+                                    <select
+                                        value={localConfig?.from_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="converted">Converted</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        To Status
+                                    </label>
+                                    <select
+                                        value={localConfig?.to_status || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">Any Status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="converted">Converted</option>
                                     </select>
                                 </div>
                             </>
@@ -1214,8 +1273,37 @@ const WorkflowEditor = () => {
                                         value={localConfig?.add_tags || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, add_tags: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                                        placeholder="vip, priority"
                                     />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Update Inquiry */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'update_inquiry' && (
+                            <>
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+                                        Updates the status of the inquiry
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Set Status to
+                                    </label>
+                                    <select
+                                        value={localConfig?.updates?.status || ''}
+                                        onChange={(e) => setLocalConfig({
+                                            ...localConfig,
+                                            updates: { ...localConfig.updates, status: e.target.value }
+                                        })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    >
+                                        <option value="">-- No change --</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="converted">Converted</option>
+                                    </select>
                                 </div>
                             </>
                         )}
@@ -1342,6 +1430,29 @@ const WorkflowEditor = () => {
                                         placeholder="sales"
                                     />
                                     <p className="text-xs text-slate-400 mt-1">Only assign to users in this team</p>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Action: Assign Inquiry */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'assign_inquiry' && (
+                            <>
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                                    <p className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">
+                                        Assigns the inquiry to a specific user
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        User ID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.user_id || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, user_id: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="User ID"
+                                    />
                                 </div>
                             </>
                         )}
