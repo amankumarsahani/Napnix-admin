@@ -1662,10 +1662,10 @@ const WorkflowEditor = () => {
                                             onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                         >
-                                            <optgroup label="Google Gemini (Free Tier Available)">
-                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Fastest/Free)</option>
-                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Powerful)</option>
-                                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Latest)</option>
+                                            <optgroup label="Google Gemini (Free Tier)">
+                                                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Latest)</option>
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                                <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
                                             </optgroup>
                                             <optgroup label="OpenAI">
                                                 <option value="gpt-4o-mini">GPT-4o Mini</option>
