@@ -547,3 +547,18 @@ export const workflowsAPI = {
         return response.data;
     }
 };
+
+export const settingsAPI = {
+    getSettings: async () => {
+        const response = await apiClient.get('/settings');
+        return response.data;
+    },
+    updateSettings: async (settings) => {
+        const response = await apiClient.post('/settings', settings);
+        return response.data;
+    },
+    testAI: async (provider, apiKey) => {
+        const response = await apiClient.post('/settings/test-ai', { provider, apiKey });
+        return response.data;
+    }
+};

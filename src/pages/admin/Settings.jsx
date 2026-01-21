@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-// import { authAPI } from '../../api'; // Configure later
+import { settingsAPI } from '../../api';
 
 export default function Settings() {
-    const { user, updateUser } = useAuth(); // Assuming updateUser updates the context
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('profile');
     const [loading, setLoading] = useState(false);
+    const [testingProvider, setTestingProvider] = useState(null);
 
     // Profile State
     const [profileData, setProfileData] = useState({
@@ -23,12 +24,35 @@ export default function Settings() {
         confirmPassword: ''
     });
 
+    // AI Settings State
+    const [aiSettings, setAiSettings] = useState({
+        openai_api_key: '',
+        gemini_api_key: ''
+    });
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const response = await settingsAPI.getSettings();
+            if (response.success) {
+                setAiSettings({
+                    openai_api_key: response.data.openai_api_key || '',
+                    gemini_api_key: response.data.gemini_api_key || ''
+                });
+            }
+        } catch (error) {
+            console.error('Failed to fetch settings:', error);
+        }
+    };
+
     const handleProfileUpdate = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             // await authAPI.updateProfile(profileData);
-            // updateUser(profileData); // Mock update context
             toast.success('Profile updated successfully');
         } catch (error) {
             toast.error('Failed to update profile');
@@ -54,6 +78,43 @@ export default function Settings() {
         }
     };
 
+    const handleAIUpdate = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const response = await settingsAPI.updateSettings(aiSettings);
+            if (response.success) {
+                toast.success('AI settings updated successfully');
+                fetchSettings(); // Refresh to get masked keys
+            }
+        } catch (error) {
+            toast.error('Failed to update AI settings');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const testConnection = async (provider) => {
+        setTestingProvider(provider);
+        try {
+            const apiKey = provider === 'openai' ? aiSettings.openai_api_key : aiSettings.gemini_api_key;
+            if (!apiKey) {
+                toast.error(`${provider === 'openai' ? 'OpenAI' : 'Gemini'} API Key is required`);
+                return;
+            }
+            const response = await settingsAPI.testAI(provider, apiKey);
+            if (response.success) {
+                toast.success(response.message);
+            } else {
+                toast.error(response.error || 'Connection failed');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Test failed');
+        } finally {
+            setTestingProvider(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -69,6 +130,7 @@ export default function Settings() {
                             { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
                             { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+                            { id: 'ai', label: 'AI Integration', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -213,6 +275,102 @@ export default function Settings() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'ai' && (
+                        <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI Integration Settings</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8">Configure your AI providers for use in automation workflows and assistants.</p>
+                            <form onSubmit={handleAIUpdate} className="space-y-8">
+                                {/* OpenAI Section */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5153-4.9089 6.0462 6.0462 0 0 0-4.4439-3.2533 6.05 6.05 0 0 0-5.4541 1.3871 6.0573 6.0573 0 0 0-4.4439 1.3871 6.05 6.05 0 0 0-2.4275 4.3936 5.9847 5.9847 0 0 0-2.5122 4.3936 6.0462 6.0462 0 0 0 1.2586 4.9089 6.05 6.05 0 0 0 4.4439 3.2533 6.05 6.05 0 0 0 5.4541-1.3871 6.0573 6.0573 0 0 0 4.4439-1.3871 6.05 6.05 0 0 0 2.4275-4.3936 5.9847 5.9847 0 0 0 2.5122-4.3936zm-8.0838 10.2831a3.7825 3.7825 0 0 1-5.4-1.252l.142-.081 3.252-1.879a.4346.4346 0 0 0 .217-.377v-4.595l1.791.995v4.512a.4346.4346 0 0 0 .217.377l3.252 1.879-.142.112a3.7825 3.7825 0 0 1-3.31 1.282zm-5.4-12.7231l-.142.081L5.4041 9.3401a.4346.4346 0 0 0-.217.377v4.595L3.3961 13.3171v-4.512a.4346.4346 0 0 0-.217-.377L3.0371 8.3541l3.31-1.282a3.7825 3.7825 0 0 1 5.4 1.252z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">OpenAI</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">GPT-4o, GPT-3.5 Turbo</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                value={aiSettings.openai_api_key}
+                                                onChange={e => setAiSettings({ ...aiSettings, openai_api_key: e.target.value })}
+                                                placeholder="sk-..."
+                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => testConnection('openai')}
+                                                disabled={testingProvider === 'openai'}
+                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                            >
+                                                {testingProvider === 'openai' ? 'Testing...' : 'Test Connection'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Google Gemini Section */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2L14.4 9.6H22L15.8 14.1L18.2 21.7L12 17.2L5.8 21.7L8.2 14.1L2 9.6H9.6L12 2Z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">Google Gemini</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Gemini 1.5 Pro/Flash</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                value={aiSettings.gemini_api_key}
+                                                onChange={e => setAiSettings({ ...aiSettings, gemini_api_key: e.target.value })}
+                                                placeholder="Enter Gemini API key"
+                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => testConnection('gemini')}
+                                                disabled={testingProvider === 'gemini'}
+                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                            >
+                                                {testingProvider === 'gemini' ? 'Testing...' : 'Test Connection'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="px-8 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/25 disabled:opacity-70 flex items-center gap-2"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Saving...
+                                            </>
+                                        ) : 'Save AI Configuration'}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     )}
                 </div>
