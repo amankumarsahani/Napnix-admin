@@ -194,6 +194,7 @@ const WorkflowEditor = () => {
     const [localConfig, setLocalConfig] = useState({});
     const [localLabel, setLocalLabel] = useState('');
     const [isApplyingConfig, setIsApplyingConfig] = useState(false);
+    const [isActive, setIsActive] = useState(false);
 
 
 
@@ -245,6 +246,7 @@ const WorkflowEditor = () => {
 
             setWorkflowName(data.name || 'Untitled Workflow');
             setWorkflowDescription(data.description || '');
+            setIsActive(!!data.is_active);
 
             if (data.canvas_data) {
                 setNodes(data.canvas_data.nodes || []);
@@ -420,8 +422,22 @@ const WorkflowEditor = () => {
                     source: e.source,
                     target: e.target,
                     source_handle: e.sourceHandle || 'default'
-                }))
+                })),
+                is_active: isActive
             };
+
+            // Payload size check
+            const payloadString = JSON.stringify(workflowData);
+            const sizeInMB = (payloadString.length / (1024 * 1024)).toFixed(2);
+            console.log(`[WorkflowEditor] Saving workflow. Payload size: ${sizeInMB} MB`);
+
+            if (sizeInMB > 5) {
+                const proceed = window.confirm(`Warning: Workflow data is unusually large (${sizeInMB} MB). Are you sure you want to save?`);
+                if (!proceed) {
+                    setSaving(false);
+                    return;
+                }
+            }
 
             if (isNew) {
                 await workflowsAPI.create(workflowData);
@@ -543,6 +559,19 @@ const WorkflowEditor = () => {
                         />
                     </div>
                     <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mr-4 bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                            <span className={`text-xs font-bold uppercase ${isActive ? 'text-green-500' : 'text-slate-400'}`}>
+                                {isActive ? 'Active' : 'Inactive'}
+                            </span>
+                            <button
+                                onClick={() => setIsActive(!isActive)}
+                                className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isActive ? 'translate-x-5' : 'translate-x-0'}`}
+                                />
+                            </button>
+                        </div>
                         {selectedNode && (
                             <button
                                 onClick={deleteSelectedNode}
@@ -1314,14 +1343,8 @@ const WorkflowEditor = () => {
                                     </label>
                                     <textarea
                                         rows={3}
-                                        value={selectedNode.data.config?.content || ''}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, content: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.content || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, content: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                         placeholder="Automated note: {{contact_name}} was qualified via workflow"
                                     />
@@ -1331,14 +1354,8 @@ const WorkflowEditor = () => {
                                         Note Type
                                     </label>
                                     <select
-                                        value={selectedNode.data.config?.note_type || 'general'}
-                                        onChange={(e) => {
-                                            setNodes(nds => nds.map(n =>
-                                                n.id === selectedNode.id
-                                                    ? { ...n, data: { ...n.data, config: { ...n.data.config, note_type: e.target.value } } }
-                                                    : n
-                                            ));
-                                        }}
+                                        value={localConfig?.note_type || 'general'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, note_type: e.target.value })}
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                     >
                                         <option value="general">General</option>
