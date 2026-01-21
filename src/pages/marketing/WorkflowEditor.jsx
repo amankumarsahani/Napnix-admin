@@ -1678,6 +1678,11 @@ const WorkflowEditor = () => {
                                                 <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
                                                 <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
                                             </optgroup>
+                                            <optgroup label="xAI Grok">
+                                                <option value="grok-beta">Grok Beta</option>
+                                                <option value="grok-4">Grok 4 (Flagship)</option>
+                                                <option value="grok-3-mini">Grok 3 Mini</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div>

@@ -28,7 +28,8 @@ export default function Settings() {
     const [aiSettings, setAiSettings] = useState({
         openai_api_key: '',
         gemini_api_key: '',
-        groq_api_key: ''
+        groq_api_key: '',
+        grok_api_key: ''
     });
 
     useEffect(() => {
@@ -42,7 +43,8 @@ export default function Settings() {
                 setAiSettings({
                     openai_api_key: response.data.openai_api_key || '',
                     gemini_api_key: response.data.gemini_api_key || '',
-                    groq_api_key: response.data.groq_api_key || ''
+                    groq_api_key: response.data.groq_api_key || '',
+                    grok_api_key: response.data.grok_api_key || ''
                 });
             }
         } catch (error) {
@@ -103,6 +105,7 @@ export default function Settings() {
             if (provider === 'openai') apiKey = aiSettings.openai_api_key;
             else if (provider === 'gemini') apiKey = aiSettings.gemini_api_key;
             else if (provider === 'groq') apiKey = aiSettings.groq_api_key;
+            else if (provider === 'grok') apiKey = aiSettings.grok_api_key;
 
             if (!apiKey) {
                 toast.error(`${provider === 'openai' ? 'OpenAI' : 'Gemini'} API Key is required`);
@@ -389,6 +392,41 @@ export default function Settings() {
                                                 className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
                                             >
                                                 {testingProvider === 'groq' ? 'Testing...' : 'Test Connection'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* xAI Grok Section */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-slate-800 dark:text-slate-200" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M18.901 2.1c.495 0 .897.402.897.897v18.006a.897.897 0 0 1-.897.897H5.099a.897.897 0 0 1-.897-.897V2.997c0-.495.402-.897.897-.897h13.802zM15.4 17.5h-6.8v-1.2h6.8v1.2zm1.6-4h-8.4v-1.2h8.4v1.2zm0-4h-8.4v-1.2h8.4v1.2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">xAI Grok</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Grok 4, Grok 3, Grok-beta</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                value={aiSettings.grok_api_key}
+                                                onChange={e => setAiSettings({ ...aiSettings, grok_api_key: e.target.value })}
+                                                placeholder="xai-..."
+                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => testConnection('grok')}
+                                                disabled={testingProvider === 'grok'}
+                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                            >
+                                                {testingProvider === 'grok' ? 'Testing...' : 'Test Connection'}
                                             </button>
                                         </div>
                                     </div>
