@@ -32,6 +32,19 @@ const TriggerNode = ({ data, selected }) => (
             <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">Trigger</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
+
+        {/* Visual Preview */}
+        {data.config && Object.keys(data.config).length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                {data.triggerType === 'lead_created' && data.config.source_filter && (
+                    <div className="text-[10px] text-slate-500 line-clamp-1">Source: {data.config.source_filter}</div>
+                )}
+                {data.triggerType === 'scheduled' && (
+                    <div className="text-[10px] text-slate-500 line-clamp-1">{data.config.schedule_type} @ {data.config.schedule_time}</div>
+                )}
+            </div>
+        )}
+
         <Handle
             type="source"
             position={Position.Bottom}
@@ -57,7 +70,26 @@ const ActionNode = ({ data, selected }) => (
             <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">Action</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-        {data.actionType && (
+
+        {/* Visual Preview */}
+        {data.config && Object.keys(data.config).length > 0 && (
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                {data.actionType === 'send_email' && (
+                    <div className="text-[10px] text-slate-500 line-clamp-1 italic">"{data.config.subject}"</div>
+                )}
+                {data.actionType === 'add_note' && (
+                    <div className="text-[10px] text-slate-500 line-clamp-2 italic">"{data.config.content}"</div>
+                )}
+                {data.actionType === 'ai_assistant' && (
+                    <div className="text-[10px] text-indigo-500 font-medium">{data.config.model}</div>
+                )}
+                {data.actionType === 'create_task' && (
+                    <div className="text-[10px] text-slate-500 line-clamp-1">Task: {data.config.title}</div>
+                )}
+            </div>
+        )}
+
+        {data.actionType && !data.config?.content && !data.config?.subject && (
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{data.actionType}</div>
         )}
         <Handle
@@ -85,6 +117,14 @@ const ConditionNode = ({ data, selected }) => (
             <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">Condition</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
+
+        {/* Visual Preview */}
+        {data.config && data.config.field && (
+            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium line-clamp-1">
+                {data.config.field} {data.config.operator?.replace('_', ' ')} {data.config.value}
+            </div>
+        )}
+
         <div className="flex justify-between mt-2 text-xs">
             <span className="text-green-600 font-medium">Yes</span>
             <span className="text-red-600 font-medium">No</span>
@@ -124,6 +164,14 @@ const DelayNode = ({ data, selected }) => (
             <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase">Delay</span>
         </div>
         <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
+
+        {/* Visual Preview */}
+        {data.config && data.config.value && (
+            <div className="mt-1 text-[10px] text-purple-600 dark:text-purple-400 font-medium text-center line-clamp-1">
+                Wait {data.config.value} {data.config.unit}
+            </div>
+        )}
+
         <Handle
             type="source"
             position={Position.Bottom}
@@ -281,7 +329,7 @@ const WorkflowEditor = () => {
                         data: {
                             label: n.label || n.data?.label || '',
                             actionType: n.action_type || n.data?.actionType || null,
-                            triggerType: n.trigger_type || n.data?.triggerType || (n.node_type === 'trigger' ? n.action_type : null),
+                            triggerType: n.trigger_type || n.data?.triggerType || (n.node_type === 'trigger' ? (n.action_type || n.trigger_type) : null),
                             config: nodeConfig
                         }
                     };
@@ -1506,6 +1554,19 @@ const WorkflowEditor = () => {
                                         <option value="system">System Note</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Activity Summary (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.summary || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, summary: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        placeholder="Automated Note"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">This will show up in the activity timeline header.</p>
+                                </div>
                             </>
                         )}
 
@@ -1990,6 +2051,15 @@ const WorkflowEditor = () => {
                                 {'{{id}}, {{email}}, {{contact_name}}, {{company}}, {{status}}, {{source}}'}
                             </code>
                         </div>
+
+                        {/* Generic / No Settings Fallback */}
+                        {!['trigger', 'action', 'condition', 'delay'].includes(selectedNode.type) ||
+                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant'].includes(selectedNode.data.actionType)) ? (
+                            <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
+                                <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
+                                <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
+                            </div>
+                        ) : null}
 
                         <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
                             <button
