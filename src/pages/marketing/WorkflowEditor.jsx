@@ -2048,7 +2048,7 @@ const WorkflowEditor = () => {
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-4">
                             <p className="font-medium mb-1">Available Variables:</p>
                             <code className="block bg-slate-100 dark:bg-slate-700 p-2 rounded text-xs">
-                                {'{{id}}, {{email}}, {{contact_name}}, {{company}}, {{status}}, {{source}}'}
+                                {'{{id}}, {{email}}, {{contact_name}}, {{company}}, {{status}}, {{source}}, {{last_email_subject}}, {{last_email_body}}'}
                             </code>
                         </div>
 
