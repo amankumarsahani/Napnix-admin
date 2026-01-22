@@ -14,6 +14,7 @@ export default function ClientsList() {
     const [selectedClient, setSelectedClient] = useState(null);
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('growth');
+    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
     const [generatingLink, setGeneratingLink] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
 
@@ -354,6 +355,21 @@ export default function ClientsList() {
                                 </select>
                             </div>
 
+                            <div className="flex bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+                                <button
+                                    onClick={() => setBillingCycle('monthly')}
+                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setBillingCycle('yearly')}
+                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                >
+                                    Yearly (Save 15%)
+                                </button>
+                            </div>
+
                             {generatedLink ? (
                                 <div className="space-y-2">
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Share this link with {selectedClient?.contactName}</label>
@@ -381,13 +397,15 @@ export default function ClientsList() {
                                     onClick={async () => {
                                         setGeneratingLink(true);
                                         try {
+                                            const planKey = billingCycle === 'yearly' ? `${selectedPlan}_yearly` : selectedPlan;
                                             const response = await billingAPI.createPaymentLink({
-                                                planId: selectedPlan,
+                                                planId: planKey,
                                                 successUrl: window.location.origin + '/pricing/success',
                                                 cancelUrl: window.location.origin + '/pricing/cancel',
                                                 metadata: {
                                                     client_id: selectedClient.id,
-                                                    entity_type: 'client'
+                                                    entity_type: 'client',
+                                                    billing_cycle: billingCycle
                                                 }
                                             });
                                             if (response.success) {
