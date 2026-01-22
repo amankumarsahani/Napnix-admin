@@ -28,6 +28,8 @@ import CampaignDetail from './pages/marketing/CampaignDetail';
 import SmtpAccounts from './pages/marketing/SmtpAccounts';
 import Workflows from './pages/marketing/Workflows';
 import WorkflowEditor from './pages/marketing/WorkflowEditor';
+import PricingPage from './pages/marketing/PricingPage';
+
 
 function AppRoutes() {
   return (
@@ -70,6 +72,8 @@ function AppRoutes() {
             <Route path="workflows/:id" element={<Workflows />} />
             <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
+            <Route path="pricing" element={<PricingPage />} />
+
           </Route>
         </Route>
       </Route>

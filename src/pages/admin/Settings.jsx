@@ -32,6 +32,11 @@ export default function Settings() {
         grok_api_key: ''
     });
 
+    // Payments Settings State
+    const [paymentSettings, setPaymentSettings] = useState({
+        pricing_page_mode: 'payment_link' // or 'contact_us'
+    });
+
     useEffect(() => {
         fetchSettings();
     }, []);
@@ -46,6 +51,12 @@ export default function Settings() {
                     groq_api_key: response.data.groq_api_key || '',
                     grok_api_key: response.data.grok_api_key || ''
                 });
+
+                if (response.data.pricing_page_mode) {
+                    setPaymentSettings({
+                        pricing_page_mode: response.data.pricing_page_mode
+                    });
+                }
             }
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -139,7 +150,9 @@ export default function Settings() {
                             { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
                             { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+                            { id: 'payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
                             { id: 'ai', label: 'AI Integration', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -287,7 +300,65 @@ export default function Settings() {
                         </div>
                     )}
 
+                    {activeTab === 'payments' && (
+                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Payment & Billing Settings</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8">Manage how customers interact with your pricing and payments.</p>
+
+                            <div className="space-y-6">
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                                    <h3 className="font-bold text-slate-800 dark:text-white mb-4">Pricing Page Mode</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'payment_link' })}
+                                            className={`p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'payment_link'
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                                                : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
+                                                }`}
+                                        >
+                                            <div className="font-bold text-slate-800 dark:text-white mb-1">Stripe Checkout</div>
+                                            <div className="text-xs text-slate-500">Direct "Buy Now" buttons with Stripe magic links.</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'contact_us' })}
+                                            className={`p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'contact_us'
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                                                : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
+                                                }`}
+                                        >
+                                            <div className="font-bold text-slate-800 dark:text-white mb-1">Contact Us</div>
+                                            <div className="text-xs text-slate-500">Lead generation focus with "Contact Us" buttons.</div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={async () => {
+                                            setLoading(true);
+                                            try {
+                                                const response = await settingsAPI.updateSettings(paymentSettings);
+                                                if (response.success) {
+                                                    toast.success('Billing settings updated');
+                                                }
+                                            } catch (err) {
+                                                toast.error('Failed to update billing settings');
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        disabled={loading}
+                                        className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
+                                    >
+                                        Save Billing Settings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === 'ai' && (
+
                         <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI Integration Settings</h2>
                             <p className="text-slate-500 dark:text-slate-400 mb-8">Configure your AI providers for use in automation workflows and assistants.</p>

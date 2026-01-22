@@ -204,7 +204,11 @@ const NODE_PALETTE = {
         { id: 'inquiry_created', label: 'Inquiry Created', type: 'trigger' },
         { id: 'inquiry_status_updated', label: 'Inquiry Status Updated', type: 'trigger' },
         { id: 'scheduled', label: 'Scheduled', type: 'trigger' },
-        { id: 'manual', label: 'Manual Trigger', type: 'trigger' }
+        { id: 'manual', label: 'Manual Trigger', type: 'trigger' },
+        { id: 'stripe_payment_received', label: 'Stripe Payment Received', type: 'trigger' },
+        { id: 'stripe_subscription_created', label: 'Stripe Subscription Created', type: 'trigger' },
+        { id: 'stripe_subscription_cancelled', label: 'Stripe Subscription Cancelled', type: 'trigger' },
+        { id: 'stripe_invoice_paid', label: 'Stripe Invoice Paid', type: 'trigger' }
     ],
     actions: [
         { id: 'send_email', label: 'Send Email', type: 'action', actionType: 'send_email' },

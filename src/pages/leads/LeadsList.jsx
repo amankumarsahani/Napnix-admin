@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { leadsAPI } from '../../api';
+import { leadsAPI, billingAPI } from '../../api';
+
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
 import Papa from 'papaparse';
@@ -25,6 +26,11 @@ export default function LeadsList() {
         score: 0
     });
     const [selectedLead, setSelectedLead] = useState(null);
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState('growth');
+    const [generatingLink, setGeneratingLink] = useState(false);
+    const [generatedLink, setGeneratedLink] = useState('');
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -361,8 +367,21 @@ export default function LeadsList() {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
+                                                        setSelectedLead(lead);
+                                                        setShowLinkModal(true);
+                                                        setGeneratedLink('');
+                                                    }}
+                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                                                    title="Generate Payment Link"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         handleDelete(lead.id);
                                                     }}
+
                                                     className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                                                     title="Delete"
                                                 >
@@ -529,7 +548,85 @@ export default function LeadsList() {
                     </div>
                 </div>
             )}
+            {/* Payment Link Modal */}
+            {showLinkModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
+                            <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Plan</label>
+                                <select
+                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 outline-none"
+                                    value={selectedPlan}
+                                    onChange={(e) => setSelectedPlan(e.target.value)}
+                                >
+                                    <option value="starter">Starter Plan ($0)</option>
+                                    <option value="growth">Growth Plan ($49/mo)</option>
+                                    <option value="business">Business Plan ($199/mo)</option>
+                                </select>
+                            </div>
+
+                            {generatedLink ? (
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Share this link with {selectedLead?.contactName}</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={generatedLink}
+                                            className="flex-1 px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(generatedLink);
+                                                toast.success('Link copied to clipboard');
+                                            }}
+                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-500 italic">This link will expire after 24 hours.</p>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={async () => {
+                                        setGeneratingLink(true);
+                                        try {
+                                            const response = await billingAPI.createPaymentLink({
+                                                planId: selectedPlan,
+                                                successUrl: window.location.origin + '/pricing/success',
+                                                cancelUrl: window.location.origin + '/pricing/cancel'
+                                            });
+                                            if (response.success) {
+                                                setGeneratedLink(response.url);
+                                                toast.success('Payment link generated!');
+                                            }
+                                        } catch (err) {
+                                            toast.error('Failed to generate link');
+                                        } finally {
+                                            setGeneratingLink(false);
+                                        }
+                                    }}
+                                    disabled={generatingLink}
+                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 disabled:opacity-50 transition-all"
+                                >
+                                    {generatingLink ? 'Generating...' : 'Generate Magic Link'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+
     );
 }
 

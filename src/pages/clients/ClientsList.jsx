@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clientsAPI } from '../../api';
+import { clientsAPI, billingAPI } from '../../api';
+
 import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
 
@@ -11,6 +12,11 @@ export default function ClientsList() {
     const [showModal, setShowModal] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState('growth');
+    const [generatingLink, setGeneratingLink] = useState(false);
+    const [generatedLink, setGeneratedLink] = useState('');
+
     const [formData, setFormData] = useState({
         companyName: '',
         contactName: '',
@@ -171,8 +177,21 @@ export default function ClientsList() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                setSelectedClient(client);
+                                                setShowLinkModal(true);
+                                                setGeneratedLink('');
+                                            }}
+                                            className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors text-sm font-medium"
+                                            title="Generate Payment Link"
+                                        >
+                                            Link
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 handleEdit(client);
                                             }}
+
                                             className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors text-sm font-medium"
                                         >
                                             Edit
@@ -301,7 +320,7 @@ export default function ClientsList() {
             )}
 
             <DetailSidebar
-                isOpen={!!selectedClient}
+                isOpen={!!selectedClient && !showLinkModal}
                 onClose={() => setSelectedClient(null)}
                 entityType="client"
                 entityId={selectedClient?.id}
@@ -309,6 +328,85 @@ export default function ClientsList() {
                 subTitle={selectedClient?.contactName}
                 status={selectedClient?.status}
             />
+
+            {/* Payment Link Modal */}
+            {showLinkModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
+                            <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Plan</label>
+                                <select
+                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 outline-none"
+                                    value={selectedPlan}
+                                    onChange={(e) => setSelectedPlan(e.target.value)}
+                                >
+                                    <option value="starter">Starter Plan ($0)</option>
+                                    <option value="growth">Growth Plan ($49/mo)</option>
+                                    <option value="business">Business Plan ($199/mo)</option>
+                                </select>
+                            </div>
+
+                            {generatedLink ? (
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Share this link with {selectedClient?.contactName}</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={generatedLink}
+                                            className="flex-1 px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(generatedLink);
+                                                toast.success('Link copied to clipboard');
+                                            }}
+                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-500 italic">This link will expire after 24 hours.</p>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={async () => {
+                                        setGeneratingLink(true);
+                                        try {
+                                            const response = await billingAPI.createPaymentLink({
+                                                planId: selectedPlan,
+                                                successUrl: window.location.origin + '/pricing/success',
+                                                cancelUrl: window.location.origin + '/pricing/cancel'
+                                            });
+                                            if (response.success) {
+                                                setGeneratedLink(response.url);
+                                                toast.success('Payment link generated!');
+                                            }
+                                        } catch (err) {
+                                            toast.error('Failed to generate link');
+                                        } finally {
+                                            setGeneratingLink(false);
+                                        }
+                                    }}
+                                    disabled={generatingLink}
+                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 disabled:opacity-50 transition-all"
+                                >
+                                    {generatingLink ? 'Generating...' : 'Generate Magic Link'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }

@@ -562,3 +562,12 @@ export const settingsAPI = {
         return response.data;
     }
 };
+
+export const billingAPI = {
+    createPaymentLink: async (data) => {
+        const response = await apiClient.post('/billing/payment-link', data);
+        return response.data;
+    }
+};
+
+
