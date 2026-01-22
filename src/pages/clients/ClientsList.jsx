@@ -384,7 +384,11 @@ export default function ClientsList() {
                                             const response = await billingAPI.createPaymentLink({
                                                 planId: selectedPlan,
                                                 successUrl: window.location.origin + '/pricing/success',
-                                                cancelUrl: window.location.origin + '/pricing/cancel'
+                                                cancelUrl: window.location.origin + '/pricing/cancel',
+                                                metadata: {
+                                                    client_id: selectedClient.id,
+                                                    entity_type: 'client'
+                                                }
                                             });
                                             if (response.success) {
                                                 setGeneratedLink(response.url);
