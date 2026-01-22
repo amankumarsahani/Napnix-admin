@@ -603,7 +603,11 @@ export default function LeadsList() {
                                             const response = await billingAPI.createPaymentLink({
                                                 planId: selectedPlan,
                                                 successUrl: window.location.origin + '/pricing/success',
-                                                cancelUrl: window.location.origin + '/pricing/cancel'
+                                                cancelUrl: window.location.origin + '/pricing/cancel',
+                                                metadata: {
+                                                    lead_id: selectedLead.id,
+                                                    entity_type: 'lead'
+                                                }
                                             });
                                             if (response.success) {
                                                 setGeneratedLink(response.url);

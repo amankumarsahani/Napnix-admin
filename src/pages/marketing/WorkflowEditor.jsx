@@ -1094,6 +1094,53 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* Trigger-specific config: Stripe Events */}
+                        {selectedNode.type === 'trigger' && (
+                            ['stripe_payment_received', 'stripe_subscription_created', 'stripe_subscription_cancelled', 'stripe_invoice_paid'].includes(selectedNode.data.triggerType) ||
+                            selectedNode.data.label.toLowerCase().includes('stripe')
+                        ) && (
+                                <>
+                                    <div className="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
+                                        <p className="text-sm text-brand-700 dark:text-brand-400 font-medium">
+                                            Stripe Event: {selectedNode.data.label}
+                                        </p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            Trigger automations based on real payment events.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Filter by Plan
+                                        </label>
+                                        <select
+                                            value={localConfig?.plan_id || ''}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, plan_id: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        >
+                                            <option value="">All Plans</option>
+                                            <option value="starter">Starter Plan</option>
+                                            <option value="growth">Growth Plan</option>
+                                            <option value="business">Business Plan</option>
+                                        </select>
+                                        <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all plans</p>
+                                    </div>
+                                    {selectedNode.data.triggerType === 'stripe_invoice_paid' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                                Minimum Amount (USD)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={localConfig?.min_amount || ''}
+                                                onChange={(e) => setLocalConfig({ ...localConfig, min_amount: e.target.value })}
+                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                placeholder="e.g. 50"
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
                         {/* Trigger-specific config: Manual */}
                         {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'manual' || selectedNode.data.label === 'Manual Trigger') && (
                             <>
