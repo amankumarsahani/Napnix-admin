@@ -32,6 +32,8 @@ const plans = [
 
 export default function PricingPage() {
     const [usePaymentLink, setUsePaymentLink] = useState(true);
+    const [billingCycle, setBillingCycle] = useState('monthly');
+    const [contactEmail, setContactEmail] = useState('sales@nexspire.com');
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -39,8 +41,13 @@ export default function PricingPage() {
         const fetchPricingMode = async () => {
             try {
                 const response = await settingsAPI.getSettings();
-                if (response.success && response.data.pricing_page_mode) {
-                    setUsePaymentLink(response.data.pricing_page_mode === 'payment_link');
+                if (response.success) {
+                    if (response.data.pricing_page_mode) {
+                        setUsePaymentLink(response.data.pricing_page_mode === 'payment_link');
+                    }
+                    if (response.data.contact_sales_email) {
+                        setContactEmail(response.data.contact_sales_email);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch pricing mode:', err);
@@ -53,16 +60,21 @@ export default function PricingPage() {
 
     const handleBuy = async (planId) => {
         if (!usePaymentLink) {
-            window.location.href = `mailto:sales@nexspire.com?subject=Nexspire%20Subscription%20Inquiry:%20${planId}%20Plan`;
+            window.location.href = `mailto:${contactEmail}?subject=Nexspire%20Subscription%20Inquiry:%20${planId}%20Plan%20(${billingCycle})`;
             return;
         }
 
         const id = toast.loading('Initiating secure checkout...');
         try {
+            const finalPlanId = billingCycle === 'yearly' ? `${planId}_yearly` : planId;
             const response = await billingAPI.createPaymentLink({
-                planId,
+                planId: finalPlanId,
                 successUrl: window.location.origin + '/dashboard?payment=success',
                 cancelUrl: window.location.origin + '/pricing?payment=cancelled',
+                metadata: {
+                    source: 'pricing_page',
+                    billing_cycle: billingCycle
+                }
             });
 
             if (response.success && response.url) {
@@ -96,17 +108,35 @@ export default function PricingPage() {
                         Choose the perfect plan for your business needs. No hidden fees.
                     </p>
 
-                    <div className="mt-8 flex justify-center items-center gap-4">
-                        <span className={`text-sm font-medium ${!usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Consultation Mode</span>
-                        <button
-                            onClick={() => setUsePaymentLink(!usePaymentLink)}
-                            className="relative inline-flex items-center cursor-pointer focus:outline-none"
-                        >
-                            <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out ${usePaymentLink ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                                <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${usePaymentLink ? 'translate-x-6' : 'translate-x-0'}`} />
-                            </div>
-                        </button>
-                        <span className={`text-sm font-medium ${usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Instant Access</span>
+                    <div className="mt-8 flex flex-col items-center gap-6">
+                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <button
+                                onClick={() => setBillingCycle('monthly')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-lg' : 'text-slate-500'}`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setBillingCycle('yearly')}
+                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-lg' : 'text-slate-500'}`}
+                            >
+                                Yearly
+                                <span className="bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 text-[10px] px-2 py-0.5 rounded-full">Save 15%</span>
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center items-center gap-4">
+                            <span className={`text-sm font-medium ${!usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Consultation Mode</span>
+                            <button
+                                onClick={() => setUsePaymentLink(!usePaymentLink)}
+                                className="relative inline-flex items-center cursor-pointer focus:outline-none"
+                            >
+                                <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out ${usePaymentLink ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                                    <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${usePaymentLink ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </div>
+                            </button>
+                            <span className={`text-sm font-medium ${usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Instant Access</span>
+                        </div>
                     </div>
                 </div>
 
@@ -127,8 +157,10 @@ export default function PricingPage() {
                                 <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{plan.description}</p>
                             </div>
                             <div className="mb-8">
-                                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">{plan.price}</span>
-                                {plan.monthly > 0 && <span className="text-slate-500 dark:text-slate-400 font-medium tracking-wide">/month</span>}
+                                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">
+                                    {plan.id === 'starter' ? 'Free' : (billingCycle === 'monthly' ? plan.price : `$${Math.round(plan.monthly * 12 * 0.85)}`)}
+                                </span>
+                                {plan.monthly > 0 && <span className="text-slate-500 dark:text-slate-400 font-medium tracking-wide">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>}
                             </div>
                             <ul className="flex-1 space-y-4 mb-8">
                                 {plan.features.map((feature, i) => (
@@ -143,8 +175,8 @@ export default function PricingPage() {
                             <button
                                 onClick={() => handleBuy(plan.id)}
                                 className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
-                                        ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/30'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
+                                    ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/30'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                             >
                                 {usePaymentLink ? (plan.id === 'starter' ? 'Get Started' : 'Buy Now') : 'Contact Sales'}

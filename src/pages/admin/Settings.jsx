@@ -301,17 +301,20 @@ export default function Settings() {
                     )}
 
                     {activeTab === 'payments' && (
-                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Payment & Billing Settings</h2>
-                            <p className="text-slate-500 dark:text-slate-400 mb-8">Manage how customers interact with your pricing and payments.</p>
+                        <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Payment & Billing Settings</h2>
+                                <p className="text-slate-500 dark:text-slate-400 mb-8">Manage how customers interact with your pricing and payments.</p>
+                            </div>
 
-                            <div className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Mode Selection */}
                                 <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
                                     <h3 className="font-bold text-slate-800 dark:text-white mb-4">Pricing Page Mode</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-4">
                                         <button
                                             onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'payment_link' })}
-                                            className={`p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'payment_link'
+                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'payment_link'
                                                 ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
                                                 : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
                                                 }`}
@@ -321,7 +324,7 @@ export default function Settings() {
                                         </button>
                                         <button
                                             onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'contact_us' })}
-                                            className={`p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'contact_us'
+                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'contact_us'
                                                 ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
                                                 : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
                                                 }`}
@@ -330,35 +333,86 @@ export default function Settings() {
                                             <div className="text-xs text-slate-500">Lead generation focus with "Contact Us" buttons.</div>
                                         </button>
                                     </div>
+
+                                    <div className="mt-6">
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Inquiry Email (for Contact Us mode)</label>
+                                        <input
+                                            type="email"
+                                            value={paymentSettings.contact_sales_email || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, contact_sales_email: e.target.value })}
+                                            placeholder="sales@nexspire.com"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={async () => {
-                                            setLoading(true);
-                                            try {
-                                                const response = await settingsAPI.updateSettings(paymentSettings);
-                                                if (response.success) {
-                                                    toast.success('Billing settings updated');
-                                                }
-                                            } catch (err) {
-                                                toast.error('Failed to update billing settings');
-                                            } finally {
-                                                setLoading(false);
-                                            }
-                                        }}
-                                        disabled={loading}
-                                        className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
-                                    >
-                                        Save Billing Settings
-                                    </button>
+                                {/* Stripe Price IDs */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-6">
+                                    <h3 className="font-bold text-slate-800 dark:text-white">Stripe Price IDs</h3>
+
+                                    <div className="space-y-4">
+                                        {['starter', 'growth', 'business'].map(plan => (
+                                            <div key={plan} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 space-y-3">
+                                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 capitalize">{plan} Plan</h4>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Monthly</label>
+                                                        <input
+                                                            type="text"
+                                                            value={paymentSettings[`stripe_price_id_${plan}`] || ''}
+                                                            onChange={e => setPaymentSettings({ ...paymentSettings, [`stripe_price_id_${plan}`]: e.target.value })}
+                                                            placeholder="price_..."
+                                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Yearly</label>
+                                                        <input
+                                                            type="text"
+                                                            value={paymentSettings[`stripe_price_id_${plan}_yearly`] || ''}
+                                                            onChange={e => setPaymentSettings({ ...paymentSettings, [`stripe_price_id_${plan}_yearly`]: e.target.value })}
+                                                            placeholder="price_..."
+                                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            const { pricing_page_mode, contact_sales_email, ...priceIds } = paymentSettings;
+                                            const response = await settingsAPI.updateSettings({
+                                                pricing_page_mode,
+                                                contact_sales_email,
+                                                ...priceIds
+                                            });
+                                            if (response.success) {
+                                                toast.success('Payment settings updated');
+                                                fetchSettings();
+                                            }
+                                        } catch (err) {
+                                            toast.error('Failed to update settings');
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    disabled={loading}
+                                    className="px-8 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/25 flex items-center gap-2"
+                                >
+                                    {loading ? 'Saving...' : 'Save Payment Configuration'}
+                                </button>
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'ai' && (
-
                         <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI Integration Settings</h2>
                             <p className="text-slate-500 dark:text-slate-400 mb-8">Configure your AI providers for use in automation workflows and assistants.</p>
@@ -509,15 +563,7 @@ export default function Settings() {
                                         disabled={loading}
                                         className="px-8 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/25 disabled:opacity-70 flex items-center gap-2"
                                     >
-                                        {loading ? (
-                                            <>
-                                                <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Saving...
-                                            </>
-                                        ) : 'Save AI Configuration'}
+                                        {loading ? 'Saving...' : 'Save AI Configuration'}
                                     </button>
                                 </div>
                             </form>
