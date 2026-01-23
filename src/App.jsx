@@ -20,6 +20,8 @@ import Settings from './pages/admin/Settings';
 import Templates from './pages/admin/Templates';
 import Documents from './pages/admin/Documents';
 import DocumentEdit from './pages/admin/DocumentEdit';
+import Blogs from './pages/admin/Blogs';
+import BlogEditor from './pages/admin/BlogEditor';
 import Tenants from './pages/tenants/Tenants';
 import TenantDetail from './pages/tenants/TenantDetail';
 import ApiDocumentation from './pages/admin/ApiDocumentation';
@@ -70,6 +72,9 @@ function AppRoutes() {
             <Route path="workflows/:id" element={<Workflows />} />
             <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
+            <Route path="blogs" element={<Blogs />} />
+            <Route path="blogs/new" element={<BlogEditor />} />
+            <Route path="blogs/:id/edit" element={<BlogEditor />} />
           </Route>
         </Route>
       </Route>
