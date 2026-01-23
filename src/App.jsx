@@ -29,6 +29,7 @@ import SmtpAccounts from './pages/marketing/SmtpAccounts';
 import Workflows from './pages/marketing/Workflows';
 import WorkflowEditor from './pages/marketing/WorkflowEditor';
 import PricingPage from './pages/marketing/PricingPage';
+import BlogsList from './pages/blogs/BlogsList';
 
 
 function AppRoutes() {
@@ -73,6 +74,7 @@ function AppRoutes() {
             <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
             <Route path="pricing" element={<PricingPage />} />
+            <Route path="blogs" element={<BlogsList />} />
 
           </Route>
         </Route>

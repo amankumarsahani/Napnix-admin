@@ -570,4 +570,37 @@ export const billingAPI = {
     }
 };
 
+// Blogs API (Content Management)
+export const blogsAPI = {
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/blogs', { params });
+        return response.data;
+    },
+
+    getById: async (id) => {
+        const response = await apiClient.get(`/blogs/${id}`);
+        return response.data;
+    },
+
+    create: async (data) => {
+        const response = await apiClient.post('/blogs', data);
+        return response.data;
+    },
+
+    update: async (id, data) => {
+        const response = await apiClient.put(`/blogs/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id) => {
+        const response = await apiClient.delete(`/blogs/${id}`);
+        return response.data;
+    },
+
+    getStats: async () => {
+        const response = await apiClient.get('/blogs/stats');
+        return response.data;
+    },
+};
+
 
