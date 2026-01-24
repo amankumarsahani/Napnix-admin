@@ -1,8 +1,63 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import toast from 'react-hot-toast';
 import { blogsAPI } from '../../api';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+
+// Lazy load CKEditor to prevent build failures if not installed
+let CKEditorComponent = null;
+let ClassicEditorBuild = null;
+
+try {
+    const CKEditorModule = await import('@ckeditor/ckeditor5-react');
+    const ClassicModule = await import('@ckeditor/ckeditor5-build-classic');
+    CKEditorComponent = CKEditorModule.CKEditor;
+    ClassicEditorBuild = ClassicModule.default;
+} catch (e) {
+    // CKEditor not installed, will use fallback textarea
+    console.log('CKEditor not available, using textarea fallback');
+}
+
+// Rich text editor component with fallback
+const RichTextEditor = ({ value, onChange }) => {
+    if (CKEditorComponent && ClassicEditorBuild) {
+        return (
+            <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                <CKEditorComponent
+                    editor={ClassicEditorBuild}
+                    data={value}
+                    config={{
+                        toolbar: [
+                            'heading', '|',
+                            'bold', 'italic', 'link', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'blockQuote', 'insertTable', '|',
+                            'undo', 'redo'
+                        ],
+                        placeholder: 'Write your blog content here...'
+                    }}
+                    onChange={(event, editor) => {
+                        onChange(editor.getData());
+                    }}
+                />
+            </div>
+        );
+    }
+
+    // Fallback textarea if CKEditor is not available
+    return (
+        <div>
+            <textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                rows={10}
+                className="w-full px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none font-mono text-sm"
+                placeholder="<p>Your blog content here...</p> (HTML supported)"
+            />
+            <p className="text-xs text-amber-600 mt-1">
+                ⚠️ Install CKEditor for rich text editing: npm install @ckeditor/ckeditor5-react @ckeditor/ckeditor5-build-classic
+            </p>
+        </div>
+    );
+};
 
 export default function BlogsList() {
     const [blogs, setBlogs] = useState([]);
@@ -532,29 +587,13 @@ export default function BlogsList() {
                                 />
                             </div>
 
-                            {/* CKEditor for Content */}
+                            {/* Rich Text Editor for Content */}
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Content</label>
-                                <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden">
-                                    <CKEditor
-                                        editor={ClassicEditor}
-                                        data={formData.content}
-                                        config={{
-                                            toolbar: [
-                                                'heading', '|',
-                                                'bold', 'italic', 'link', '|',
-                                                'bulletedList', 'numberedList', '|',
-                                                'blockQuote', 'insertTable', '|',
-                                                'undo', 'redo'
-                                            ],
-                                            placeholder: 'Write your blog content here...'
-                                        }}
-                                        onChange={(event, editor) => {
-                                            const data = editor.getData();
-                                            setFormData({ ...formData, content: data });
-                                        }}
-                                    />
-                                </div>
+                                <RichTextEditor
+                                    value={formData.content}
+                                    onChange={(content) => setFormData({ ...formData, content })}
+                                />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
