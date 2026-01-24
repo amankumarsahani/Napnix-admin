@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { blogsAPI } from '../../api';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 
 export default function BlogsList() {
     const [blogs, setBlogs] = useState([]);
@@ -25,6 +27,17 @@ export default function BlogsList() {
         status: 'draft',
         read_time: ''
     });
+
+    // Predefined categories + dynamic from existing blogs
+    const defaultCategories = ['Technology', 'Business', 'Design', 'Development', 'AI & ML', 'Cloud', 'Mobile'];
+
+    const availableCategories = useMemo(() => {
+        const existingCategories = blogs
+            .map(b => b.category)
+            .filter(Boolean)
+            .filter((v, i, a) => a.indexOf(v) === i);
+        return [...new Set([...defaultCategories, ...existingCategories])].sort();
+    }, [blogs]);
 
     useEffect(() => {
         loadBlogs();
@@ -155,8 +168,8 @@ export default function BlogsList() {
         }
     };
 
-    // Handle image file selection for preview
-    const handleImageChange = (e) => {
+    // Handle image file upload
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -172,23 +185,32 @@ export default function BlogsList() {
             return;
         }
 
-        // For now, create a local preview URL
-        // In production, you'd upload to a server/CDN
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setFormData({ ...formData, image: event.target.result });
-        };
-        reader.readAsDataURL(file);
-    };
+        setUploading(true);
 
-    // Image placeholder component
-    const ImagePlaceholder = () => (
-        <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-            <svg className="w-12 h-12 text-slate-300 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-        </div>
-    );
+        try {
+            // Create FormData for upload
+            const uploadData = new FormData();
+            uploadData.append('file', file);
+
+            // Try to upload to backend
+            const response = await blogsAPI.uploadImage(uploadData);
+            if (response.url) {
+                setFormData({ ...formData, image: response.url });
+                toast.success('Image uploaded successfully');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            // Fallback: Use base64 for local preview if upload fails
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setFormData({ ...formData, image: event.target.result });
+                toast.success('Image loaded (local preview)');
+            };
+            reader.readAsDataURL(file);
+        } finally {
+            setUploading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -314,8 +336,8 @@ export default function BlogsList() {
                                 {/* Status overlay */}
                                 <div className="absolute top-3 left-3 flex gap-2">
                                     <span className={`px-2.5 py-1 text-xs font-bold rounded-full border backdrop-blur-sm ${blog.status === 'published'
-                                            ? 'bg-emerald-100/90 text-emerald-700 border-emerald-200'
-                                            : 'bg-amber-100/90 text-amber-700 border-amber-200'
+                                        ? 'bg-emerald-100/90 text-emerald-700 border-emerald-200'
+                                        : 'bg-amber-100/90 text-amber-700 border-amber-200'
                                         }`}>
                                         {blog.status === 'published' ? 'Published' : 'Draft'}
                                     </span>
@@ -365,8 +387,8 @@ export default function BlogsList() {
                                     <button
                                         onClick={() => toggleFeatured(blog)}
                                         className={`p-2 rounded-lg transition-colors ${blog.featured
-                                                ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                                                : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                            ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                            : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                                             }`}
                                         title={blog.featured ? 'Remove from featured' : 'Add to featured'}
                                     >
@@ -392,7 +414,7 @@ export default function BlogsList() {
             {/* Create/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
                         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
                                 {editingBlog ? 'Edit Blog Post' : 'Create New Blog Post'}
@@ -411,7 +433,7 @@ export default function BlogsList() {
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Cover Image</label>
                                 <div className="flex gap-4">
-                                    <div className="w-40 h-24 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex-shrink-0">
+                                    <div className="w-40 h-24 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 flex-shrink-0 relative">
                                         {formData.image ? (
                                             <img
                                                 src={formData.image}
@@ -429,16 +451,41 @@ export default function BlogsList() {
                                                 </svg>
                                             </div>
                                         )}
+                                        {uploading && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="flex-1 space-y-2">
-                                        <input
-                                            type="text"
-                                            value={formData.image}
-                                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                            placeholder="https://example.com/image.jpg"
-                                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none"
-                                        />
-                                        <p className="text-xs text-slate-500">Enter an image URL or paste a link</p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={formData.image}
+                                                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                                                placeholder="https://example.com/image.jpg"
+                                                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none"
+                                            />
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                className="hidden"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={uploading}
+                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-slate-500 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                </svg>
+                                                Upload
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-slate-500">Enter an image URL or upload a file (max 5MB)</p>
                                     </div>
                                 </div>
                             </div>
@@ -485,27 +532,50 @@ export default function BlogsList() {
                                 />
                             </div>
 
+                            {/* CKEditor for Content */}
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Content (HTML)</label>
-                                <textarea
-                                    value={formData.content}
-                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    rows={8}
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none font-mono text-sm"
-                                    placeholder="<p>Your blog content here...</p>"
-                                />
+                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Content</label>
+                                <div className="border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden">
+                                    <CKEditor
+                                        editor={ClassicEditor}
+                                        data={formData.content}
+                                        config={{
+                                            toolbar: [
+                                                'heading', '|',
+                                                'bold', 'italic', 'link', '|',
+                                                'bulletedList', 'numberedList', '|',
+                                                'blockQuote', 'insertTable', '|',
+                                                'undo', 'redo'
+                                            ],
+                                            placeholder: 'Write your blog content here...'
+                                        }}
+                                        onChange={(event, editor) => {
+                                            const data = editor.getData();
+                                            setFormData({ ...formData, content: data });
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                {/* Category Dropdown */}
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Category</label>
-                                    <input
-                                        type="text"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none"
-                                        placeholder="e.g. Technology"
-                                    />
+                                    <div className="relative">
+                                        <select
+                                            value={formData.category}
+                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none appearance-none"
+                                        >
+                                            <option value="">Select Category</option>
+                                            {availableCategories.map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Author</label>
