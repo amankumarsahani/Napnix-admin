@@ -22,6 +22,8 @@ import Documents from './pages/admin/Documents';
 import DocumentEdit from './pages/admin/DocumentEdit';
 import Tenants from './pages/tenants/Tenants';
 import TenantDetail from './pages/tenants/TenantDetail';
+import Servers from './pages/servers/Servers';
+import BackupAccounts from './pages/backups/BackupAccounts';
 import ApiDocumentation from './pages/admin/ApiDocumentation';
 import Campaigns from './pages/marketing/Campaigns';
 import CampaignDetail from './pages/marketing/CampaignDetail';
@@ -65,6 +67,8 @@ function AppRoutes() {
             <Route path="settings" element={<Settings />} />
             <Route path="tenants" element={<Tenants />} />
             <Route path="tenants/:id" element={<TenantDetail />} />
+            <Route path="infrastructure/servers" element={<Servers />} />
+            <Route path="infrastructure/backups" element={<BackupAccounts />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="campaigns/:id" element={<CampaignDetail />} />
             <Route path="smtp-accounts" element={<SmtpAccounts />} />

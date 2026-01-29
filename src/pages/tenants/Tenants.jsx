@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { tenantsAPI, plansAPI } from '../../api';
+import { tenantsAPI } from '../../api';
+import planService from '../../api/plan';
+import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
+import { FiPlus, FiServer, FiGlobe } from 'react-icons/fi';
 
 const Tenants = () => {
     const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
-    const [plans, setPlans] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -14,17 +16,18 @@ const Tenants = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchData = async (retryCount = 0) => {
         const maxRetries = 3;
-        const retryDelay = 2000; // 2 seconds
+        const retryDelay = 2000;
 
         try {
             setLoading(true);
             const [tenantsRes, plansRes, statsRes] = await Promise.all([
                 tenantsAPI.getAll(),
-                plansAPI.getAll(),
+                planService.getAllPlans(),
                 tenantsAPI.getStats()
             ]);
             setTenants(tenantsRes.data || []);
@@ -32,14 +35,10 @@ const Tenants = () => {
             setStats(statsRes.data);
         } catch (error) {
             console.error('Fetch tenants error:', error);
-
-            // Retry if connection failed (tunnel restart can cause this)
             if (retryCount < maxRetries) {
-                console.log(`Retrying fetch... (${retryCount + 1}/${maxRetries})`);
                 setTimeout(() => fetchData(retryCount + 1), retryDelay);
-                return; // Don't set loading to false yet
+                return;
             }
-
             toast.error('Failed to fetch tenants');
         } finally {
             if (retryCount >= maxRetries || retryCount === 0) {
@@ -72,7 +71,7 @@ const Tenants = () => {
                     break;
             }
             fetchData();
-        } catch (error) {
+        } catch (_error) {
             toast.error(`Failed to ${action} tenant`);
         } finally {
             setActionLoading(prev => ({ ...prev, [tenantId]: null }));
@@ -109,7 +108,6 @@ const Tenants = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tenants</h1>
@@ -119,14 +117,11 @@ const Tenants = () => {
                     onClick={() => setShowCreateModal(true)}
                     className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                    <FiPlus className="w-5 h-5" />
                     Add Tenant
                 </button>
             </div>
 
-            {/* Stats Cards */}
             {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
@@ -148,7 +143,6 @@ const Tenants = () => {
                 </div>
             )}
 
-            {/* Tenants Table - Desktop */}
             <div className="hidden md:block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -261,98 +255,72 @@ const Tenants = () => {
                 </div>
             </div>
 
-            {/* Tenants Cards - Mobile */}
             <div className="md:hidden space-y-4">
-                {tenants.length === 0 ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center text-slate-500">
-                        No tenants yet. Create your first tenant!
-                    </div>
-                ) : (
-                    tenants.map((tenant) => (
-                        <div key={tenant.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="flex items-start justify-between mb-3">
-                                <div>
-                                    <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{tenant.slug}-crm-api</div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <div className={`w-2 h-2 rounded-full ${getProcessStatusColor(tenant.process_status)}`}></div>
-                                    <span className="text-xs text-slate-500 capitalize">{tenant.process_status || 'stopped'}</span>
-                                </div>
+                {tenants.map((tenant) => (
+                    <div key={tenant.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                        <div className="flex items-start justify-between mb-3">
+                            <div>
+                                <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{tenant.slug}-crm-api</div>
                             </div>
-
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
-                                    {tenant.industry_type || 'general'}
-                                </span>
-                                <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">
-                                    {tenant.plan_name || 'Starter'}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(tenant.status)}`}>
-                                    {tenant.status}
-                                </span>
-                                {tenant.assigned_port && (
-                                    <span className="px-2 py-1 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 rounded">
-                                        Port: {tenant.assigned_port}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                {tenant.process_status !== 'running' ? (
-                                    <button
-                                        onClick={() => handleAction(tenant.id, 'start')}
-                                        disabled={actionLoading[tenant.id]}
-                                        className="flex-1 py-2.5 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-                                    >
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z" />
-                                        </svg>
-                                        Start
-                                    </button>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={() => handleAction(tenant.id, 'stop')}
-                                            disabled={actionLoading[tenant.id]}
-                                            className="flex-1 py-2.5 text-amber-600 bg-amber-50 dark:bg-amber-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-                                        >
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                <rect x="6" y="6" width="12" height="12" />
-                                            </svg>
-                                            Stop
-                                        </button>
-                                        <button
-                                            onClick={() => handleAction(tenant.id, 'restart')}
-                                            disabled={actionLoading[tenant.id]}
-                                            className="flex-1 py-2.5 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                            </svg>
-                                            Restart
-                                        </button>
-                                    </>
-                                )}
-                                <button
-                                    onClick={() => navigate(`/tenants/${tenant.id}`)}
-                                    className="py-2.5 px-4 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    View
-                                </button>
+                            <div className="flex items-center gap-1">
+                                <div className={`w-2 h-2 rounded-full ${getProcessStatusColor(tenant.process_status)}`}></div>
+                                <span className="text-xs text-slate-500 capitalize">{tenant.process_status || 'stopped'}</span>
                             </div>
                         </div>
-                    ))
-                )}
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
+                                {tenant.industry_type || 'general'}
+                            </span>
+                            <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">
+                                {tenant.plan_name || 'Starter'}
+                            </span>
+                            <span className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(tenant.status)}`}>
+                                {tenant.status}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                            {tenant.process_status !== 'running' ? (
+                                <button
+                                    onClick={() => handleAction(tenant.id, 'start')}
+                                    disabled={actionLoading[tenant.id]}
+                                    className="flex-1 py-2.5 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                                >
+                                    Start
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => handleAction(tenant.id, 'stop')}
+                                        disabled={actionLoading[tenant.id]}
+                                        className="flex-1 py-2.5 text-amber-600 bg-amber-50 dark:bg-amber-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                                    >
+                                        Stop
+                                    </button>
+                                    <button
+                                        onClick={() => handleAction(tenant.id, 'restart')}
+                                        disabled={actionLoading[tenant.id]}
+                                        className="flex-1 py-2.5 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                                    >
+                                        Restart
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={() => navigate(`/tenants/${tenant.id}`)}
+                                className="py-2.5 px-4 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg font-medium text-sm"
+                            >
+                                View
+                            </button>
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            {/* Create Tenant Modal */}
             {showCreateModal && (
                 <CreateTenantModal
-                    plans={plans}
                     onClose={() => setShowCreateModal(false)}
                     onCreated={() => {
                         setShowCreateModal(false);
@@ -364,24 +332,50 @@ const Tenants = () => {
     );
 };
 
-// Create Tenant Modal Component
-const CreateTenantModal = ({ plans, onClose, onCreated }) => {
+const CreateTenantModal = ({ onClose, onCreated }) => {
+    const [plans, setPlans] = useState([]);
+    const [servers, setServers] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
         email: '',
         phone: '',
         industry_type: 'general',
-        plan_id: 1
+        plan_id: '',
+        server_id: '',
+        custom_domain: ''
     });
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [plansRes, serversRes] = await Promise.all([
+                    planService.getAllPlans(),
+                    serverService.getAllServers()
+                ]);
+                if (plansRes.success) setPlans(plansRes.data);
+                if (serversRes.success) {
+                    setServers(serversRes.data);
+                    if (serversRes.data.length > 0) {
+                        const bestServer = serversRes.data.reduce((prev, curr) =>
+                            (prev.tenant_count < curr.tenant_count) ? prev : curr
+                        );
+                        setFormData(prev => ({ ...prev, server_id: bestServer.id }));
+                    }
+                }
+            } catch (_error) {
+                toast.error('Failed to load form data');
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value,
-            // Auto-generate slug from name
             ...(name === 'name' && { slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })
         }));
     };
@@ -423,7 +417,7 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                             value={formData.name}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             placeholder="Acme Corporation"
                         />
                     </div>
@@ -440,45 +434,46 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 onChange={handleChange}
                                 required
                                 pattern="[a-z0-9-]+"
-                                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-l-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                 placeholder="acme-corp"
                             />
-                            <span className="px-3 py-2 bg-slate-100 dark:bg-slate-600 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg text-slate-500 dark:text-slate-400 text-sm">
+                            <span className="px-3 py-2 bg-slate-100 dark:bg-slate-600 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg text-slate-500 dark:text-slate-400 text-sm italic">
                                 .crm-api.nexspiresolutions.co.in
                             </span>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Admin Email *
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                            placeholder="admin@acme.com"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Admin Email *
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                placeholder="admin@acme.com"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Phone
+                            </label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                placeholder="+91 9876543210"
+                            />
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Phone
-                        </label>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                            placeholder="+91 9876543210"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Industry
@@ -500,7 +495,6 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 <option value="legal">Legal (Law Firm)</option>
                             </select>
                         </div>
-
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Plan
@@ -509,14 +503,51 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                                 name="plan_id"
                                 value={formData.plan_id}
                                 onChange={handleChange}
+                                required
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             >
+                                <option value="">Select Plan</option>
                                 {plans.map(plan => (
                                     <option key={plan.id} value={plan.id}>
                                         {plan.name} - ₹{plan.price_monthly}/mo
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
+                                <FiServer className="text-indigo-500" /> Destination Server
+                            </label>
+                            <select
+                                required
+                                name="server_id"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                value={formData.server_id}
+                                onChange={handleChange}
+                            >
+                                <option value="">Select Server</option>
+                                {servers.map(server => (
+                                    <option key={server.id} value={server.id}>
+                                        {server.name} ({server.tenant_count} tenants)
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
+                                <FiGlobe className="text-sky-500" /> Custom Domain
+                            </label>
+                            <input
+                                type="text"
+                                name="custom_domain"
+                                placeholder="crm.company.com (optional)"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                value={formData.custom_domain}
+                                onChange={handleChange}
+                            />
                         </div>
                     </div>
 
@@ -531,7 +562,7 @@ const CreateTenantModal = ({ plans, onClose, onCreated }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-brand-600/20"
                         >
                             {loading && (
                                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
