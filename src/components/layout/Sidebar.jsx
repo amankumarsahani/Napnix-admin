@@ -5,8 +5,8 @@ import { useState } from 'react';
 import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText,
     FiMail, FiMessageCircle, FiLayout, FiActivity, FiSearch, FiLayers,
-    FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus
-} from 'react-icons/fi';
+    FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle
+} from '../icons/FeatherIcons';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
