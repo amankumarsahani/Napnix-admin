@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiHardDrive, FiPlus, FiCheckCircle, FiRefreshCw, FiTrash2, FiKey, FiFolder } from 'react-icons/fi';
+import { FiHardDrive, FiPlus, FiCheckCircle, FiRefreshCw, FiTrash2, FiKey, FiFolder } from '../../components/icons/FeatherIcons';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 

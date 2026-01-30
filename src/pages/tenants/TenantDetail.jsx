@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     FiGlobe, FiDatabase, FiActivity, FiTerminal, FiTrash2,
     FiRefreshCw, FiExternalLink, FiServer
-} from 'react-icons/fi';
+} from '../../components/icons/FeatherIcons';
 import { tenantsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
