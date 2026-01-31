@@ -361,6 +361,11 @@ export const tenantsAPI = {
         return response.data;
     },
 
+    setupCustomDomain: async (id, domain) => {
+        const response = await apiClient.post(`/tenants/${id}/custom-domain`, { domain });
+        return response.data;
+    },
+
     fullDelete: async (id, options = {}) => {
         const response = await apiClient.delete(`/tenants/${id}/full-delete`, { data: options });
         return response.data;
