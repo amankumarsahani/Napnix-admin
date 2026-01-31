@@ -265,7 +265,7 @@ const TenantDetail = () => {
                                 )}
                             </div>
                         </div>
-                        <a href={`https://${tenant.custom_domain || `${tenant.slug}-crm.${domain}`}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain ? (tenant.custom_domain.startsWith('http') ? tenant.custom_domain : `https://${tenant.custom_domain}`) : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
