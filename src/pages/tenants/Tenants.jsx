@@ -25,13 +25,11 @@ const Tenants = () => {
 
         try {
             setLoading(true);
-            const [tenantsRes, plansRes, statsRes] = await Promise.all([
+            const [tenantsRes, statsRes] = await Promise.all([
                 tenantsAPI.getAll(),
-                planService.getAllPlans(),
                 tenantsAPI.getStats()
             ]);
             setTenants(tenantsRes.data || []);
-            setPlans(plansRes.data || []);
             setStats(statsRes.data);
         } catch (error) {
             console.error('Fetch tenants error:', error);
