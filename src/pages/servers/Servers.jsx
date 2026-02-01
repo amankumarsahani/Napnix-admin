@@ -159,33 +159,33 @@ const Servers = () => {
 
             {/* Add Server Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl scale-in">
-                        <h2 className="text-2xl font-bold mb-6">Add New Server</h2>
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
+                        <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Add New Server</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
                                     placeholder="e.g. Server-2"
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Hostname (via CF Tunnel)</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hostname (via CF Tunnel)</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
                                     placeholder="e.g. ssh2.domain.com"
                                     onChange={e => setFormData({ ...formData, hostname: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Cloudflare Tunnel ID</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cloudflare Tunnel ID</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
                                     placeholder="Tunnel UUID"
                                     onChange={e => setFormData({ ...formData, cloudflare_tunnel_id: e.target.value })}
                                 />
@@ -194,7 +194,7 @@ const Servers = () => {
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition"
+                                    className="flex-1 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
                                 >
                                     Cancel
                                 </button>
