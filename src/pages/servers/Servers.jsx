@@ -159,7 +159,7 @@ const Servers = () => {
 
             {/* Add Server Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
                         <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">Add New Server</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -167,7 +167,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
                                     placeholder="e.g. Server-2"
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
@@ -176,7 +176,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hostname (via CF Tunnel)</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
                                     placeholder="e.g. ssh2.domain.com"
                                     onChange={e => setFormData({ ...formData, hostname: e.target.value })}
                                 />
@@ -185,7 +185,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cloudflare Tunnel ID</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
                                     placeholder="Tunnel UUID"
                                     onChange={e => setFormData({ ...formData, cloudflare_tunnel_id: e.target.value })}
                                 />
