@@ -361,8 +361,9 @@ export const tenantsAPI = {
         return response.data;
     },
 
-    setupCustomDomain: async (id, domain) => {
-        const response = await apiClient.post(`/tenants/${id}/custom-domain`, { domain });
+    setupCustomDomain: async (id, domains) => {
+        // domains = { crm: string, storefront: string, api: string }
+        const response = await apiClient.post(`/tenants/${id}/custom-domain`, domains);
         return response.data;
     },
 
