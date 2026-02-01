@@ -21,7 +21,7 @@ const TenantDetail = () => {
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [showDomainModal, setShowDomainModal] = useState(false);
-    const [customDomain, setCustomDomain] = useState('');
+    const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
@@ -130,14 +130,18 @@ const TenantDetail = () => {
     };
 
     const handleSetupDomain = async () => {
+        if (!customDomains.crm && !customDomains.storefront && !customDomains.api) {
+            toast.error('Enter at least one domain');
+            return;
+        }
         setDomainLoading(true);
         try {
-            await tenantsAPI.setupCustomDomain(tenant.id, customDomain);
-            toast.success('Custom domain configured!');
+            await tenantsAPI.setupCustomDomain(tenant.id, customDomains);
+            toast.success('Custom domains configured!');
             setShowDomainModal(false);
             fetchTenant();
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to setup domain');
+            toast.error(error.response?.data?.error || 'Failed to setup domains');
         } finally {
             setDomainLoading(false);
         }
@@ -402,46 +406,60 @@ const TenantDetail = () => {
 
             {/* Custom Domain Modal */}
             {showDomainModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
-                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domain</h2>
-                        <div className="mb-4">
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                                1. Add a <strong>CNAME</strong> record in your DNS provider (GoDaddy, Namecheap):
-                            </p>
-                            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700 font-mono text-sm mb-4">
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-slate-500">Type:</span>
-                                    <span className="text-slate-900 dark:text-white">CNAME</span>
-                                </div>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-slate-500">Name:</span>
-                                    <span className="text-slate-900 dark:text-white">{customDomain.split('.')[0] || 'www'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Target:</span>
-                                    <span className="text-slate-900 dark:text-white text-xs break-all">nexcrm-frontend.pages.dev</span>
-                                </div>
-                            </div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
-                                2. Enter your custom domain below:
-                            </p>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
+                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                            Add CNAME records in your DNS provider pointing to the targets shown below.
+                        </p>
+
+                        {/* CRM Domain */}
+                        <div className="mb-4 p-3 border rounded-lg">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CRM Dashboard</label>
                             <input
                                 type="text"
-                                value={customDomain}
-                                onChange={(e) => setCustomDomain(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                                value={customDomains.crm}
+                                onChange={(e) => setCustomDomains(prev => ({ ...prev, crm: e.target.value }))}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                                 placeholder="crm.yourbrand.com"
                             />
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>nexcrm-frontend.pages.dev</code></p>
                         </div>
-                        <div className="flex justify-end gap-3">
+
+                        {/* Storefront Domain */}
+                        <div className="mb-4 p-3 border rounded-lg">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Storefront</label>
+                            <input
+                                type="text"
+                                value={customDomains.storefront}
+                                onChange={(e) => setCustomDomains(prev => ({ ...prev, storefront: e.target.value }))}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                placeholder="yourbrand.com or store.yourbrand.com"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>nexcrm-storefront.pages.dev</code></p>
+                        </div>
+
+                        {/* API Domain */}
+                        <div className="mb-4 p-3 border rounded-lg">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">API Backend</label>
+                            <input
+                                type="text"
+                                value={customDomains.api}
+                                onChange={(e) => setCustomDomains(prev => ({ ...prev, api: e.target.value }))}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                placeholder="api.yourbrand.com"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>[tunnel-id].cfargotunnel.com</code></p>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
                             <button onClick={() => setShowDomainModal(false)} className="px-4 py-2 text-slate-600">Cancel</button>
                             <button
                                 onClick={handleSetupDomain}
-                                disabled={domainLoading || !customDomain}
+                                disabled={domainLoading}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
                             >
-                                {domainLoading ? 'Verifying...' : 'Verify & Save'}
+                                {domainLoading ? 'Configuring...' : 'Save Domains'}
                             </button>
                         </div>
                     </div>
