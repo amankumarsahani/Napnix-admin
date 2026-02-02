@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { templatesAPI } from '../../api';
+import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 // SVG Icon components for template types
@@ -63,14 +63,27 @@ export default function Templates() {
         html_content: '',
         description: '',
         variables: [],
+        attachment_document_ids: '',
         category: 'notification',
         is_active: true,
     });
 
+    const [availableDocuments, setAvailableDocuments] = useState([]);
+
     useEffect(() => {
         fetchTemplates();
         fetchStats();
+        fetchAvailableDocuments();
     }, [activeTypeFilter]);
+
+    const fetchAvailableDocuments = async () => {
+        try {
+            const response = await documentTemplatesAPI.getAll();
+            setAvailableDocuments(response.data || []);
+        } catch (error) {
+            console.error('Failed to load document templates:', error);
+        }
+    };
 
     const fetchTemplates = async () => {
         try {
@@ -147,6 +160,7 @@ export default function Templates() {
                 ? template.variables.join(', ')
                 : '',
             category: template.category || 'notification',
+            attachment_document_ids: template.attachment_document_ids || '',
             is_active: template.is_active !== false,
         });
         setShowModal(true);
@@ -177,6 +191,7 @@ export default function Templates() {
             html_content: '',
             description: '',
             variables: [],
+            attachment_document_ids: '',
             category: 'notification',
             is_active: true,
         });
@@ -465,6 +480,36 @@ export default function Templates() {
                                     required
                                 />
                             </div>
+
+                            {formData.type === 'email' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Default Attachments</label>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto p-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+                                        {availableDocuments.map(doc => (
+                                            <label key={doc.id} className="flex items-center gap-2 cursor-pointer hover:bg-white dark:hover:bg-slate-800 p-1 rounded transition-colors group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.attachment_document_ids.split(',').filter(id => id).includes(doc.id.toString())}
+                                                    onChange={(e) => {
+                                                        const currentIds = formData.attachment_document_ids.split(',').filter(id => id);
+                                                        const newIds = e.target.checked
+                                                            ? [...currentIds, doc.id.toString()]
+                                                            : currentIds.filter(id => id !== doc.id.toString());
+                                                        setFormData({ ...formData, attachment_document_ids: newIds.join(',') });
+                                                    }}
+                                                    className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                                                />
+                                                <span className="text-sm text-slate-700 dark:text-slate-300">{doc.name}</span>
+                                                <span className="text-[10px] text-slate-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity">#{doc.id}</span>
+                                            </label>
+                                        ))}
+                                        {availableDocuments.length === 0 && (
+                                            <p className="text-xs text-slate-500 italic">No document templates available to attach.</p>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 mt-1">These documents will be automatically selected when this email template is used.</p>
+                                </div>
+                            )}
 
                             <div className="flex items-center gap-3">
                                 <input
