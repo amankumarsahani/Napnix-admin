@@ -88,18 +88,46 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
 
                 // Extract and set variables
                 const extractedVars = extractVariables(fullTemplate.html_content || fullTemplate.htmlContent || fullTemplate.content || '');
+
+                // Handle pre-defined attachments
+                if (fullTemplate.attachment_document_ids) {
+                    const docIds = fullTemplate.attachment_document_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                    const docsToSelect = documentTemplates.filter(d => docIds.includes(d.id));
+                    setSelectedDocuments(docsToSelect);
+
+                    // Also extract variables from these documents
+                    for (const doc of docsToSelect) {
+                        try {
+                            let docContent = doc.content;
+                            if (!docContent) {
+                                const docRes = await documentTemplatesAPI.getById(doc.id);
+                                docContent = docRes.data.content;
+                            }
+                            if (docContent) {
+                                extractedVars.push(...extractVariables(docContent));
+                            }
+                        } catch (e) {
+                            console.error('Failed to pre-load doc variables:', e);
+                        }
+                    }
+                } else {
+                    setSelectedDocuments([]);
+                }
+
+                const uniqueVars = [...new Set(extractedVars)];
                 const newVars = {};
-                extractedVars.forEach(v => {
+                uniqueVars.forEach(v => {
                     // Keep existing values or set empty
                     newVars[v] = variables[v] || '';
                 });
+
                 // Pre-fill with recipient info
                 if (recipient?.name) {
-                    newVars.contact_name = recipient.name;
-                    newVars.name = recipient.name;
+                    newVars.contact_name = newVars.contact_name || recipient.name;
+                    newVars.name = newVars.name || recipient.name;
                 }
                 if (recipient?.company) {
-                    newVars.company_name = recipient.company;
+                    newVars.company_name = newVars.company_name || recipient.company;
                 }
                 setVariables(newVars);
             } catch (error) {
@@ -108,6 +136,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
         } else {
             setEmailData(prev => ({ ...prev, subject: '', content: '' }));
             setVariables({});
+            setSelectedDocuments([]);
         }
     };
 
