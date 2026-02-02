@@ -483,13 +483,18 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                             >
                                 <option value="general">General CRM</option>
                                 <option value="ecommerce">E-Commerce</option>
-                                <option value="realestate">Real Estate</option>
-                                <option value="services">Services (Salon, Spa, etc.)</option>
-                                <option value="healthcare">Healthcare</option>
                                 <option value="education">Education</option>
-                                <option value="hospitality">Hospitality (Hotels)</option>
-                                <option value="travel">Travel (Tour & Travels)</option>
-                                <option value="legal">Legal (Law Firm)</option>
+                                <option value="fitness">Fitness / Gym</option>
+                                <option value="healthcare">Healthcare</option>
+                                <option value="hospitality">Hospitality</option>
+                                <option value="legal">Legal</option>
+                                <option value="logistics">Logistics</option>
+                                <option value="manufacturing">Manufacturing</option>
+                                <option value="realestate">Real Estate</option>
+                                <option value="restaurant">Restaurant</option>
+                                <option value="salon">Salon & Spa</option>
+                                <option value="services">Services</option>
+                                <option value="travel">Travel</option>
                             </select>
                         </div>
                         <div>
