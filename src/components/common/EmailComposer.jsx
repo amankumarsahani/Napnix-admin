@@ -47,12 +47,25 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
     const fetchTemplates = async () => {
         setLoading(true);
         try {
-            const [emailRes, docRes] = await Promise.all([
-                emailTemplatesAPI.getAll().catch(() => ({ data: [] })),
-                documentTemplatesAPI.getAll().catch(() => ({ data: [] }))
-            ]);
-            setEmailTemplates(emailRes.data || []);
-            setDocumentTemplates(docRes.data || []);
+            try {
+                const [emailRes, docRes] = await Promise.all([
+                    emailTemplatesAPI.getAll().catch(err => {
+                        console.error('Failed to fetch email templates:', err);
+                        toast.error('Could not load email templates');
+                        return { data: [] };
+                    }),
+                    documentTemplatesAPI.getAll().catch(err => {
+                        console.error('Failed to fetch document templates:', err);
+                        toast.error('Could not load document templates');
+                        return { data: [] };
+                    })
+                ]);
+                setEmailTemplates(emailRes.data || []);
+                setDocumentTemplates(docRes.data || []);
+            } catch (error) {
+                console.error('Error fetching templates:', error);
+                toast.error('Failed to fetch templates');
+            }
         } catch (error) {
             console.error('Failed to fetch templates:', error);
         } finally {
@@ -321,7 +334,10 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
 
                                 {/* Document Attachments */}
                                 <div>
-                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3">📎 Attach Documents</h4>
+                                    <h4 className="font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                        📎 Attach Documents
+                                        <span className="text-[10px] font-normal px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded uppercase tracking-wider">PDF</span>
+                                    </h4>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         {documentTemplates.map(d => (
                                             <label
@@ -345,8 +361,9 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                         )}
                                     </div>
                                     {selectedDocuments.length > 0 && (
-                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">
-                                            {selectedDocuments.length} document(s) will be attached
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                            {selectedDocuments.length} document(s) will be attached as PDF
                                         </p>
                                     )}
                                 </div>
