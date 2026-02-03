@@ -86,6 +86,21 @@ const ActionNode = ({ data, selected }) => (
                 {data.actionType === 'create_task' && (
                     <div className="text-[10px] text-slate-500 line-clamp-1">Task: {data.config.title}</div>
                 )}
+                {/* AI Blog Nodes Preview */}
+                {data.actionType === 'ai_pick_topic' && data.config.niche && (
+                    <div className="text-[10px] text-pink-500 font-medium">Niche: {data.config.niche}</div>
+                )}
+                {data.actionType === 'ai_write_blog' && (
+                    <div className="text-[10px] text-pink-500 font-medium">{data.config.word_count || 1000} words • {data.config.tone || 'professional'}</div>
+                )}
+                {data.actionType === 'ai_fetch_image' && data.config.query && (
+                    <div className="text-[10px] text-orange-500 font-medium">Query: {data.config.query}</div>
+                )}
+                {data.actionType === 'ai_post_blog' && (
+                    <div className="text-[10px] text-red-500 font-medium">
+                        {data.config.author || 'AI Writer'} • {data.config.status || 'draft'}
+                    </div>
+                )}
             </div>
         )}
 
@@ -298,6 +313,21 @@ const WorkflowEditor = () => {
             setLocalLabel('');
         }
     }, [selectedNodeId]);
+
+    // Auto-apply config changes to node (debounced)
+    useEffect(() => {
+        if (!selectedNodeId) return;
+
+        const timeoutId = setTimeout(() => {
+            setNodes(nds => nds.map(n =>
+                n.id === selectedNodeId
+                    ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } }
+                    : n
+            ));
+        }, 300); // Debounce 300ms
+
+        return () => clearTimeout(timeoutId);
+    }, [selectedNodeId, localConfig, localLabel, setNodes]);
 
 
     const fetchWorkflow = async () => {
