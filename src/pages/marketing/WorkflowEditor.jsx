@@ -223,6 +223,12 @@ const NODE_PALETTE = {
         { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
         { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' }
     ],
+    aiBlog: [
+        { id: 'ai_pick_topic', label: 'AI Pick Topic', type: 'action', actionType: 'ai_pick_topic' },
+        { id: 'ai_write_blog', label: 'AI Write Blog', type: 'action', actionType: 'ai_write_blog' },
+        { id: 'ai_fetch_image', label: 'Fetch Image (Unsplash)', type: 'action', actionType: 'ai_fetch_image' },
+        { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' }
+    ],
     conditions: [
         { id: 'condition', label: 'If/Else Condition', type: 'condition' }
     ],
@@ -569,6 +575,22 @@ const WorkflowEditor = () => {
                                 key={item.id}
                                 onClick={() => addNode(item)}
                                 className="w-full text-left px-3 py-2 text-sm bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* AI Blog */}
+                <div className="mb-4">
+                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">AI Blog</h4>
+                    <div className="space-y-2">
+                        {NODE_PALETTE.aiBlog.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => addNode(item)}
+                                className="w-full text-left px-3 py-2 text-sm bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
                             >
                                 {item.label}
                             </button>
@@ -1840,6 +1862,178 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* AI Pick Topic Config */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_pick_topic' && (
+                            <>
+                                <div className="p-3 bg-pink-50 dark:bg-pink-900/30 rounded-lg border border-pink-100 dark:border-pink-800">
+                                    <div className="flex items-center gap-2 text-pink-700 dark:text-pink-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">AI Pick Topic</span>
+                                    </div>
+                                    <p className="text-xs text-pink-600 dark:text-pink-400">
+                                        Uses AI to generate a blog topic with SEO keywords.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Blog Niche / Category
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.niche || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, niche: e.target.value })}
+                                        placeholder="e.g. Technology, CRM, Marketing"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Outputs:</strong> blog_topic, blog_keywords[], blog_image_query, blog_outline[]
+                                </div>
+                            </>
+                        )}
+
+                        {/* AI Write Blog Config */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_write_blog' && (
+                            <>
+                                <div className="p-3 bg-pink-50 dark:bg-pink-900/30 rounded-lg border border-pink-100 dark:border-pink-800">
+                                    <div className="flex items-center gap-2 text-pink-700 dark:text-pink-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">AI Write Blog</span>
+                                    </div>
+                                    <p className="text-xs text-pink-600 dark:text-pink-400">
+                                        Generates full blog content in HTML format.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Word Count
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={localConfig?.word_count || 1000}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, word_count: parseInt(e.target.value) || 1000 })}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            Tone
+                                        </label>
+                                        <select
+                                            value={localConfig?.tone || 'professional'}
+                                            onChange={(e) => setLocalConfig({ ...localConfig, tone: e.target.value })}
+                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        >
+                                            <option value="professional">Professional</option>
+                                            <option value="casual">Casual</option>
+                                            <option value="technical">Technical</option>
+                                            <option value="friendly">Friendly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Uses:</strong> blog_topic, blog_keywords, blog_outline<br />
+                                    <strong>Outputs:</strong> blog_title, blog_excerpt, blog_content
+                                </div>
+                            </>
+                        )}
+
+                        {/* AI Fetch Image Config */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_fetch_image' && (
+                            <>
+                                <div className="p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg border border-orange-100 dark:border-orange-800">
+                                    <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">Fetch Image (Unsplash)</span>
+                                    </div>
+                                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                                        Gets a relevant image from Unsplash based on the AI-generated query.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Query Override (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.query || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, query: e.target.value })}
+                                        placeholder="Leave empty to use AI-generated query"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Uses:</strong> blog_image_query<br />
+                                    <strong>Outputs:</strong> blog_image, blog_image_credit
+                                </div>
+                            </>
+                        )}
+
+                        {/* AI Post Blog Config */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_post_blog' && (
+                            <>
+                                <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-100 dark:border-red-800">
+                                    <div className="flex items-center gap-2 text-red-700 dark:text-red-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">Post Blog</span>
+                                    </div>
+                                    <p className="text-xs text-red-600 dark:text-red-400">
+                                        Publishes the generated blog to NexSpire Solutions website.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Category
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.category || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, category: e.target.value })}
+                                        placeholder="General"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Author
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.author || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, author: e.target.value })}
+                                        placeholder="AI Writer"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Publish Status
+                                    </label>
+                                    <select
+                                        value={localConfig?.status || 'draft'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, status: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    >
+                                        <option value="draft">Draft (Review First)</option>
+                                        <option value="published">Published (Auto-Publish)</option>
+                                    </select>
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Uses:</strong> blog_title, blog_excerpt, blog_content, blog_image<br />
+                                    <strong>Outputs:</strong> blog_posted, blog_id, blog_slug
+                                </div>
+                            </>
+                        )}
+
                         {selectedNode.type === 'delay' && (
                             <>
                                 <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
@@ -2105,7 +2299,7 @@ const WorkflowEditor = () => {
 
                         {/* Generic / No Settings Fallback */}
                         {!['trigger', 'action', 'condition', 'delay'].includes(selectedNode.type) ||
-                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant'].includes(selectedNode.data.actionType)) ? (
+                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog'].includes(selectedNode.data.actionType)) ? (
                             <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
                                 <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
                                 <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
