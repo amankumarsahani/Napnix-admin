@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -31,7 +32,16 @@ import SmtpAccounts from './pages/marketing/SmtpAccounts';
 import Workflows from './pages/marketing/Workflows';
 import WorkflowEditor from './pages/marketing/WorkflowEditor';
 import PricingPage from './pages/marketing/PricingPage';
-import BlogsList from './pages/blogs/BlogsList';
+// Lazy load Blog components to isolate ReactQuill dependencies
+const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
+const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+  </div>
+);
 
 
 function AppRoutes() {
@@ -78,7 +88,22 @@ function AppRoutes() {
             <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
             <Route path="api-docs" element={<ApiDocumentation />} />
             <Route path="pricing" element={<PricingPage />} />
-            <Route path="blogs" element={<BlogsList />} />
+            <Route path="pricing" element={<PricingPage />} />
+            <Route path="blogs" element={
+              <Suspense fallback={<PageLoader />}>
+                <BlogsList />
+              </Suspense>
+            } />
+            <Route path="blogs/new" element={
+              <Suspense fallback={<PageLoader />}>
+                <BlogEditor />
+              </Suspense>
+            } />
+            <Route path="blogs/:id/edit" element={
+              <Suspense fallback={<PageLoader />}>
+                <BlogEditor />
+              </Suspense>
+            } />
 
           </Route>
         </Route>
