@@ -53,7 +53,7 @@ export default function BlogsList() {
         }
     };
 
-    const filteredBlogs = blogs.filter(blog =>
+    const filteredBlogs = (blogs || []).filter(blog =>
         blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         blog.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         blog.category?.toLowerCase().includes(searchTerm.toLowerCase())
