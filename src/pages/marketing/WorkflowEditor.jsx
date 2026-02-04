@@ -312,11 +312,22 @@ const WorkflowEditor = () => {
             setLocalConfig({});
             setLocalLabel('');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedNodeId]);
 
-    // Auto-apply config changes to node (debounced)
+    // Auto-apply config changes to node (debounced) - only when user changes config
     useEffect(() => {
         if (!selectedNodeId) return;
+
+        // Skip initial sync - only apply on actual user changes
+        const currentNode = nodes.find(n => n.id === selectedNodeId);
+        if (!currentNode) return;
+
+        // Check if values actually changed from what's in the node
+        const configChanged = JSON.stringify(currentNode.data.config) !== JSON.stringify(localConfig);
+        const labelChanged = currentNode.data.label !== localLabel;
+
+        if (!configChanged && !labelChanged) return;
 
         const timeoutId = setTimeout(() => {
             setNodes(nds => nds.map(n =>
@@ -324,10 +335,11 @@ const WorkflowEditor = () => {
                     ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } }
                     : n
             ));
-        }, 300); // Debounce 300ms
+        }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [selectedNodeId, localConfig, localLabel, setNodes]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [localConfig, localLabel]);
 
 
     const fetchWorkflow = async () => {
