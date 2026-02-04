@@ -1930,6 +1930,34 @@ const WorkflowEditor = () => {
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                     />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        AI Model
+                                    </label>
+                                    <select
+                                        value={localConfig?.model || 'llama-3.3-70b-versatile'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    >
+                                        <optgroup label="Groq / Open Source (Fast)">
+                                            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Default)</option>
+                                            <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+                                            <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                                        </optgroup>
+                                        <optgroup label="Google Gemini">
+                                            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        </optgroup>
+                                        <optgroup label="OpenAI">
+                                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                            <option value="gpt-4o">GPT-4o</option>
+                                        </optgroup>
+                                        <optgroup label="xAI Grok">
+                                            <option value="grok-beta">Grok Beta</option>
+                                            <option value="grok-4">Grok 4</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
                                 <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
                                     <strong>Outputs:</strong> blog_topic, blog_keywords[], blog_image_query, blog_outline[]
                                 </div>
@@ -1977,6 +2005,34 @@ const WorkflowEditor = () => {
                                             <option value="friendly">Friendly</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        AI Model
+                                    </label>
+                                    <select
+                                        value={localConfig?.model || 'llama-3.3-70b-versatile'}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    >
+                                        <optgroup label="Groq / Open Source (Fast)">
+                                            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Default)</option>
+                                            <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
+                                            <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+                                        </optgroup>
+                                        <optgroup label="Google Gemini">
+                                            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                        </optgroup>
+                                        <optgroup label="OpenAI">
+                                            <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                            <option value="gpt-4o">GPT-4o</option>
+                                        </optgroup>
+                                        <optgroup label="xAI Grok">
+                                            <option value="grok-beta">Grok Beta</option>
+                                            <option value="grok-4">Grok 4</option>
+                                        </optgroup>
+                                    </select>
                                 </div>
                                 <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
                                     <strong>Uses:</strong> blog_topic, blog_keywords, blog_outline<br />
