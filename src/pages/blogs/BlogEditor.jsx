@@ -25,7 +25,8 @@ export default function BlogEditor() {
         image: '',
         featured: false,
         status: 'published',
-        read_time: 5
+        read_time: 5,
+        keywords: []
     });
 
     useEffect(() => {
@@ -58,6 +59,12 @@ export default function BlogEditor() {
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
+
+        // Handle keywords specific logic
+        if (name === 'keywords') {
+            const keywordsArray = value.split(',').map(k => k.trim()).filter(Boolean);
+            setFormData(prev => ({ ...prev, keywords: keywordsArray }));
+        }
 
         // Auto-generate slug from title
         if (name === 'title' && !isEditMode) {
@@ -200,7 +207,7 @@ export default function BlogEditor() {
                                     data={formData.content}
                                     onChange={(event, editor) => {
                                         const data = editor.getData();
-                                        setFormData({ ...formData, content: data });
+                                        setFormData(prev => ({ ...prev, content: data }));
                                     }}
                                     config={{
                                         toolbar: [
@@ -293,6 +300,28 @@ export default function BlogEditor() {
                                 name="read_time"
                                 value={formData.read_time}
                                 onChange={handleChange}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                SEO Keywords (comma separated)
+                            </label>
+                            <input
+                                type="text"
+                                name="keywords_input" // distinct name to avoid direct conflict with state keywords array
+                                defaultValue={formData.keywords ? formData.keywords.join(', ') : ''}
+                                // Controlled input is tricky with calculated value from array. 
+                                // Better to handle onChange locally or just use a helper. 
+                                // Let's try simple controlled:
+                                value={Array.isArray(formData.keywords) ? formData.keywords.join(', ') : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    const tags = val.split(',').map(s => s.trim());
+                                    setFormData(prev => ({ ...prev, keywords: tags }));
+                                }}
+                                placeholder="seo, marketing, guide"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                         </div>
