@@ -561,7 +561,7 @@ const WorkflowEditor = () => {
 
     if (isLoading) {
         return (
-            <div className="flex p-6 h-[calc(100vh-80px)] items-center justify-center bg-slate-50 dark:bg-slate-900">
+            <div className="flex h-[calc(100vh-80px)] items-center justify-center bg-slate-50 dark:bg-slate-900">
                 <div className="flex flex-col items-center gap-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
                     <p className="text-slate-500 font-medium">Loading Workflow...</p>
@@ -571,7 +571,7 @@ const WorkflowEditor = () => {
     }
 
     return (
-        <div className="flex p-6 h-[calc(100vh-80px)] overflow-hidden">
+        <div className="flex h-[calc(100vh-80px)] overflow-hidden">
             {/* Left Sidebar - Node Palette */}
             <div className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Nodes</h3>
