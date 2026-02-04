@@ -3,8 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { BlogService } from '../../api/blogs';
 import { FiArrowLeft, FiSave, FiImage, FiType } from '../../components/icons/FeatherIcons';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+
 
 export default function BlogEditor() {
     const { id } = useParams();
@@ -68,9 +69,7 @@ export default function BlogEditor() {
         }
     };
 
-    const handleContentChange = (content) => {
-        setFormData(prev => ({ ...prev, content: content }));
-    };
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -195,13 +194,22 @@ export default function BlogEditor() {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                 Main Content
                             </label>
-                            <div className="prose-editor">
-                                <ReactQuill
-                                    theme="snow"
-                                    value={formData.content}
-                                    onChange={handleContentChange}
-                                    placeholder="Write your blog content here..."
-                                    className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg"
+                            <div className="prose dark:prose-invert max-w-none">
+                                <CKEditor
+                                    editor={ClassicEditor}
+                                    data={formData.content}
+                                    onChange={(event, editor) => {
+                                        const data = editor.getData();
+                                        setFormData({ ...formData, content: data });
+                                    }}
+                                    config={{
+                                        toolbar: [
+                                            'heading', '|',
+                                            'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|',
+                                            'undo', 'redo'
+                                        ],
+                                        placeholder: 'Start writing your amazing blog post...'
+                                    }}
                                 />
                             </div>
                         </div>
