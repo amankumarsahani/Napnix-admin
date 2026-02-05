@@ -61,6 +61,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Documents', path: '/documents', icon: <FiFileText />, roles: ['admin', 'sales_operator'] },
                 { name: 'Templates', path: '/templates', icon: <FiLayout />, roles: ['admin'] },
+                { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] },
                 { name: 'Settings', path: '/settings', icon: <FiSettings />, roles: ['admin'] },
                 { name: 'Team', path: '/team', icon: <FiUsers />, roles: ['admin'] },
             ]
