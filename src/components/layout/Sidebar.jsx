@@ -4,7 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useState } from 'react';
 import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText,
-    FiMail, FiMessageCircle, FiLayout, FiActivity, FiSearch, FiLayers,
+    FiMail, FiMessageCircle, FiLayout, FiCreditCard, FiActivity, FiSearch, FiLayers,
     FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle
 } from '../icons/FeatherIcons';
 
