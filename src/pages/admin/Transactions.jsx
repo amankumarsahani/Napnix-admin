@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { FiDownload, FiSearch, FiFilter, FiMoreHorizontal, FiCheck, FiX, FiClock, FiCreditCard, FiRefreshCw } from 'react-icons/fi';
+import { FiDownload, FiSearch, FiFilter, FiMoreHorizontal, FiCheck, FiX, FiClock, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 
@@ -14,6 +14,10 @@ export default function Transactions() {
     const [syncModalOpen, setSyncModalOpen] = useState(false);
     const [syncPaymentId, setSyncPaymentId] = useState('');
     const [syncing, setSyncing] = useState(false);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, [pagination.page, filterStatus]);
 
     const handleSync = async (e) => {
         e.preventDefault();
@@ -40,6 +44,50 @@ export default function Transactions() {
         } finally {
             setSyncing(false);
         }
+    };
+
+    const fetchTransactions = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get(`/billing/payments?page=${pagination.page}&limit=10&status=${filterStatus}`);
+            if (res.data.success) {
+                setTransactions(res.data.data);
+                setPagination(res.data.pagination);
+            }
+        } catch (error) {
+            console.error('Failed to fetch transactions:', error);
+            toast.error('Failed to load transactions');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getStatusBadge = (status) => {
+        const styles = {
+            success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+            failed: 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400',
+            pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+        };
+        const icon = {
+            success: <FiCheck className="w-3 h-3" />,
+            failed: <FiX className="w-3 h-3" />,
+            pending: <FiClock className="w-3 h-3" />
+        };
+        const normalizedStatus = status?.toLowerCase() || 'pending';
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${styles[normalizedStatus] || styles.pending}`}>
+                {icon[normalizedStatus]}
+                {status}
+            </span>
+        );
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        }).format(amount);
     };
 
     return (
