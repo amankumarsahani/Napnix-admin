@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FiDownload, FiSearch, FiFilter, FiMoreHorizontal, FiCheck, FiX, FiClock, FiCreditCard, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import api from '../../services/api';
+import api from '../../api/axios';
 
 export default function Transactions() {
     const { isDark } = useTheme();
