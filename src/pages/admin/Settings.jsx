@@ -346,6 +346,88 @@ export default function Settings() {
                                     </div>
                                 </div>
 
+                                {/* Stripe Credentials */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.915 0-1.17 1.107-1.72 2.965-1.72 1.903 0 3.004.59 3.486.978l.843-2.92c-.63-.267-1.954-.622-3.485-.622-4.14 0-6.726 1.933-6.726 5.22 0 3.867 3.518 4.604 6.136 5.488 2.37.892 2.872 1.83 2.872 3.167 0 1.258-1.257 2.15-3.627 2.15-2.26 0-3.655-.66-4.526-1.144l-.873 3.01c.715.357 2.508.85 4.685.85 4.544 0 7.373-1.97 7.373-5.32 0-4.47-4.9-5.35-5.766-5.89z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">Stripe Credentials</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Manage API keys securely.</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Secret Key</label>
+                                        <input
+                                            type="password"
+                                            value={paymentSettings.stripe_api_key || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, stripe_api_key: e.target.value })}
+                                            placeholder="sk_test_..."
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Webhook Secret</label>
+                                        <input
+                                            type="password"
+                                            value={paymentSettings.stripe_webhook_secret || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, stripe_webhook_secret: e.target.value })}
+                                            placeholder="whsec_..."
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Razorpay Credentials */}
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M7.712 9.074L2.85 17.5h5.17l2.872-5.185L13.9 17.5h5.795l-7.23-10.925L9.67 2h7.336l5.12 7.765H16.89l-2.92-4.475-4.258 3.784z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">Razorpay Credentials</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">Manage API keys securely.</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Key ID</label>
+                                        <input
+                                            type="text"
+                                            value={paymentSettings.razorpay_api_key || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_api_key: e.target.value })}
+                                            placeholder="rzp_test_..."
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Key Secret</label>
+                                        <input
+                                            type="password"
+                                            value={paymentSettings.razorpay_secret_key || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_secret_key: e.target.value })}
+                                            placeholder="Enter Key Secret"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Webhook Secret</label>
+                                        <input
+                                            type="password"
+                                            value={paymentSettings.razorpay_webhook_secret || ''}
+                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_webhook_secret: e.target.value })}
+                                            placeholder="Enter Webhook Secret"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Stripe Price IDs */}
                                 <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-6">
                                     <h3 className="font-bold text-slate-800 dark:text-white">Stripe Price IDs</h3>
@@ -387,11 +469,11 @@ export default function Settings() {
                                     onClick={async () => {
                                         setLoading(true);
                                         try {
-                                            const { pricing_page_mode, contact_sales_email, ...priceIds } = paymentSettings;
+                                            const { pricing_page_mode, contact_sales_email, ...otherSettings } = paymentSettings;
                                             const response = await settingsAPI.updateSettings({
                                                 pricing_page_mode,
                                                 contact_sales_email,
-                                                ...priceIds
+                                                ...otherSettings
                                             });
                                             if (response.success) {
                                                 toast.success('Payment settings updated');
