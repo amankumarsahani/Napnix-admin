@@ -35,6 +35,11 @@ const serverService = {
     createBackupAccount: async (data) => {
         const response = await axios.post('/admin/backup-accounts', data);
         return response.data;
+    },
+
+    triggerManualBackup: async () => {
+        const response = await axios.post('/admin/backup-accounts/run-now');
+        return response.data;
     }
 };
 
