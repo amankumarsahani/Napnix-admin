@@ -199,6 +199,24 @@ const Tenants = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                {tenant.status === 'trial' && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!confirm('Are you sure you want to activate this tenant?')) return;
+                                                            try {
+                                                                await tenantsAPI.update(tenant.id, { status: 'active' });
+                                                                toast.success('Tenant activated successfully');
+                                                                fetchData();
+                                                            } catch (error) {
+                                                                toast.error('Failed to activate tenant');
+                                                            }
+                                                        }}
+                                                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                                        title="Activate Tenant (End Trial)"
+                                                    >
+                                                        <FiCheckCircle className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                                 {tenant.process_status !== 'running' ? (
                                                     <button
                                                         onClick={() => handleAction(tenant.id, 'start')}
@@ -251,7 +269,7 @@ const Tenants = () => {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div >
 
             <div className="md:hidden space-y-4">
                 {tenants.map((tenant) => (
@@ -317,16 +335,18 @@ const Tenants = () => {
                 ))}
             </div>
 
-            {showCreateModal && (
-                <CreateTenantModal
-                    onClose={() => setShowCreateModal(false)}
-                    onCreated={() => {
-                        setShowCreateModal(false);
-                        fetchData();
-                    }}
-                />
-            )}
-        </div>
+            {
+                showCreateModal && (
+                    <CreateTenantModal
+                        onClose={() => setShowCreateModal(false)}
+                        onCreated={() => {
+                            setShowCreateModal(false);
+                            fetchData();
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 };
 
