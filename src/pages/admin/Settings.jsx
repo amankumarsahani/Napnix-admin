@@ -37,6 +37,42 @@ export default function Settings() {
         pricing_page_mode: 'payment_link' // or 'contact_us'
     });
 
+    // Preferences State
+    const [preferencesSettings, setPreferencesSettings] = useState({
+        default_timezone: 'UTC'
+    });
+    const [savingPreferences, setSavingPreferences] = useState(false);
+
+    // Common timezones list
+    const COMMON_TIMEZONES = [
+        { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
+        { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
+        { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
+        { value: 'America/Denver', label: 'Mountain Time (US & Canada)' },
+        { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
+        { value: 'Europe/London', label: 'London (GMT/BST)' },
+        { value: 'Europe/Paris', label: 'Central European Time' },
+        { value: 'Europe/Berlin', label: 'Berlin, Frankfurt' },
+        { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+        { value: 'Asia/Kolkata', label: 'India Standard Time' },
+        { value: 'Asia/Singapore', label: 'Singapore Time' },
+        { value: 'Asia/Tokyo', label: 'Japan Standard Time' },
+        { value: 'Asia/Shanghai', label: 'China Standard Time' },
+        { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+        { value: 'Australia/Melbourne', label: 'Melbourne (AEST/AEDT)' },
+        { value: 'Pacific/Auckland', label: 'New Zealand Time' }
+    ];
+
+    // Detect browser timezone
+    const detectTimezone = () => {
+        try {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        } catch (e) {
+            return 'UTC';
+        }
+    };
+    const detectedTimezone = detectTimezone();
+
     useEffect(() => {
         fetchSettings();
     }, []);
@@ -55,6 +91,12 @@ export default function Settings() {
                 if (response.data.pricing_page_mode) {
                     setPaymentSettings({
                         pricing_page_mode: response.data.pricing_page_mode
+                    });
+                }
+
+                if (response.data.default_timezone) {
+                    setPreferencesSettings({
+                        default_timezone: response.data.default_timezone
                     });
                 }
             }
@@ -149,6 +191,7 @@ export default function Settings() {
                         {[
                             { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
                             { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
+                            { id: 'preferences', label: 'Preferences', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
                             { id: 'payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
                             { id: 'ai', label: 'AI Integration', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
@@ -299,6 +342,82 @@ export default function Settings() {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'preferences' && (
+                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">System Preferences</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8">Configure default system-wide settings.</p>
+
+                            <div className="space-y-6">
+                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-slate-800 dark:text-white">Default Timezone</h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                                Used for scheduled tasks, reports, and as default for new tenants
+                                            </p>
+                                            {detectedTimezone !== preferencesSettings.default_timezone && (
+                                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Browser detected: {detectedTimezone}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <select
+                                                value={preferencesSettings.default_timezone}
+                                                onChange={async (e) => {
+                                                    const newTimezone = e.target.value;
+                                                    setPreferencesSettings({ ...preferencesSettings, default_timezone: newTimezone });
+                                                    setSavingPreferences(true);
+                                                    try {
+                                                        await settingsAPI.updateSettings({ default_timezone: newTimezone });
+                                                        toast.success('Timezone updated');
+                                                    } catch (err) {
+                                                        toast.error('Failed to update timezone');
+                                                    } finally {
+                                                        setSavingPreferences(false);
+                                                    }
+                                                }}
+                                                disabled={savingPreferences}
+                                                className="min-w-[250px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            >
+                                                {COMMON_TIMEZONES.map((tz) => (
+                                                    <option key={tz.value} value={tz.value}>
+                                                        {tz.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {detectedTimezone !== preferencesSettings.default_timezone && (
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        setPreferencesSettings({ ...preferencesSettings, default_timezone: detectedTimezone });
+                                                        setSavingPreferences(true);
+                                                        try {
+                                                            await settingsAPI.updateSettings({ default_timezone: detectedTimezone });
+                                                            toast.success(`Timezone set to ${detectedTimezone}`);
+                                                        } catch (err) {
+                                                            toast.error('Failed to update timezone');
+                                                        } finally {
+                                                            setSavingPreferences(false);
+                                                        }
+                                                    }}
+                                                    disabled={savingPreferences}
+                                                    className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                                >
+                                                    Use Detected
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
 
                     {activeTab === 'payments' && (
                         <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
