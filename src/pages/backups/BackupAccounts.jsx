@@ -47,19 +47,41 @@ const BackupAccounts = () => {
         }
     };
 
+    const handleRunBackup = async () => {
+        if (!confirm('Are you sure you want to trigger a manual backup for ALL tenants? This might affect performance.')) return;
+
+        const toastId = toast.loading('Starting backup process...');
+        try {
+            const res = await serverService.triggerManualBackup();
+            if (res.success) {
+                toast.success('Backup started in background', { id: toastId });
+            }
+        } catch (error) {
+            toast.error('Failed to start backup', { id: toastId });
+        }
+    };
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Backup Infrastructure</h1>
-                    <p className="text-gray-500">Manage Google Drive accounts for automated backups</p>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Backup Infrastructure</h1>
+                    <p className="text-gray-500 dark:text-gray-400">Manage Google Drive accounts for automated backups</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                >
-                    <FiPlus /> Add GDrive Account
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={handleRunBackup}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                    >
+                        <FiRefreshCw /> Run Backup Now
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                        <FiPlus /> Add GDrive Account
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -86,26 +108,26 @@ const BackupAccounts = () => {
                         </div>
                     ) : (
                         accounts.map(account => (
-                            <div key={account.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-green-50 rounded-lg text-green-600">
+                                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
                                         <FiHardDrive size={24} />
                                     </div>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${account.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${account.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                         {account.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </div>
 
-                                <h3 className="text-lg font-bold text-gray-800">{account.account_name}</h3>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-white">{account.account_name}</h3>
 
                                 <div className="mt-4 space-y-3">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <FiFolder className="text-gray-400" />
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <FiFolder className="text-gray-400 dark:text-gray-500" />
                                         <span className="truncate">Folder: {account.folder_id || 'Root'}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <FiRefreshCw className="text-gray-400" />
-                                        <span>Used for: <strong>{account.usage_count}</strong> backups</span>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <FiRefreshCw className="text-gray-400 dark:text-gray-500" />
+                                        <span>Used for: <strong className="text-gray-900 dark:text-white">{account.usage_count}</strong> backups</span>
                                     </div>
                                 </div>
                             </div>
