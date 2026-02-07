@@ -158,7 +158,7 @@ const BackupAccounts = () => {
                                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
                                         title="Edit Account"
                                     >
-                                        <FiEdit />
+                                        <FiEdit2 />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(account.id)}
