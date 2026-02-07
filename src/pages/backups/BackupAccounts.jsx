@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiHardDrive, FiPlus, FiCheckCircle, FiRefreshCw, FiTrash2, FiKey, FiFolder } from '../../components/icons/FeatherIcons';
+import { FiHardDrive, FiPlus, FiCheckCircle, FiRefreshCw, FiTrash2, FiKey, FiFolder, FiEdit } from '../../components/icons/FeatherIcons';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 
@@ -10,7 +10,8 @@ const BackupAccounts = () => {
     const [formData, setFormData] = useState({
         account_name: '',
         credentials_json: '',
-        folder_id: ''
+        folder_id: '',
+        subject_email: ''
     });
 
     const fetchAccounts = async () => {
@@ -29,21 +30,63 @@ const BackupAccounts = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const handleDelete = async (id) => {
+        if (!confirm('Are you sure you want to delete this backup account?')) return;
+        try {
+            const res = await serverService.deleteBackupAccount(id);
+            if (res.success) {
+                toast.success('Account deleted');
+                fetchAccounts();
+            }
+        } catch (error) {
+            toast.error('Failed to delete account');
+        }
+    };
+
+    const [editingId, setEditingId] = useState(null);
+
+    const handleEdit = (account) => {
+        setFormData({
+            account_name: account.account_name,
+            credentials_json: JSON.stringify(account.credentials_json || {}, null, 2),
+            folder_id: account.folder_id || '',
+            subject_email: account.subject_email || ''
+        });
+        setEditingId(account.id);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenCreate = () => {
+        setFormData({
+            account_name: '',
+            credentials_json: '',
+            folder_id: '',
+            subject_email: ''
+        });
+        setEditingId(null);
+        setIsModalOpen(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const json = JSON.parse(formData.credentials_json);
-            const res = await serverService.createBackupAccount({
-                ...formData,
-                credentials_json: json
-            });
+            const payload = { ...formData, credentials_json: json };
+
+            let res;
+            if (editingId) {
+                res = await serverService.updateBackupAccount(editingId, payload);
+            } else {
+                res = await serverService.createBackupAccount(payload);
+            }
+
             if (res.success) {
-                toast.success('Backup account added');
+                toast.success(editingId ? 'Account updated' : 'Backup account added');
                 setIsModalOpen(false);
                 fetchAccounts();
             }
         } catch (error) {
-            toast.error(error instanceof SyntaxError ? 'Invalid JSON format' : 'Failed to add account');
+            toast.error(error instanceof SyntaxError ? 'Invalid JSON format' : 'Failed to save account');
         }
     };
 
@@ -76,7 +119,7 @@ const BackupAccounts = () => {
                         <FiRefreshCw /> Run Backup Now
                     </button>
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={handleOpenCreate}
                         className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
                     >
                         <FiPlus /> Add GDrive Account
@@ -100,7 +143,7 @@ const BackupAccounts = () => {
                                 Connect a Google Drive Service Account to enable automated database backups.
                             </p>
                             <button
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={handleOpenCreate}
                                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
                             >
                                 <FiPlus /> Connect First Account
@@ -108,7 +151,23 @@ const BackupAccounts = () => {
                         </div>
                     ) : (
                         accounts.map(account => (
-                            <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6">
+                            <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 relative group">
+                                <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => handleEdit(account)}
+                                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
+                                        title="Edit Account"
+                                    >
+                                        <FiRefreshCw className="rotate-0" /> {/* Using refresh icon as edit placeholder or explicit edit icon if available */}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(account.id)}
+                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                                        title="Delete Account"
+                                    >
+                                        <FiTrash2 />
+                                    </button>
+                                </div>
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
                                         <FiHardDrive size={24} />
@@ -125,6 +184,12 @@ const BackupAccounts = () => {
                                         <FiFolder className="text-gray-400 dark:text-gray-500" />
                                         <span className="truncate">Folder: {account.folder_id || 'Root'}</span>
                                     </div>
+                                    {account.subject_email && (
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <FiKey className="text-gray-400 dark:text-gray-500" />
+                                            <span className="truncate">Impersonating: {account.subject_email}</span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                         <FiRefreshCw className="text-gray-400 dark:text-gray-500" />
                                         <span>Used for: <strong className="text-gray-900 dark:text-white">{account.usage_count}</strong> backups</span>
@@ -136,19 +201,20 @@ const BackupAccounts = () => {
                 </div>
             )}
 
-            {/* Add Account Modal */}
+            {/* Add/Edit Account Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
                         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-900 dark:text-white">
                             <FiKey className="text-amber-500" />
-                            Connect Google Drive Account
+                            {editingId ? 'Edit Google Drive Account' : 'Connect Google Drive Account'}
                         </h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account Label</label>
                                 <input
                                     type="text" required
+                                    value={formData.account_name}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
                                     placeholder="e.g. My Primary GDrive"
                                     onChange={e => setFormData({ ...formData, account_name: e.target.value })}
@@ -158,19 +224,35 @@ const BackupAccounts = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Service Account Credentials (JSON)</label>
                                 <textarea
                                     required rows={8}
+                                    value={formData.credentials_json}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
                                     placeholder='Paste the content of your Google Service Account JSON file here...'
                                     onChange={e => setFormData({ ...formData, credentials_json: e.target.value })}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target Folder ID (Optional)</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
-                                    placeholder="Google Drive Folder ID"
-                                    onChange={e => setFormData({ ...formData, folder_id: e.target.value })}
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target Folder ID (Optional)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.folder_id}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
+                                        placeholder="Google Drive Folder ID"
+                                        onChange={e => setFormData({ ...formData, folder_id: e.target.value })}
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">Use a Shared Drive ID or leave blank to root</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Impersonate Email (Optional)</label>
+                                    <input
+                                        type="email"
+                                        value={formData.subject_email}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
+                                        placeholder="admin@company.com"
+                                        onChange={e => setFormData({ ...formData, subject_email: e.target.value })}
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">For Domain-Wide Delegation only</p>
+                                </div>
                             </div>
                             <div className="flex gap-4 pt-4">
                                 <button
@@ -184,7 +266,7 @@ const BackupAccounts = () => {
                                     type="submit"
                                     className="flex-1 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
                                 >
-                                    Save Account
+                                    {editingId ? 'Update Account' : 'Save Account'}
                                 </button>
                             </div>
                         </form>
@@ -194,5 +276,6 @@ const BackupAccounts = () => {
         </div>
     );
 };
+
 
 export default BackupAccounts;
