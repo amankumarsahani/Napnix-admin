@@ -152,13 +152,13 @@ const BackupAccounts = () => {
                     ) : (
                         accounts.map(account => (
                             <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 relative group">
-                                <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-6 right-6 flex gap-2">
                                     <button
                                         onClick={() => handleEdit(account)}
                                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
                                         title="Edit Account"
                                     >
-                                        <FiRefreshCw className="rotate-0" /> {/* Using refresh icon as edit placeholder or explicit edit icon if available */}
+                                        <FiEdit />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(account.id)}
