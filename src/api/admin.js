@@ -37,6 +37,16 @@ const serverService = {
         return response.data;
     },
 
+    updateBackupAccount: async (id, data) => {
+        const response = await axios.put(`/admin/backup-accounts/${id}`, data);
+        return response.data;
+    },
+
+    deleteBackupAccount: async (id) => {
+        const response = await axios.delete(`/admin/backup-accounts/${id}`);
+        return response.data;
+    },
+
     triggerManualBackup: async () => {
         const response = await axios.post('/admin/backup-accounts/run-now');
         return response.data;
