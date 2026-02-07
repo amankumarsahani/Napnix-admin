@@ -46,9 +46,18 @@ const BackupAccounts = () => {
     const [editingId, setEditingId] = useState(null);
 
     const handleEdit = (account) => {
+        let credentials = account.credentials_json || {};
+        if (typeof credentials === 'string') {
+            try {
+                credentials = JSON.parse(credentials);
+            } catch (e) {
+                console.error('Failed to parse credentials:', e);
+            }
+        }
+
         setFormData({
             account_name: account.account_name,
-            credentials_json: JSON.stringify(account.credentials_json || {}, null, 2),
+            credentials_json: JSON.stringify(credentials, null, 2),
             folder_id: account.folder_id || '',
             subject_email: account.subject_email || ''
         });
