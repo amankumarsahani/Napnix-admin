@@ -4,7 +4,7 @@ import { tenantsAPI } from '../../api';
 import planService from '../../api/plan';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
-import { FiPlus, FiServer, FiGlobe } from '../../components/icons/FeatherIcons';
+import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
 
 const Tenants = () => {
     const navigate = useNavigate();
