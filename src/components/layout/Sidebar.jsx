@@ -7,6 +7,7 @@ import {
     FiMail, FiMessageCircle, FiLayout, FiCreditCard, FiActivity, FiSearch, FiLayers,
     FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle
 } from '../icons/FeatherIcons';
+import { LuSun, LuMoon } from 'react-icons/lu';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
@@ -158,7 +159,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         </span>
                         <div className={`relative w-14 h-7 rounded-full transition-all duration-300 ${isDark ? 'bg-indigo-600' : 'bg-slate-300'}`}>
                             <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-300 ${isDark ? 'left-7' : 'left-0.5'}`}>
-                                {isDark ? '🌙' : '☀️'}
+                                {isDark ? <LuMoon className="w-4 h-4 text-indigo-600" /> : <LuSun className="w-4 h-4 text-amber-500" />}
                             </span>
                         </div>
                     </button>
