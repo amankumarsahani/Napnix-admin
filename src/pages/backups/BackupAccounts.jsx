@@ -252,15 +252,20 @@ const BackupAccounts = () => {
                                     <p className="text-xs text-slate-500 mt-1">Use a Shared Drive ID or leave blank to root</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Impersonate Email (Optional)</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Impersonate Email (Workspace Only)</label>
                                     <input
                                         type="email"
                                         value={formData.subject_email}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-500"
+                                        className={`w-full px-4 py-2 rounded-lg border ${formData.subject_email && formData.subject_email.endsWith('@gmail.com') ? 'border-amber-300 focus:border-amber-500 focus:ring-amber-500' : 'border-slate-300 dark:border-slate-600 focus:border-green-500 focus:ring-green-500'} bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 placeholder-slate-500`}
                                         placeholder="admin@company.com"
                                         onChange={e => setFormData({ ...formData, subject_email: e.target.value })}
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">For Domain-Wide Delegation only</p>
+                                    <p className="text-xs text-slate-500 mt-1">Leave blank for standard Service Account access. Required <b>only</b> for Domain-Wide Delegation.</p>
+                                    {formData.subject_email && formData.subject_email.endsWith('@gmail.com') && (
+                                        <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                            ⚠️ Personal @gmail.com accounts do not support impersonation.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex gap-4 pt-4">
