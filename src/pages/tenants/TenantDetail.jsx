@@ -165,6 +165,35 @@ const TenantDetail = () => {
         }
     };
 
+    const handleRestartProcess = async () => {
+        setActionLoading('restart');
+        try {
+            await tenantsAPI.restartProcess(tenant.id);
+            toast.success('Process restarting');
+            setTimeout(fetchTenant, 2000);
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to restart process');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleEndTrial = async () => {
+        if (!window.confirm('Are you sure you want to end this trial and suspend the tenant? This will send them an email requesting payment.')) {
+            return;
+        }
+        setActionLoading('endTrial');
+        try {
+            const res = await tenantsAPI.endTrial(tenant.id);
+            toast.success(res.message || 'Trial ended successfully. Payment email sent.');
+            fetchTenant();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to end trial');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
         toast.success('Copied to clipboard');
@@ -270,6 +299,24 @@ const TenantDetail = () => {
                             >
                                 Restart
                             </button>
+
+                            {tenant.status === 'trial' && (
+                                <button
+                                    onClick={handleEndTrial}
+                                    disabled={actionLoading === 'endTrial'}
+                                    className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                                >
+                                    {actionLoading === 'endTrial' ? (
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                        </svg>
+                                    ) : (
+                                        <FiCreditCard className="w-4 h-4" />
+                                    )}
+                                    End Trial
+                                </button>
+                            )}
                         </>
                     )}
                 </div>
@@ -339,7 +386,7 @@ const TenantDetail = () => {
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500">API</p>
-                                <p className="font-medium text-slate-800 text-sm">{tenant.slug}-crm-api.{domain}</p>
+                                <p className="font-medium text-slate-800 text-sm">{tenant.slug}-crm-api.${domain}</p>
                             </div>
                         </div>
                         <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
@@ -410,7 +457,7 @@ const TenantDetail = () => {
 
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <FiCreditCard className="w-5 h-5 text-slate-500" />
                         Billing & Subscriptions
                         {paymentsLoading && (
@@ -493,10 +540,21 @@ const TenantDetail = () => {
                         <button
                             onClick={fetchLogs}
                             disabled={logsLoading}
-                            className="px-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg"
+                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-lg transition-colors flex items-center gap-2"
                         >
-                            <FiRefreshCw className="w-4 h-4" />
+                            <FiRefreshCw className={`w-4 h-4 ${actionLoading === 'refresh' ? 'animate-spin' : ''}`} />
+                            Refresh
                         </button>
+
+                        <a
+                            href={`https://${tenant.slug}-crm.nexspiresolutions.co.in`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                        >
+                            <FiExternalLink className="w-4 h-4" />
+                            Open CRM
+                        </a>
                     </div>
                 </div>
                 <div ref={logsRef} className="bg-slate-900 text-green-400 font-mono text-xs p-4 h-80 overflow-auto whitespace-pre-wrap">

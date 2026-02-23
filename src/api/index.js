@@ -371,6 +371,11 @@ export const tenantsAPI = {
         const response = await apiClient.delete(`/tenants/${id}/full-delete`, { data: options });
         return response.data;
     },
+
+    endTrial: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/end-trial`);
+        return response.data;
+    }
 };
 
 // Plans API
