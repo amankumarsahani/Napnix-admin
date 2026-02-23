@@ -573,6 +573,10 @@ export const billingAPI = {
     createPaymentLink: async (data) => {
         const response = await apiClient.post('/billing/payment-link', data);
         return response.data;
+    },
+    getTenantPayments: async (tenantId) => {
+        const response = await apiClient.get(`/billing/payments/${tenantId}`);
+        return response.data;
     }
 };
 
