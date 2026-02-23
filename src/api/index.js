@@ -375,6 +375,11 @@ export const tenantsAPI = {
     endTrial: async (id) => {
         const response = await apiClient.post(`/tenants/${id}/end-trial`);
         return response.data;
+    },
+
+    sendPaymentLink: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/send-payment-link`);
+        return response.data;
     }
 };
 
