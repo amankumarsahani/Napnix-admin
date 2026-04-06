@@ -50,6 +50,11 @@ const serverService = {
     triggerManualBackup: async () => {
         const response = await axios.post('/admin/backup-accounts/run-now');
         return response.data;
+    },
+
+    exchangeGoogleOauthCode: async (data) => {
+        const response = await axios.post('/admin/backup-accounts/google-oauth/exchange', data);
+        return response.data;
     }
 };
 
