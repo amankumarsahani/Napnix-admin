@@ -22,6 +22,7 @@ const TenantDetail = () => {
     const [deleteOptions, setDeleteOptions] = useState({ dropDatabase: false });
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [confirmText, setConfirmText] = useState('');
+    const [showDomainHelp, setShowDomainHelp] = useState(false);
     const [showDomainModal, setShowDomainModal] = useState(false);
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
@@ -163,6 +164,16 @@ const TenantDetail = () => {
         } finally {
             setDomainLoading(false);
         }
+    };
+
+    const openDomainModal = () => {
+        // Pre-fill with existing custom domains
+        setCustomDomains({
+            crm: tenant.custom_domain_crm || '',
+            storefront: tenant.custom_domain_storefront || '',
+            api: tenant.custom_domain_api || ''
+        });
+        setShowDomainModal(true);
     };
 
     const handleRestartProcess = async () => {
@@ -381,63 +392,75 @@ const TenantDetail = () => {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiGlobe className="w-5 h-5 text-slate-500" />
                     Domains
+                    <button onClick={openDomainModal} className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Configure
+                    </button>
                 </h3>
                 <div className="grid md:grid-cols-3 gap-4">
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 transition">
+                    {/* CRM Dashboard */}
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
                                 <FiGlobe />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500">CRM Dashboard</p>
-                                <p className="font-medium text-slate-800 text-sm">{tenant.custom_domain || `${tenant.slug}-crm.${domain}`}</p>
-                                {tenant.custom_domain ? (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">CRM Dashboard</p>
+                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_crm || `${tenant.slug}-crm.${domain}`}</p>
+                                {tenant.custom_domain_crm ? (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                         {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
                                     </span>
                                 ) : (
-                                    <button onClick={() => setShowDomainModal(true)} className="text-[10px] text-indigo-600 hover:underline">
-                                        + Add Custom Domain
-                                    </button>
+                                    <span className="text-[10px] text-slate-400">Default</span>
                                 )}
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            {tenant.custom_domain && (
-                                <button onClick={() => setShowDomainModal(true)} className="p-2 text-slate-400 hover:text-indigo-600 transition" title="Configure Domain">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                </button>
-                            )}
-                            <a href={tenant.custom_domain ? (tenant.custom_domain.startsWith('http') ? tenant.custom_domain : `https://${tenant.custom_domain}`) : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
-                                <FiExternalLink />
-                            </a>
-                        </div>
-                    </div>
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 transition">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
-                                <FiGlobe />
-                            </div>
-                            <div>
-                                <p className="text-xs text-slate-500">API</p>
-                                <p className="font-medium text-slate-800 text-sm">{tenant.slug}-crm-api.${domain}</p>
-                            </div>
-                        </div>
-                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 transition">
+                    {/* API */}
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
                                 <FiGlobe />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500">Storefront</p>
-                                <p className="font-medium text-slate-800 text-sm">{tenant.slug}.${domain}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
+                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_api || `${tenant.slug}-crm-api.${domain}`}</p>
+                                {tenant.custom_domain_api ? (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                        {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] text-slate-400">Default</span>
+                                )}
                             </div>
                         </div>
-                        <a href={`https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_api ? `https://${tenant.custom_domain_api}` : `https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                            <FiExternalLink />
+                        </a>
+                    </div>
+                    {/* Storefront */}
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                                <FiGlobe />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">Storefront</p>
+                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_storefront || `${tenant.slug}.${domain}`}</p>
+                                {tenant.custom_domain_storefront ? (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                        {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] text-slate-400">Default</span>
+                                )}
+                            </div>
+                        </div>
+                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
@@ -658,6 +681,68 @@ const TenantDetail = () => {
                                 placeholder="api.yourbrand.com"
                             />
                             <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>[tunnel-id].cfargotunnel.com</code></p>
+                        </div>
+
+                        {/* Setup Help Section */}
+                        <div className="mb-4 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setShowDomainHelp(prev => !prev)}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    How to set up a custom domain
+                                </span>
+                                <svg className={`w-4 h-4 transition-transform ${showDomainHelp ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            {showDomainHelp && (
+                                <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 space-y-3 bg-white dark:bg-slate-800">
+                                    <div className="flex gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">1</span>
+                                        <div>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Enter your custom domains above</p>
+                                            <p className="text-xs mt-0.5">You can configure one, two, or all three. Each is optional.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">2</span>
+                                        <div>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Click "Save Domains"</p>
+                                            <p className="text-xs mt-0.5">This registers the domains with Cloudflare Pages and Tunnel automatically.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">3</span>
+                                        <div>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Add CNAME records in the tenant's DNS provider</p>
+                                            <p className="text-xs mt-0.5">Go to the domain registrar (GoDaddy, Cloudflare, Namecheap, etc.) and add a CNAME record for each domain:</p>
+                                            <div className="mt-2 bg-slate-50 dark:bg-slate-900 rounded-md p-2 text-xs font-mono space-y-1">
+                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
+                                                <p><span className="text-slate-400">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
+                                                <p><span className="text-slate-400">API:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">api.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">[tunnel-id].cfargotunnel.com</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">4</span>
+                                        <div>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Wait for DNS propagation</p>
+                                            <p className="text-xs mt-0.5">DNS changes can take up to 24 hours but usually propagate within minutes. Cloudflare handles SSL certificates automatically.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">5</span>
+                                        <div>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Done! Visit the custom domain</p>
+                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. Status will change from "Pending DNS" to "Verified" once the domain is resolving correctly.</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-400">
+                                        <strong>Note:</strong> If the tenant's domain is managed on Cloudflare, make sure the CNAME proxy status is set to <strong>Proxied</strong> (orange cloud) for SSL to work.
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-3 mt-6">
