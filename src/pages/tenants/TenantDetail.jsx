@@ -149,13 +149,13 @@ const TenantDetail = () => {
     };
 
     const handleSetupDomain = async () => {
-        if (!customDomains.crm && !customDomains.storefront && !customDomains.api) {
+        if (!customDomains.crm && !customDomains.storefront) {
             toast.error('Enter at least one domain');
             return;
         }
         setDomainLoading(true);
         try {
-            await tenantsAPI.setupCustomDomain(tenant.id, customDomains);
+            await tenantsAPI.setupCustomDomain(tenant.id, { crm: customDomains.crm, storefront: customDomains.storefront });
             toast.success('Custom domains configured!');
             setShowDomainModal(false);
             fetchTenant();
@@ -171,7 +171,7 @@ const TenantDetail = () => {
         setCustomDomains({
             crm: tenant.custom_domain_crm || '',
             storefront: tenant.custom_domain_storefront || '',
-            api: tenant.custom_domain_api || ''
+            api: ''
         });
         setShowDomainModal(true);
     };
@@ -420,25 +420,19 @@ const TenantDetail = () => {
                             <FiExternalLink />
                         </a>
                     </div>
-                    {/* API */}
+                    {/* API (always uses default nexspiresolutions domain) */}
                     <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-500">
                                 <FiGlobe />
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_api || `${tenant.slug}-crm-api.${domain}`}</p>
-                                {tenant.custom_domain_api ? (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                        {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] text-slate-400">Default</span>
-                                )}
+                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
+                                <span className="text-[10px] text-slate-400">Managed by NexSpire</span>
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_api ? `https://${tenant.custom_domain_api}` : `https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
@@ -641,11 +635,11 @@ const TenantDetail = () => {
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Add CNAME records in your DNS provider pointing to the targets shown below.
+                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">{tenant.slug}-crm-api.nexspiresolutions.co.in</code>.
                         </p>
 
                         {/* CRM Domain */}
-                        <div className="mb-4 p-3 border rounded-lg">
+                        <div className="mb-4 p-3 border rounded-lg dark:border-slate-600">
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CRM Dashboard</label>
                             <input
                                 type="text"
@@ -654,11 +648,11 @@ const TenantDetail = () => {
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                                 placeholder="crm.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>nexcrm-frontend.pages.dev</code></p>
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-frontend.pages.dev</code></p>
                         </div>
 
                         {/* Storefront Domain */}
-                        <div className="mb-4 p-3 border rounded-lg">
+                        <div className="mb-4 p-3 border rounded-lg dark:border-slate-600">
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Storefront</label>
                             <input
                                 type="text"
@@ -667,20 +661,7 @@ const TenantDetail = () => {
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                                 placeholder="yourbrand.com or store.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>nexcrm-storefront.pages.dev</code></p>
-                        </div>
-
-                        {/* API Domain */}
-                        <div className="mb-4 p-3 border rounded-lg">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">API Backend</label>
-                            <input
-                                type="text"
-                                value={customDomains.api}
-                                onChange={(e) => setCustomDomains(prev => ({ ...prev, api: e.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
-                                placeholder="api.yourbrand.com"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code>[tunnel-id].cfargotunnel.com</code></p>
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-storefront.pages.dev</code></p>
                         </div>
 
                         {/* Setup Help Section */}
@@ -701,45 +682,42 @@ const TenantDetail = () => {
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">1</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Enter your custom domains above</p>
-                                            <p className="text-xs mt-0.5">You can configure one, two, or all three. Each is optional.</p>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Enter the tenant's custom domains above</p>
+                                            <p className="text-xs mt-0.5">CRM and Storefront are both optional. You can set up one or both.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">2</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Click "Save Domains"</p>
-                                            <p className="text-xs mt-0.5">This registers the domains with Cloudflare Pages and Tunnel automatically.</p>
+                                            <p className="text-xs mt-0.5">This registers the custom domains with Cloudflare Pages automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">3</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Add CNAME records in the tenant's DNS provider</p>
-                                            <p className="text-xs mt-0.5">Go to the domain registrar (GoDaddy, Cloudflare, Namecheap, etc.) and add a CNAME record for each domain:</p>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Tenant adds CNAME records in their DNS provider</p>
+                                            <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
                                             <div className="mt-2 bg-slate-50 dark:bg-slate-900 rounded-md p-2 text-xs font-mono space-y-1">
-                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
                                                 <p><span className="text-slate-400">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
-                                                <p><span className="text-slate-400">API:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">api.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">[tunnel-id].cfargotunnel.com</span></p>
+                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
                                             </div>
+                                            <p className="text-xs mt-1.5 text-slate-500">Works with any DNS provider — no Cloudflare account needed for the tenant.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">4</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Wait for DNS propagation</p>
-                                            <p className="text-xs mt-0.5">DNS changes can take up to 24 hours but usually propagate within minutes. Cloudflare handles SSL certificates automatically.</p>
+                                            <p className="text-xs mt-0.5">Usually takes a few minutes. Cloudflare Pages handles SSL certificates automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">5</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Done! Visit the custom domain</p>
-                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. Status will change from "Pending DNS" to "Verified" once the domain is resolving correctly.</p>
+                                            <p className="font-medium text-slate-700 dark:text-slate-300">Done!</p>
+                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexspiresolutions.co.in</code> under the hood — customers never see it.</p>
                                         </div>
-                                    </div>
-                                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-400">
-                                        <strong>Note:</strong> If the tenant's domain is managed on Cloudflare, make sure the CNAME proxy status is set to <strong>Proxied</strong> (orange cloud) for SSL to work.
                                     </div>
                                 </div>
                             )}
