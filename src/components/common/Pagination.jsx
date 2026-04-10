@@ -4,27 +4,33 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
     const startItem = (currentPage - 1) * pageSize + 1;
     const endItem = Math.min(currentPage * pageSize, totalItems);
 
-    // Build page numbers with ellipsis
+    // Always show max 7 slots: [1] [...] [x-1] [x] [x+1] [...] [last]
     const getPageNumbers = () => {
-        const pages = [];
-        const maxVisible = 5;
-
-        if (totalPages <= maxVisible + 2) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            pages.push(1);
-            if (currentPage > 3) pages.push('...');
-
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(totalPages - 1, currentPage + 1);
-
-            for (let i = start; i <= end; i++) pages.push(i);
-
-            if (currentPage < totalPages - 2) pages.push('...');
-            pages.push(totalPages);
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
         }
 
-        return pages;
+        const pages = new Set();
+        pages.add(1);
+        pages.add(totalPages);
+
+        // Window around current page
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+            if (i > 1 && i < totalPages) pages.add(i);
+        }
+
+        // Convert to sorted array and insert ellipsis
+        const sorted = [...pages].sort((a, b) => a - b);
+        const result = [];
+
+        for (let i = 0; i < sorted.length; i++) {
+            if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+                result.push('...');
+            }
+            result.push(sorted[i]);
+        }
+
+        return result;
     };
 
     return (
