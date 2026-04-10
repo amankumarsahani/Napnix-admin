@@ -20,7 +20,7 @@ export default function BlogsList() {
     const fetchBlogs = async () => {
         try {
             setLoading(true);
-            const params = { page: currentPage, limit: pageSize, status: 'all' };
+            const params = { page: currentPage, limit: pageSize };
             if (searchTerm) params.search = searchTerm;
             const response = await BlogService.getAll(params);
             if (response.success) {
