@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { projectsAPI, clientsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 export default function ProjectsList() {
     const [projects, setProjects] = useState([]);
@@ -20,17 +22,20 @@ export default function ProjectsList() {
         progress: 0,
     });
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [currentPage]);
 
     const fetchData = async () => {
         try {
             const [projectsData, clientsData] = await Promise.all([
-                projectsAPI.getAll(),
-                clientsAPI.getAll(),
+                projectsAPI.getAll({ page: currentPage, limit: pageSize }),
+                clientsAPI.getAll({ limit: 1000 }),
             ]);
             setProjects(Array.isArray(projectsData) ? projectsData : projectsData.projects || []);
+            if (projectsData.pagination) setPagination(projectsData.pagination);
             setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
         } catch (error) {
             toast.error('Failed to load data');
@@ -221,6 +226,8 @@ export default function ProjectsList() {
                     </div>
                 )}
             </div>
+
+            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
 
             {/* Modal */}
             {showModal && (

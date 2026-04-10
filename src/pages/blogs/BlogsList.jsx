@@ -3,23 +3,29 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { BlogService } from '../../api/blogs';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiClock } from '../../components/icons/FeatherIcons';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 export default function BlogsList() {
     const navigate = useNavigate();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination, resetPage } = usePagination(10);
 
     useEffect(() => {
         fetchBlogs();
-    }, []);
+    }, [currentPage, searchTerm]);
 
     const fetchBlogs = async () => {
         try {
             setLoading(true);
-            const response = await BlogService.getAll();
+            const params = { page: currentPage, limit: pageSize, status: 'all' };
+            if (searchTerm) params.search = searchTerm;
+            const response = await BlogService.getAll(params);
             if (response.success) {
-                setBlogs(response.blogs);
+                setBlogs(response.blogs || []);
+                if (response.pagination) setPagination(response.pagination);
             }
         } catch (error) {
             console.error('Failed to fetch blogs:', error);
@@ -53,11 +59,10 @@ export default function BlogsList() {
         }
     };
 
-    const filteredBlogs = (blogs || []).filter(blog =>
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        resetPage();
+    };
 
     if (loading) {
         return (
@@ -91,7 +96,7 @@ export default function BlogsList() {
                         type="text"
                         placeholder="Search blogs..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => handleSearchChange(e)}
                         className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
                     />
                 </div>
@@ -112,14 +117,14 @@ export default function BlogsList() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {filteredBlogs.length === 0 ? (
+                            {blogs.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                         No blogs found.
                                     </td>
                                 </tr>
                             ) : (
-                                filteredBlogs.map((blog) => (
+                                blogs.map((blog) => (
                                     <tr key={blog.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -196,6 +201,7 @@ export default function BlogsList() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
         </div>
     );

@@ -5,6 +5,8 @@ import { leadsAPI, billingAPI } from '../../api';
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
 import Papa from 'papaparse';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 export default function LeadsList() {
     const [leads, setLeads] = useState([]);
@@ -32,20 +34,23 @@ export default function LeadsList() {
     const [generatingLink, setGeneratingLink] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchLeads();
-    }, []);
+    }, [currentPage]);
 
     const fetchLeads = async () => {
         try {
             setLoading(true);
-            const response = await leadsAPI.getAll();
+            const response = await leadsAPI.getAll({ page: currentPage, limit: pageSize });
             console.log('[Leads] API response:', response);
-            // Backend returns { leads: [...] }
+            // Backend returns { leads: [...], pagination: {...} }
             const list = response?.leads || response?.data || [];
             setLeads(Array.isArray(list) ? list : []);
+            if (response?.pagination) setPagination(response.pagination);
         } catch (error) {
             toast.error('Failed to load leads');
             console.error('[Leads] Error:', error);
@@ -405,6 +410,7 @@ export default function LeadsList() {
                             </tbody>
                         </table>
                     </div>
+                    <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
                 </div>
             )}
 

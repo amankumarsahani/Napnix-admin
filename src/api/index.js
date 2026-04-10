@@ -513,8 +513,8 @@ export const smtpAccountsAPI = {
 
 // Workflows API (Automation)
 export const workflowsAPI = {
-    getAll: async () => {
-        const response = await apiClient.get('/workflows');
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/workflows', { params });
         return response.data;
     },
 

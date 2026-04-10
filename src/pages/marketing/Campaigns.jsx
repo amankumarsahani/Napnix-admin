@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 const Campaigns = () => {
     const navigate = useNavigate();
@@ -15,15 +17,18 @@ const Campaigns = () => {
     const [lastUpdated, setLastUpdated] = useState(null);
     const intervalRef = useRef(null);
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     // Fetch data function
     const fetchData = useCallback(async (showLoading = true) => {
         try {
             if (showLoading) setLoading(true);
             const [campaignsRes, statsRes] = await Promise.all([
-                campaignsAPI.getAll(),
+                campaignsAPI.getAll({ page: currentPage, limit: pageSize }),
                 campaignsAPI.getDashboardStats()
             ]);
             setCampaigns(campaignsRes.data || []);
+            if (campaignsRes.pagination) setPagination(campaignsRes.pagination);
             setStats(statsRes.data);
             setLastUpdated(new Date());
         } catch (error) {
@@ -32,9 +37,9 @@ const Campaigns = () => {
         } finally {
             if (showLoading) setLoading(false);
         }
-    }, []);
+    }, [currentPage, pageSize, setPagination]);
 
-    // Initial load
+    // Initial load and page change
     useEffect(() => {
         fetchData();
     }, [fetchData]);
@@ -310,6 +315,7 @@ const Campaigns = () => {
                         </tbody>
                     </table>
                 </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
 
             {/* Create/Edit Campaign Modal */}
