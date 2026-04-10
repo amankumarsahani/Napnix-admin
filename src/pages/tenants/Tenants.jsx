@@ -5,6 +5,8 @@ import planService from '../../api/plan';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 const Tenants = () => {
     const navigate = useNavigate();
@@ -13,11 +15,12 @@ const Tenants = () => {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [actionLoading, setActionLoading] = useState({});
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     useEffect(() => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [currentPage]);
 
     const fetchData = async (retryCount = 0) => {
         const maxRetries = 3;
@@ -26,10 +29,11 @@ const Tenants = () => {
         try {
             setLoading(true);
             const [tenantsRes, statsRes] = await Promise.all([
-                tenantsAPI.getAll(),
+                tenantsAPI.getAll({ page: currentPage, limit: pageSize }),
                 tenantsAPI.getStats()
             ]);
             setTenants(tenantsRes.data || []);
+            setPagination(tenantsRes.pagination);
             setStats(statsRes.data);
         } catch (error) {
             console.error('Fetch tenants error:', error);
@@ -334,6 +338,8 @@ const Tenants = () => {
                     </div>
                 ))}
             </div>
+
+            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
 
             {
                 showCreateModal && (

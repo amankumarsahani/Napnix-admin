@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
+import usePagination from '../hooks/usePagination';
+import Pagination from '../components/common/Pagination';
 
 export default function Inquiries() {
     const [inquiries, setInquiries] = useState([]);
@@ -10,20 +12,21 @@ export default function Inquiries() {
     const [showModal, setShowModal] = useState(false);
     const navigate = useNavigate();
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     useEffect(() => {
         fetchInquiries();
-    }, []);
+    }, [currentPage]);
 
     const fetchInquiries = async () => {
         try {
-            const response = await inquiriesAPI.getAll();
+            const response = await inquiriesAPI.getAll({ page: currentPage, limit: pageSize });
             console.log('[Inquiries] API response:', response);
-            // Backend returns { success: true, data: [...], page, limit }
-            // inquiriesAPI.getAll() already extracts response.data from axios
-            // So response = { success, data, page, limit } where data is the array
+            // Backend returns { success: true, data: [...], pagination: {...} }
             const list = response?.data || [];
             console.log('[Inquiries] Extracted list:', list);
             setInquiries(Array.isArray(list) ? list : []);
+            if (response?.pagination) setPagination(response.pagination);
         } catch (error) {
             toast.error('Failed to load inquiries');
             console.error('Fetch inquiries error:', error);
@@ -227,6 +230,7 @@ export default function Inquiries() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
 
             {/* Detail Modal */}

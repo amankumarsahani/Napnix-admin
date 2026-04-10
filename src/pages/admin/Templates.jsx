@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 // SVG Icon components for template types
 const TypeIcons = {
@@ -70,11 +72,13 @@ export default function Templates() {
 
     const [availableDocuments, setAvailableDocuments] = useState([]);
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(9);
+
     useEffect(() => {
         fetchTemplates();
         fetchStats();
         fetchAvailableDocuments();
-    }, [activeTypeFilter]);
+    }, [activeTypeFilter, currentPage]);
 
     const fetchAvailableDocuments = async () => {
         try {
@@ -87,12 +91,13 @@ export default function Templates() {
 
     const fetchTemplates = async () => {
         try {
-            const params = {};
+            const params = { page: currentPage, limit: pageSize };
             if (activeTypeFilter !== 'all') {
                 params.type = activeTypeFilter;
             }
             const response = await templatesAPI.getAll(params);
             setTemplates(Array.isArray(response.data) ? response.data : []);
+            if (response.pagination) setPagination(response.pagination);
         } catch (error) {
             toast.error('Failed to load templates');
             console.error(error);
@@ -369,6 +374,10 @@ export default function Templates() {
                         <p className="text-sm">Create your first template to get started</p>
                     </div>
                 )}
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
 
             {/* Create/Edit Modal */}

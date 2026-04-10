@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -15,6 +17,8 @@ export default function Team() {
     const [isAddingDept, setIsAddingDept] = useState(false);
     const [departments, setDepartments] = useState(['Management', 'Sales', 'Marketing', 'Development', 'Support']);
     const [newDept, setNewDept] = useState('');
+
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -31,10 +35,12 @@ export default function Team() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.get(`${API_URL}/teams`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                params: { page: currentPage, limit: pageSize }
             });
             if (response.data.success) {
                 setMembers(response.data.data);
+                if (response.data.pagination) setPagination(response.data.pagination);
                 // Extract unique departments from data to update list dynamically
                 const uniqueDepts = [...new Set(response.data.data.map(m => m.department).filter(Boolean))];
                 setDepartments(prev => [...new Set([...prev, ...uniqueDepts])]);
@@ -49,7 +55,7 @@ export default function Team() {
 
     useEffect(() => {
         fetchMembers();
-    }, []);
+    }, [currentPage]);
 
     const handleAddDepartment = () => {
         if (newDept.trim() && !departments.includes(newDept)) {
@@ -182,6 +188,7 @@ export default function Team() {
                         </tbody>
                     </table>
                 </div>
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
 
             {/* Invite/Add Modal */}

@@ -4,6 +4,8 @@ import { clientsAPI, billingAPI } from '../../api';
 
 import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 export default function ClientsList() {
     const navigate = useNavigate();
@@ -18,6 +20,8 @@ export default function ClientsList() {
     const [generatingLink, setGeneratingLink] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     const [formData, setFormData] = useState({
         companyName: '',
         contactName: '',
@@ -30,12 +34,13 @@ export default function ClientsList() {
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [currentPage]);
 
     const fetchClients = async () => {
         try {
-            const data = await clientsAPI.getAll();
+            const data = await clientsAPI.getAll({ page: currentPage, limit: pageSize });
             setClients(Array.isArray(data) ? data : data.clients || []);
+            if (data.pagination) setPagination(data.pagination);
         } catch (error) {
             toast.error('Failed to load clients');
             console.error(error);
@@ -219,6 +224,8 @@ export default function ClientsList() {
                         <p className="text-sm">Click "Add Client" to create your first client</p>
                     </div>
                 )}
+
+                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
 
             {/* Modal */}

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { workflowsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../../components/common/Pagination';
 
 // Simple SVG Icon components
 const Icons = {
@@ -78,15 +80,18 @@ const Workflows = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedWorkflow, setSelectedWorkflow] = useState(null);
 
+    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+
     useEffect(() => {
         fetchWorkflows();
-    }, []);
+    }, [currentPage]);
 
     const fetchWorkflows = async () => {
         try {
             setLoading(true);
-            const response = await workflowsAPI.getAll();
+            const response = await workflowsAPI.getAll({ page: currentPage, limit: pageSize });
             setWorkflows(response.data || []);
+            if (response.pagination) setPagination(response.pagination);
         } catch (error) {
             console.error('Failed to fetch workflows:', error);
             toast.error('Failed to load workflows');
@@ -349,6 +354,7 @@ const Workflows = () => {
                             ))}
                         </tbody>
                     </table>
+                    <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
                 </div>
             )}
 
