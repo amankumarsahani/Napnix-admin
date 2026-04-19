@@ -26,6 +26,7 @@ const TenantDetail = () => {
     const [showDomainModal, setShowDomainModal] = useState(false);
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
+    const [sendingAgreement, setSendingAgreement] = useState(false);
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
 
@@ -220,6 +221,18 @@ const TenantDetail = () => {
         }
     };
 
+    const handleSendAgreement = async () => {
+        setSendingAgreement(true);
+        try {
+            const res = await tenantsAPI.sendAgreement(tenant.id);
+            toast.success(res.message || 'Agreement sent to tenant email');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to send agreement');
+        } finally {
+            setSendingAgreement(false);
+        }
+    };
+
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
         toast.success('Copied to clipboard');
@@ -363,6 +376,25 @@ const TenantDetail = () => {
                             <FiCreditCard className="w-4 h-4 text-indigo-500" />
                         )}
                         Send Payment Link
+                    </button>
+
+                    <button
+                        onClick={handleSendAgreement}
+                        disabled={sendingAgreement}
+                        className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
+                        title="Send service agreement PDF to tenant email"
+                    >
+                        {sendingAgreement ? (
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        )}
+                        {sendingAgreement ? 'Sending...' : 'Send Agreement'}
                     </button>
                 </div>
             </div>
