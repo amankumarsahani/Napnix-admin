@@ -50,7 +50,7 @@ export default function PricingPage() {
                     }
                 }
             } catch (err) {
-                console.error('Failed to fetch pricing mode:', err);
+                // silently ignore
             } finally {
                 setLoading(false);
             }
@@ -84,7 +84,6 @@ export default function PricingPage() {
             }
         } catch (err) {
             toast.error('Payment gateway error', { id });
-            console.error(err);
         }
     };
 

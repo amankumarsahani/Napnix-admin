@@ -39,7 +39,6 @@ export default function Transactions() {
                 toast.error(res.data.message || 'Sync failed');
             }
         } catch (error) {
-            console.error('Sync error:', error);
             toast.error(error.response?.data?.error || 'Failed to sync transaction');
         } finally {
             setSyncing(false);
@@ -55,7 +54,6 @@ export default function Transactions() {
                 setPagination(res.data.pagination);
             }
         } catch (error) {
-            console.error('Failed to fetch transactions:', error);
             toast.error('Failed to load transactions');
         } finally {
             setLoading(false);
