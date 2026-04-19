@@ -37,7 +37,7 @@ const CampaignDetail = () => {
             setRecipients(res.data || []);
             setTotalPages(res.pagination?.pages || 1);
         } catch (error) {
-            console.error('Failed to load recipients:', error);
+            // silently ignore
         } finally {
             setRecipientsLoading(false);
         }

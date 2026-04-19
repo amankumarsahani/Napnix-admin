@@ -36,7 +36,6 @@ export default function AdminStatsSection() {
             });
 
         } catch (error) {
-            console.error('Failed to fetch stats:', error);
             // Don't show error toast - might not have permission
         } finally {
             setLoading(false);
