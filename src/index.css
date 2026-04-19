@@ -45,7 +45,7 @@
 }
 
 .glass-panel {
-  @apply bg-white border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700;
+  @apply bg-white border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800;
 }
 
 .glass-card {
@@ -60,19 +60,19 @@
 
 /* Button Utilities */
 .btn {
-  @apply px-4 py-2.5 rounded-xl font-semibold transition-all duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2;
+  @apply px-4 py-2.5 rounded-lg font-semibold transition-all duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2;
 }
 
 .btn-primary {
-  @apply bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/25 active:scale-[0.98];
+  @apply bg-brand-600 text-white hover:bg-brand-700;
 }
 
 .btn-secondary {
-  @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700;
+  @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700;
 }
 
 .btn-danger {
-  @apply bg-white text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 active:scale-[0.98] dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-rose-900/30;
+  @apply bg-white text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-rose-900/30;
 }
 
 .btn-ghost {
@@ -94,11 +94,11 @@
 
 /* Card utilities */
 .card {
-  @apply bg-white border border-slate-100 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-slate-700;
+  @apply bg-white border border-slate-100 rounded-xl shadow-sm dark:bg-slate-800 dark:border-slate-700;
 }
 
 .card-hover {
-  @apply bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 dark:bg-slate-800 dark:border-slate-700;
+  @apply bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow transition-shadow dark:bg-slate-800 dark:border-slate-700;
 }
 
 /* Custom Scrollbar - Dark Mode Compatible */

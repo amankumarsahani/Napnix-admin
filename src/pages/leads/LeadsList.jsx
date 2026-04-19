@@ -281,7 +281,7 @@ export default function LeadsList() {
                                 resetForm();
                                 setShowModal(true);
                             }}
-                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
+                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             <span className="hidden sm:inline">Add Lead</span>
@@ -307,7 +307,7 @@ export default function LeadsList() {
                     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
                 }} />
             ) : (
-                <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -565,7 +565,7 @@ export default function LeadsList() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-brand-500/25 hover:bg-brand-700 transition-all transform active:scale-95"
+                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
                                 >
                                     {editingLead ? 'Update Lead' : 'Create Lead'}
                                 </button>

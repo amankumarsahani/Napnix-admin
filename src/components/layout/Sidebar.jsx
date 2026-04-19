@@ -92,7 +92,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 <div className="p-6">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-600/20 text-white">
+                            <div className="w-10 h-10 bg-brand-600 rounded-lg flex items-center justify-center text-white">
                                 <FiZap size={24} />
                             </div>
                             <div>
@@ -116,7 +116,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         <div key={section.title} className="mb-6">
                             <button
                                 onClick={() => toggleMenu(section.id)}
-                                className="w-full flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2 hover:text-indigo-500 transition-colors"
+                                className="w-full flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2 hover:text-brand-500 transition-colors"
                                 aria-expanded={openMenus.includes(section.id)}
                             >
                                 {section.title}
@@ -132,7 +132,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                             onClick={() => setIsOpen(false)}
                                             className={({ isActive }) =>
                                                 `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative ${isActive
-                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                                                    ? 'bg-brand-600 text-white'
                                                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                                                 }`
                                             }
@@ -164,9 +164,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                             {isDark ? 'Dark Mode' : 'Light Mode'}
                         </span>
-                        <div className={`relative w-14 h-7 rounded-full transition-all duration-300 ${isDark ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                        <div className={`relative w-14 h-7 rounded-full transition-all duration-300 ${isDark ? 'bg-brand-600' : 'bg-slate-300'}`}>
                             <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center transition-all duration-300 ${isDark ? 'left-7' : 'left-0.5'}`}>
-                                {isDark ? <LuMoon className="w-4 h-4 text-indigo-600" /> : <LuSun className="w-4 h-4 text-amber-500" />}
+                                {isDark ? <LuMoon className="w-4 h-4 text-brand-600" /> : <LuSun className="w-4 h-4 text-amber-500" />}
                             </span>
                         </div>
                     </button>

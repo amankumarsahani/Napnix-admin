@@ -623,7 +623,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-brand-600/20"
+                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                         >
                             {loading && (
                                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
