@@ -4,32 +4,32 @@ import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
 import usePagination from '../hooks/usePagination';
 import Pagination from '../components/common/Pagination';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 export default function Inquiries() {
     const [inquiries, setInquiries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     useEffect(() => {
         fetchInquiries();
-    }, [currentPage]);
+    }, [currentPage, searchTerm]);
 
     const fetchInquiries = async () => {
         try {
-            const response = await inquiriesAPI.getAll({ page: currentPage, limit: pageSize });
-            console.log('[Inquiries] API response:', response);
+            const response = await inquiriesAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) });
             // Backend returns { success: true, data: [...], pagination: {...} }
             const list = response?.data || [];
-            console.log('[Inquiries] Extracted list:', list);
             setInquiries(Array.isArray(list) ? list : []);
             if (response?.pagination) setPagination(response.pagination);
         } catch (error) {
             toast.error('Failed to load inquiries');
-            console.error('Fetch inquiries error:', error);
         } finally {
             setLoading(false);
         }
@@ -42,41 +42,42 @@ export default function Inquiries() {
             fetchInquiries();
         } catch (error) {
             toast.error('Failed to update status');
-            console.error('Update status error:', error);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this inquiry?')) return;
-
-        try {
-            await inquiriesAPI.delete(id);
-            toast.success('Inquiry deleted successfully');
-            fetchInquiries();
-            setShowModal(false);
-        } catch (error) {
-            toast.error('Failed to delete inquiry');
-            console.error('Delete inquiry error:', error);
-        }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Delete Inquiry',
+            message: 'Are you sure you want to delete this inquiry? This action cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    await inquiriesAPI.delete(id);
+                    toast.success('Inquiry deleted successfully');
+                    fetchInquiries();
+                    setShowModal(false);
+                } catch (error) {
+                    toast.error('Failed to delete inquiry');
+                }
+            },
+        });
     };
 
     const handleConvertToLead = async (inquiry) => {
-        console.log('[Convert to Lead] Converting:', inquiry.name);
-
         try {
-            console.log('[Convert to Lead] Calling API...');
             toast.loading('Converting to lead...', { id: 'convert' });
 
             const result = await inquiriesAPI.convertToLead(inquiry.id, {
                 notes: inquiry.message
             });
 
-            console.log('[Convert to Lead] Success:', result);
             toast.success('Inquiry converted to lead!', { id: 'convert' });
             fetchInquiries();
             setShowModal(false);
         } catch (error) {
-            console.error('[Convert to Lead] Error:', error);
             toast.error(error.response?.data?.error || 'Failed to convert', { id: 'convert' });
         }
     };
@@ -120,6 +121,17 @@ export default function Inquiries() {
                 <div className="text-sm text-slate-600 dark:text-slate-400">
                     Total: <span className="font-semibold">{inquiries.length}</span>
                 </div>
+            </div>
+
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search inquiries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* Inquiries Table */}
@@ -312,6 +324,16 @@ export default function Inquiries() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 }

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Activity type configurations
 const ACTIVITY_TYPES = {
@@ -47,15 +45,12 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
     const fetchActivities = async () => {
         setLoadingActivities(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/${entityType}/${entityId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/${entityType}/${entityId}`);
             if (res.data.success) {
                 setActivities(res.data.data);
             }
         } catch (error) {
-            console.error('Failed to load activities', error);
+            // silently ignore
         } finally {
             setLoadingActivities(false);
         }
@@ -67,15 +62,12 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_URL}/activities`, {
+            const res = await apiClient.post('/activities', {
                 entityType,
                 entityId,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             if (res.data.success) {
@@ -84,7 +76,6 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
                 fetchActivities();
             }
         } catch (error) {
-            console.error(error);
             toast.error('Failed to add activity');
         } finally {
             setIsSubmitting(false);

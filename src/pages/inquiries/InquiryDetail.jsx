@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 // Activity type configurations
 const ACTIVITY_TYPES = {
@@ -51,6 +50,7 @@ export default function InquiryDetail() {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('timeline');
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
 
     // Activity form
     const [newNote, setNewNote] = useState('');
@@ -65,13 +65,9 @@ export default function InquiryDetail() {
 
     const fetchInquiry = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/inquiries/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/inquiries/${id}`);
             setInquiry(res.data.data || res.data);
         } catch (error) {
-            console.error('Failed to fetch inquiry:', error);
             toast.error('Failed to load inquiry details');
             navigate('/inquiries');
         } finally {
@@ -81,15 +77,12 @@ export default function InquiryDetail() {
 
     const fetchActivities = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/inquiry/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/inquiry/${id}`);
             if (res.data.success) {
                 setActivities(res.data.data || []);
             }
         } catch (error) {
-            console.error('Failed to fetch activities:', error);
+            // silently ignore
         }
     };
 
@@ -99,15 +92,12 @@ export default function InquiryDetail() {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_URL}/activities`, {
+            await apiClient.post('/activities', {
                 entityType: 'inquiry',
                 entityId: id,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             toast.success('Activity added');
@@ -122,10 +112,7 @@ export default function InquiryDetail() {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.patch(`${API_URL}/inquiries/${id}/status`, { status: newStatus }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.patch(`/inquiries/${id}/status`, { status: newStatus });
             toast.success('Status updated');
             fetchInquiry();
             fetchActivities();
@@ -134,19 +121,24 @@ export default function InquiryDetail() {
         }
     };
 
-    const handleConvertToLead = async () => {
-        if (!confirm('Convert this inquiry to a lead?')) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${API_URL}/inquiries/${id}/convert-to-lead`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            toast.success('Converted to lead!');
-            navigate(`/leads/${res.data.lead?.id || ''}`);
-        } catch (error) {
-            toast.error('Failed to convert to lead');
-        }
+    const handleConvertToLead = () => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Convert to Lead',
+            message: 'Convert this inquiry to a lead? This will create a new lead record from the inquiry data.',
+            variant: 'info',
+            confirmText: 'Convert',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    const res = await apiClient.post(`/inquiries/${id}/convert-to-lead`, {});
+                    toast.success('Converted to lead!');
+                    navigate(`/leads/${res.data.lead?.id || ''}`);
+                } catch (error) {
+                    toast.error('Failed to convert to lead');
+                }
+            },
+        });
     };
 
     if (loading) {
@@ -403,6 +395,16 @@ export default function InquiryDetail() {
                 entityType="inquiry"
                 entityId={id}
                 onEmailSent={() => fetchActivities()}
+            />
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
             />
         </div>
     );
