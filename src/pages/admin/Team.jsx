@@ -138,7 +138,7 @@ export default function Team() {
             </div>
 
             {/* List */}
-            <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>

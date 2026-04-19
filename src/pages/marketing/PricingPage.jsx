@@ -143,7 +143,7 @@ export default function PricingPage() {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative flex flex-col bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border-2 transition-all hover:scale-[1.02] ${plan.id === 'growth' ? 'border-brand-500 shadow-brand-500/10' : 'border-transparent'
+                            className={`relative flex flex-col bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border-2 transition-colors ${plan.id === 'growth' ? 'border-brand-500' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}
                         >
                             {plan.id === 'growth' && (
@@ -174,7 +174,7 @@ export default function PricingPage() {
                             <button
                                 onClick={() => handleBuy(plan.id)}
                                 className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
-                                    ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/30'
+                                    ? 'bg-brand-600 text-white hover:bg-brand-700'
                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                             >
