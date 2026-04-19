@@ -78,11 +78,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 <div
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={() => setIsOpen(false)}
+                    aria-hidden="true"
                 ></div>
             )}
 
             {/* Sidebar */}
-            <div className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            <div
+                role="navigation"
+                aria-label="Main navigation"
+                className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                 }`}>
                 {/* Header */}
                 <div className="p-6">
@@ -99,6 +103,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         <button
                             onClick={() => setIsOpen(false)}
                             className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            aria-label="Close sidebar"
                         >
                             <FiXCircle className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                         </button>
@@ -112,6 +117,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             <button
                                 onClick={() => toggleMenu(section.id)}
                                 className="w-full flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2 hover:text-indigo-500 transition-colors"
+                                aria-expanded={openMenus.includes(section.id)}
                             >
                                 {section.title}
                                 {openMenus.includes(section.id) ? <FiChevronDown /> : <FiChevronRight />}
@@ -153,6 +159,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     <button
                         onClick={toggleTheme}
                         className="w-full flex items-center justify-between px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all duration-200"
+                        aria-label="Toggle theme"
                     >
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                             {isDark ? 'Dark Mode' : 'Light Mode'}
@@ -167,6 +174,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                        aria-label="Log out"
                     >
                         Log Out
                     </button>

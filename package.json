@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:prod": "vite build --mode production && node scripts/generate-404.js",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "predeploy": "npm run build:prod",
     "deploy": "gh-pages -d dist"
@@ -15,19 +16,21 @@
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
     "@ckeditor/ckeditor5-react": "^11.0.1",
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.99.2",
     "@xyflow/react": "^12.6.1",
     "axios": "^1.7.9",
-    "chart.js": "^4.5.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
-    "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.0",
+    "react-hook-form": "^7.72.1",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.4.0",
     "react-is": "^19.2.4",
     "react-router-dom": "^7.9.6",
     "recharts": "^3.5.1",
-    "swagger-ui-react": "^5.31.0"
+    "swagger-ui-react": "^5.31.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
