@@ -380,6 +380,11 @@ export const tenantsAPI = {
     sendPaymentLink: async (id) => {
         const response = await apiClient.post(`/tenants/${id}/send-payment-link`);
         return response.data;
+    },
+
+    sendAgreement: async (id) => {
+        const response = await apiClient.post(`/tenants/${id}/send-agreement`);
+        return response.data;
     }
 };
 
