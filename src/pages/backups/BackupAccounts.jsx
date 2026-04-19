@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FiHardDrive, FiPlus, FiRefreshCw, FiTrash2, FiKey, FiFolder, FiEdit2, FiX, FiCheckCircle, FiServer } from '../../components/icons/FeatherIcons';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const GOOGLE_OAUTH_SESSION_KEY = 'nexs_admin_backup_oauth';
 
@@ -34,6 +35,7 @@ const BackupAccounts = () => {
     const [editingId, setEditingId] = useState(null);
     const [saving, setSaving] = useState(false);
     const [oauthConnecting, setOauthConnecting] = useState(false);
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
 
     const stats = useMemo(() => ({
         total: accounts.length,
@@ -178,12 +180,21 @@ const BackupAccounts = () => {
         setIsModalOpen(true);
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this backup account?')) return;
-        try {
-            const res = await serverService.deleteBackupAccount(id);
-            if (res.success) { toast.success('Account deleted'); fetchAccounts(); }
-        } catch { toast.error('Failed to delete account'); }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Delete Backup Account',
+            message: 'Are you sure you want to delete this backup account? Scheduled backups using this account will stop.',
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    const res = await serverService.deleteBackupAccount(id);
+                    if (res.success) { toast.success('Account deleted'); fetchAccounts(); }
+                } catch { toast.error('Failed to delete account'); }
+            },
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -241,13 +252,22 @@ const BackupAccounts = () => {
         }
     };
 
-    const handleRunBackup = async () => {
-        if (!confirm('Trigger a manual backup for ALL tenants? This may affect performance.')) return;
-        const id = toast.loading('Starting backup...');
-        try {
-            const res = await serverService.triggerManualBackup();
-            if (res.success) toast.success('Backup started in background', { id });
-        } catch { toast.error('Failed to start backup', { id }); }
+    const handleRunBackup = () => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Trigger Manual Backup',
+            message: 'This will trigger a manual backup for ALL tenants. This may affect performance while the backup is running.',
+            variant: 'warning',
+            confirmText: 'Start Backup',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                const id = toast.loading('Starting backup...');
+                try {
+                    const res = await serverService.triggerManualBackup();
+                    if (res.success) toast.success('Backup started in background', { id });
+                } catch { toast.error('Failed to start backup', { id }); }
+            },
+        });
     };
 
     const handleConnectGoogleDrive = () => {
@@ -574,6 +594,16 @@ const BackupAccounts = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 };
