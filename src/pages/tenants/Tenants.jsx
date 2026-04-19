@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantsAPI } from '../../api';
-import planService from '../../api/plan';
+import { plansAPI } from '../../api';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const Tenants = () => {
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
     const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [actionLoading, setActionLoading] = useState({});
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     useEffect(() => {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage]);
+    }, [currentPage, searchTerm]);
 
     const fetchData = async (retryCount = 0) => {
         const maxRetries = 3;
@@ -29,14 +33,13 @@ const Tenants = () => {
         try {
             setLoading(true);
             const [tenantsRes, statsRes] = await Promise.all([
-                tenantsAPI.getAll({ page: currentPage, limit: pageSize }),
+                tenantsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
                 tenantsAPI.getStats()
             ]);
             setTenants(tenantsRes.data || []);
             setPagination(tenantsRes.pagination);
             setStats(statsRes.data);
         } catch (error) {
-            console.error('Fetch tenants error:', error);
             if (retryCount < maxRetries) {
                 setTimeout(() => fetchData(retryCount + 1), retryDelay);
                 return;
@@ -124,6 +127,17 @@ const Tenants = () => {
                 </button>
             </div>
 
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search tenants..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+
             {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
@@ -172,7 +186,7 @@ const Tenants = () => {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <div className="font-semibold text-slate-900 dark:text-white">{tenant.name}</div>
-                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}-crm-api.nexspiresolutions.co.in</div>
+                                                <div className="text-sm text-slate-500 dark:text-slate-400">{tenant.slug}-crm-api.{domain}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -205,15 +219,24 @@ const Tenants = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 {tenant.status === 'trial' && (
                                                     <button
-                                                        onClick={async () => {
-                                                            if (!confirm('Are you sure you want to activate this tenant?')) return;
-                                                            try {
-                                                                await tenantsAPI.update(tenant.id, { status: 'active' });
-                                                                toast.success('Tenant activated successfully');
-                                                                fetchData();
-                                                            } catch (error) {
-                                                                toast.error('Failed to activate tenant');
-                                                            }
+                                                        onClick={() => {
+                                                            setConfirmState({
+                                                                isOpen: true,
+                                                                title: 'Activate Tenant',
+                                                                message: 'Are you sure you want to activate this tenant? This will end the trial period.',
+                                                                variant: 'info',
+                                                                confirmText: 'Activate',
+                                                                onConfirm: async () => {
+                                                                    setConfirmState({ isOpen: false });
+                                                                    try {
+                                                                        await tenantsAPI.update(tenant.id, { status: 'active' });
+                                                                        toast.success('Tenant activated successfully');
+                                                                        fetchData();
+                                                                    } catch (error) {
+                                                                        toast.error('Failed to activate tenant');
+                                                                    }
+                                                                },
+                                                            });
                                                         }}
                                                         className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
                                                         title="Activate Tenant (End Trial)"
@@ -352,6 +375,16 @@ const Tenants = () => {
                     />
                 )
             }
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div >
     );
 };
@@ -375,7 +408,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
         const fetchData = async () => {
             try {
                 const [plansRes, serversRes] = await Promise.all([
-                    planService.getAllPlans(),
+                    plansAPI.getAll(),
                     serverService.getAllServers()
                 ]);
                 if (plansRes.success) setPlans(plansRes.data);
@@ -461,7 +494,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                                 placeholder="acme-corp"
                             />
                             <span className="px-3 py-2 bg-slate-100 dark:bg-slate-600 border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-lg text-slate-500 dark:text-slate-400 text-sm italic">
-                                .crm-api.nexspiresolutions.co.in
+                                .crm-api.{domain}
                             </span>
                         </div>
                     </div>

@@ -15,6 +15,11 @@ export const authAPI = {
         const response = await apiClient.post('/auth/logout');
         return response.data;
     },
+
+    refreshToken: async () => {
+        const response = await apiClient.post('/auth/refresh-token');
+        return response.data;
+    },
 };
 
 export const clientsAPI = {
@@ -160,6 +165,7 @@ export const inquiriesAPI = {
     },
 };
 
+// Email Templates API
 export const templatesAPI = {
     getAll: async (params = {}) => {
         const response = await apiClient.get('/email-templates', { params });
@@ -193,6 +199,11 @@ export const templatesAPI = {
 
     getStats: async () => {
         const response = await apiClient.get('/email-templates/stats');
+        return response.data;
+    },
+
+    send: async (data) => {
+        const response = await apiClient.post('/email-templates/send', data);
         return response.data;
     },
 };
@@ -262,44 +273,6 @@ export const documentTemplatesAPI = {
 
     send: async (templateId, to, subject, variables) => {
         const response = await apiClient.post('/document-templates/send', { templateId, to, subject, variables });
-        return response.data;
-    },
-};
-
-// Email Templates API
-export const emailTemplatesAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/email-templates', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/email-templates/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/email-templates', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/email-templates/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/email-templates/${id}`);
-        return response.data;
-    },
-
-    preview: async (id, data) => {
-        const response = await apiClient.post(`/email-templates/${id}/preview`, data);
-        return response.data;
-    },
-
-    send: async (data) => {
-        const response = await apiClient.post('/email-templates/send', data);
         return response.data;
     },
 };
@@ -485,8 +458,8 @@ export const campaignsAPI = {
 
 // SMTP Accounts API (Email Configuration)
 export const smtpAccountsAPI = {
-    getAll: async () => {
-        const response = await apiClient.get('/smtp-accounts');
+    getAll: async (params = {}) => {
+        const response = await apiClient.get('/smtp-accounts', { params });
         return response.data;
     },
 

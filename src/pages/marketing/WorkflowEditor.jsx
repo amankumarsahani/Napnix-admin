@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 // Searchable dropdown component — filters locally, no API calls on type
 const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, renderOption, getOptionLabel, getOptionValue, hint }) => {
@@ -103,7 +104,7 @@ import {
     Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { workflowsAPI, emailTemplatesAPI, documentTemplatesAPI } from '../../api';
+import { workflowsAPI, templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 // ============================================
@@ -351,7 +352,7 @@ const WorkflowEditor = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const isNew = !id || id === 'new';
-    console.log('WorkflowEditor: id =', id, 'isNew =', isNew);
+
 
     const [workflowName, setWorkflowName] = useState('New Workflow');
     const [workflowDescription, setWorkflowDescription] = useState('');
@@ -363,6 +364,7 @@ const WorkflowEditor = () => {
     const [localLabel, setLocalLabel] = useState('');
     const [isApplyingConfig, setIsApplyingConfig] = useState(false);
     const [isActive, setIsActive] = useState(false);
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
 
 
 
@@ -373,16 +375,16 @@ const WorkflowEditor = () => {
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const res = await emailTemplatesAPI.getAll({ limit: 100 });
+                const res = await templatesAPI.getAll({ limit: 100 });
                 setEmailTemplates(res.data || res.templates || []);
             } catch (error) {
-                console.log('Failed to fetch email templates');
+                // silently ignore
             }
             try {
                 const res = await documentTemplatesAPI.getAll();
                 setDocumentTemplates(res.data || []);
             } catch (error) {
-                console.log('Failed to fetch document templates');
+                // silently ignore
             }
         };
         fetchTemplates();
@@ -465,7 +467,7 @@ const WorkflowEditor = () => {
                             nodeConfig = typeof n.data.config === 'string' ? JSON.parse(n.data.config) : n.data.config;
                         }
                     } catch (e) {
-                        console.error('Failed to parse node config for node:', n.node_uid, e);
+
                         nodeConfig = {};
                     }
 
@@ -484,12 +486,10 @@ const WorkflowEditor = () => {
                         }
                     };
                 });
-                console.log('Formatted nodes for React Flow:', formattedNodes);
                 setNodes(formattedNodes);
 
                 // Map connections to edges
                 if (data.connections && data.connections.length > 0) {
-                    console.log('Raw connections from backend:', data.connections);
                     const formattedEdges = data.connections.map((c, idx) => ({
                         id: String(c.id || `edge-${c.source}-${c.target}-${idx}`),
                         source: String(c.source),
@@ -500,12 +500,10 @@ const WorkflowEditor = () => {
                         style: { strokeWidth: 2, stroke: '#10b981' },
                         markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
                     }));
-                    console.log('Formatted edges for React Flow:', formattedEdges);
                     setEdges(formattedEdges);
                 }
             }
         } catch (error) {
-            console.error('Failed to fetch workflow:', error);
             toast.error('Failed to load workflow data');
         } finally {
             setIsLoading(false);
@@ -631,14 +629,34 @@ const WorkflowEditor = () => {
             // Payload size check
             const payloadString = JSON.stringify(workflowData);
             const sizeInMB = (payloadString.length / (1024 * 1024)).toFixed(2);
-            console.log(`[WorkflowEditor] Saving workflow. Payload size: ${sizeInMB} MB`);
 
             if (sizeInMB > 5) {
-                const proceed = window.confirm(`Warning: Workflow data is unusually large (${sizeInMB} MB). Are you sure you want to save?`);
-                if (!proceed) {
-                    setSaving(false);
-                    return;
-                }
+                setConfirmState({
+                    isOpen: true,
+                    title: 'Large Workflow Data',
+                    message: `Workflow data is unusually large (${sizeInMB} MB). Are you sure you want to save? This may affect performance.`,
+                    variant: 'warning',
+                    confirmText: 'Save Anyway',
+                    onConfirm: async () => {
+                        setConfirmState({ isOpen: false });
+                        try {
+                            if (isNew) {
+                                await workflowsAPI.create(workflowData);
+                                toast.success('Workflow created!');
+                            } else {
+                                await workflowsAPI.update(id, workflowData);
+                                toast.success('Workflow saved!');
+                            }
+                            navigate('/workflows');
+                        } catch (error) {
+                            toast.error('Failed to save workflow');
+                        } finally {
+                            setSaving(false);
+                        }
+                    },
+                });
+                setSaving(false);
+                return;
             }
 
             if (isNew) {
@@ -650,7 +668,6 @@ const WorkflowEditor = () => {
             }
             navigate('/workflows');
         } catch (error) {
-            console.error('Save workflow error:', error);
             toast.error('Failed to save workflow');
         } finally {
             setSaving(false);
@@ -781,14 +798,12 @@ const WorkflowEditor = () => {
                             onClick={async () => {
                                 const newActive = !isActive;
                                 setIsActive(newActive);
-                                console.log('[WorkflowEditor] Toggle isActive:', newActive);
 
                                 if (!isNew && id && id !== 'new') {
                                     try {
                                         await workflowsAPI.toggle(id);
                                         toast.success(`Workflow ${newActive ? 'activated' : 'deactivated'}`);
                                     } catch (error) {
-                                        console.error('Failed to toggle workflow:', error);
                                         setIsActive(!newActive);
                                         toast.error('Failed to update workflow status');
                                     }
@@ -891,9 +906,6 @@ const WorkflowEditor = () => {
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
-
-                        {/* Debug: Log selectedNode when it's a trigger */}
-                        {selectedNode.type === 'trigger' && console.log('Trigger node selected:', selectedNode.id, 'triggerType:', selectedNode.data.triggerType, 'data:', selectedNode.data)}
 
                         {/* Trigger-specific config: Lead Created */}
                         {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'lead_created' || selectedNode.data.label === 'Lead Created') && (
@@ -2641,6 +2653,16 @@ const WorkflowEditor = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => { setConfirmState({ isOpen: false }); }}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 };

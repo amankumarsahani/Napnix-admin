@@ -1,8 +1,8 @@
 import axios from './axios';
 
 const serverService = {
-    getAllServers: async () => {
-        const response = await axios.get('/admin/servers');
+    getAllServers: async (params = {}) => {
+        const response = await axios.get('/admin/servers', { params });
         return response.data;
     },
 

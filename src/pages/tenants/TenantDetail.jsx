@@ -6,6 +6,7 @@ import {
 } from '../../components/icons/FeatherIcons';
 import { tenantsAPI, billingAPI } from '../../api';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const TenantDetail = () => {
     const { id } = useParams();
@@ -27,6 +28,7 @@ const TenantDetail = () => {
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
     const [sendingAgreement, setSendingAgreement] = useState(false);
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
 
@@ -62,7 +64,6 @@ const TenantDetail = () => {
             setTenant(response.data);
         } catch (error) {
             toast.error('Failed to fetch tenant');
-            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -77,7 +78,7 @@ const TenantDetail = () => {
                 setPayments(response.data);
             }
         } catch (error) {
-            console.error('Failed to fetch payments:', error);
+            // silently ignore
         } finally {
             setPaymentsLoading(false);
         }
@@ -93,7 +94,6 @@ const TenantDetail = () => {
                 logsRef.current.scrollTop = logsRef.current.scrollHeight;
             }
         } catch (error) {
-            console.error('Failed to fetch logs:', error);
             setLogs('Error fetching logs');
         } finally {
             setLogsLoading(false);
@@ -143,7 +143,6 @@ const TenantDetail = () => {
             navigate('/tenants');
         } catch (error) {
             toast.error('Failed to delete tenant');
-            console.error(error);
         } finally {
             setDeleteLoading(false);
         }
@@ -190,35 +189,49 @@ const TenantDetail = () => {
         }
     };
 
-    const handleEndTrial = async () => {
-        if (!window.confirm('Are you sure you want to end this trial and suspend the tenant? This will send them an email requesting payment.')) {
-            return;
-        }
-        setActionLoading('endTrial');
-        try {
-            const res = await tenantsAPI.endTrial(tenant.id);
-            toast.success(res.message || 'Trial ended successfully. Payment email sent.');
-            fetchTenant();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to end trial');
-        } finally {
-            setActionLoading(null);
-        }
+    const handleEndTrial = () => {
+        setConfirmState({
+            isOpen: true,
+            title: 'End Trial',
+            message: 'Are you sure you want to end this trial and suspend the tenant? This will send them an email requesting payment.',
+            variant: 'warning',
+            confirmText: 'End Trial',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                setActionLoading('endTrial');
+                try {
+                    const res = await tenantsAPI.endTrial(tenant.id);
+                    toast.success(res.message || 'Trial ended successfully. Payment email sent.');
+                    fetchTenant();
+                } catch (error) {
+                    toast.error(error.response?.data?.error || 'Failed to end trial');
+                } finally {
+                    setActionLoading(null);
+                }
+            },
+        });
     };
 
-    const handleSendPaymentLink = async () => {
-        if (!window.confirm('Send a payment link email to this tenant to subscribe?')) {
-            return;
-        }
-        setActionLoading('sendPayment');
-        try {
-            const res = await tenantsAPI.sendPaymentLink(tenant.id);
-            toast.success(res.message || 'Payment link sent successfully.');
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to send payment link');
-        } finally {
-            setActionLoading(null);
-        }
+    const handleSendPaymentLink = () => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Send Payment Link',
+            message: 'Send a payment link email to this tenant to subscribe?',
+            variant: 'info',
+            confirmText: 'Send Link',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                setActionLoading('sendPayment');
+                try {
+                    const res = await tenantsAPI.sendPaymentLink(tenant.id);
+                    toast.success(res.message || 'Payment link sent successfully.');
+                } catch (error) {
+                    toast.error(error.response?.data?.error || 'Failed to send payment link');
+                } finally {
+                    setActionLoading(null);
+                }
+            },
+        });
     };
 
     const handleSendAgreement = async () => {
@@ -630,7 +643,7 @@ const TenantDetail = () => {
                         </button>
 
                         <a
-                            href={`https://${tenant.slug}-crm.nexspiresolutions.co.in`}
+                            href={`https://${tenant.slug}-crm.${domain}`}
                             target="_blank"
                             rel="noreferrer"
                             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
@@ -667,7 +680,7 @@ const TenantDetail = () => {
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">{tenant.slug}-crm-api.nexspiresolutions.co.in</code>.
+                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">{tenant.slug}-crm-api.{domain}</code>.
                         </p>
 
                         {/* CRM Domain */}
@@ -748,7 +761,7 @@ const TenantDetail = () => {
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">5</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Done!</p>
-                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexspiresolutions.co.in</code> under the hood — customers never see it.</p>
+                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{domain}</code> under the hood — customers never see it.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -805,6 +818,16 @@ const TenantDetail = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 };

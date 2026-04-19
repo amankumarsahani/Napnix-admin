@@ -1,117 +1,97 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import React, { Suspense } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { queryClient } from './lib/queryClient';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
-import Dashboard from './pages/Dashboard';
-import ClientsList from './pages/clients/ClientsList';
-import ClientDetail from './pages/clients/ClientDetail';
-import ProjectsList from './pages/projects/ProjectsList';
-import LeadsList from './pages/leads/LeadsList';
-import LeadDetail from './pages/leads/LeadDetail';
-import Inquiries from './pages/Inquiries';
-import InquiryDetail from './pages/inquiries/InquiryDetail';
-import PlaceholderPage from './pages/PlaceholderPage';
 
-import Team from './pages/admin/Team';
-import Settings from './pages/admin/Settings';
-import Transactions from './pages/admin/Transactions'; // Added
-import Templates from './pages/admin/Templates';
-import Documents from './pages/admin/Documents';
-import DocumentEdit from './pages/admin/DocumentEdit';
-import Tenants from './pages/tenants/Tenants';
-import TenantDetail from './pages/tenants/TenantDetail';
-import Servers from './pages/servers/Servers';
-import BackupAccounts from './pages/backups/BackupAccounts';
-import ApiDocumentation from './pages/admin/ApiDocumentation';
-import Campaigns from './pages/marketing/Campaigns';
-import CampaignDetail from './pages/marketing/CampaignDetail';
-import SmtpAccounts from './pages/marketing/SmtpAccounts';
-import Workflows from './pages/marketing/Workflows';
-import WorkflowEditor from './pages/marketing/WorkflowEditor';
-import PricingPage from './pages/marketing/PricingPage';
-// Lazy load Blog components to isolate ReactQuill dependencies
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const ClientsList = React.lazy(() => import('./pages/clients/ClientsList'));
+const ClientDetail = React.lazy(() => import('./pages/clients/ClientDetail'));
+const ProjectsList = React.lazy(() => import('./pages/projects/ProjectsList'));
+const LeadsList = React.lazy(() => import('./pages/leads/LeadsList'));
+const LeadDetail = React.lazy(() => import('./pages/leads/LeadDetail'));
+const Inquiries = React.lazy(() => import('./pages/Inquiries'));
+const InquiryDetail = React.lazy(() => import('./pages/inquiries/InquiryDetail'));
+const Team = React.lazy(() => import('./pages/admin/Team'));
+const Settings = React.lazy(() => import('./pages/admin/Settings'));
+const Transactions = React.lazy(() => import('./pages/admin/Transactions'));
+const Templates = React.lazy(() => import('./pages/admin/Templates'));
+const Documents = React.lazy(() => import('./pages/admin/Documents'));
+const DocumentEdit = React.lazy(() => import('./pages/admin/DocumentEdit'));
+const Tenants = React.lazy(() => import('./pages/tenants/Tenants'));
+const TenantDetail = React.lazy(() => import('./pages/tenants/TenantDetail'));
+const Servers = React.lazy(() => import('./pages/servers/Servers'));
+const BackupAccounts = React.lazy(() => import('./pages/backups/BackupAccounts'));
+const ApiDocumentation = React.lazy(() => import('./pages/admin/ApiDocumentation'));
+const Campaigns = React.lazy(() => import('./pages/marketing/Campaigns'));
+const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail'));
+const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
+const Workflows = React.lazy(() => import('./pages/marketing/Workflows'));
+const WorkflowEditor = React.lazy(() => import('./pages/marketing/WorkflowEditor'));
+const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage'));
 const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
 const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
 
-// Loading fallback
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
+  <div className="flex items-center justify-center min-h-[60vh]">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
   </div>
 );
 
+function LazyRoute({ element }) {
+  return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
+}
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Protected Routes Wrapper */}
       <Route element={<ProtectedRoute allowedRoles={['admin', 'manager', 'sales_operator', 'user']} />}>
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="clients" element={<ClientsList />} />
-          <Route path="clients/:id" element={<ClientDetail />} />
-          <Route path="projects" element={<ProjectsList />} />
+          <Route path="dashboard" element={<LazyRoute element={<Dashboard />} />} />
+          <Route path="clients" element={<LazyRoute element={<ClientsList />} />} />
+          <Route path="clients/:id" element={<LazyRoute element={<ClientDetail />} />} />
+          <Route path="projects" element={<LazyRoute element={<ProjectsList />} />} />
+          <Route path="leads" element={<LazyRoute element={<LeadsList />} />} />
+          <Route path="leads/:id" element={<LazyRoute element={<LeadDetail />} />} />
+          <Route path="inquiries" element={<LazyRoute element={<Inquiries />} />} />
+          <Route path="inquiries/:id" element={<LazyRoute element={<InquiryDetail />} />} />
+          <Route path="documents" element={<LazyRoute element={<Documents />} />} />
+          <Route path="documents/:id/edit" element={<LazyRoute element={<DocumentEdit />} />} />
 
-          {/* Leads - accessible by admin and sales_operator */}
-          <Route path="leads" element={<LeadsList />} />
-          <Route path="leads/:id" element={<LeadDetail />} />
-
-          {/* Inquiries - accessible by admin and sales_operator */}
-          <Route path="inquiries" element={<Inquiries />} />
-          <Route path="inquiries/:id" element={<InquiryDetail />} />
-
-          {/* Documents - accessible by admin and sales_operator */}
-          <Route path="documents" element={<Documents />} />
-          <Route path="documents/:id/edit" element={<DocumentEdit />} />
-
-          {/* Admin Only Routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="templates" element={<Templates />} />
-            <Route path="team" element={<Team />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="transactions" element={<Transactions />} /> // Added
-            <Route path="tenants" element={<Tenants />} />
-            <Route path="tenants/:id" element={<TenantDetail />} />
-            <Route path="infrastructure/servers" element={<Servers />} />
-            <Route path="infrastructure/backups" element={<BackupAccounts />} />
-            <Route path="campaigns" element={<Campaigns />} />
-            <Route path="campaigns/:id" element={<CampaignDetail />} />
-            <Route path="smtp-accounts" element={<SmtpAccounts />} />
-            <Route path="workflows" element={<Workflows />} />
-            <Route path="workflows/new" element={<WorkflowEditor />} />
-            <Route path="workflows/:id" element={<Workflows />} />
-            <Route path="workflows/:id/edit" element={<WorkflowEditor />} />
-            <Route path="api-docs" element={<ApiDocumentation />} />
-            <Route path="pricing" element={<PricingPage />} />
-            <Route path="pricing" element={<PricingPage />} />
-            <Route path="blogs" element={
-              <Suspense fallback={<PageLoader />}>
-                <BlogsList />
-              </Suspense>
-            } />
-            <Route path="blogs/new" element={
-              <Suspense fallback={<PageLoader />}>
-                <BlogEditor />
-              </Suspense>
-            } />
-            <Route path="blogs/:id/edit" element={
-              <Suspense fallback={<PageLoader />}>
-                <BlogEditor />
-              </Suspense>
-            } />
-
+            <Route path="templates" element={<LazyRoute element={<Templates />} />} />
+            <Route path="team" element={<LazyRoute element={<Team />} />} />
+            <Route path="settings" element={<LazyRoute element={<Settings />} />} />
+            <Route path="transactions" element={<LazyRoute element={<Transactions />} />} />
+            <Route path="tenants" element={<LazyRoute element={<Tenants />} />} />
+            <Route path="tenants/:id" element={<LazyRoute element={<TenantDetail />} />} />
+            <Route path="infrastructure/servers" element={<LazyRoute element={<Servers />} />} />
+            <Route path="infrastructure/backups" element={<LazyRoute element={<BackupAccounts />} />} />
+            <Route path="campaigns" element={<LazyRoute element={<Campaigns />} />} />
+            <Route path="campaigns/:id" element={<LazyRoute element={<CampaignDetail />} />} />
+            <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />
+            <Route path="workflows" element={<LazyRoute element={<Workflows />} />} />
+            <Route path="workflows/new" element={<LazyRoute element={<WorkflowEditor />} />} />
+            <Route path="workflows/:id" element={<LazyRoute element={<Workflows />} />} />
+            <Route path="workflows/:id/edit" element={<LazyRoute element={<WorkflowEditor />} />} />
+            <Route path="api-docs" element={<LazyRoute element={<ApiDocumentation />} />} />
+            <Route path="pricing" element={<LazyRoute element={<PricingPage />} />} />
+            <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
+            <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
+            <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
           </Route>
         </Route>
       </Route>
 
-      {/* Catch-all 404 - redirect to login */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
@@ -122,8 +102,11 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <AppRoutes />
-          <Toaster
+          <QueryClientProvider client={queryClient}>
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
+            <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -159,6 +142,7 @@ export default function App() {
               },
             }}
           />
+          </QueryClientProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
