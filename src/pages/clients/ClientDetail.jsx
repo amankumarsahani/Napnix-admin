@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Activity type configurations
 const ACTIVITY_TYPES = {
@@ -66,13 +64,9 @@ export default function ClientDetail() {
 
     const fetchClient = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/clients/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/clients/${id}`);
             setClient(res.data.client || res.data);
         } catch (error) {
-            console.error('Failed to fetch client:', error);
             toast.error('Failed to load client details');
             navigate('/clients');
         } finally {
@@ -82,27 +76,21 @@ export default function ClientDetail() {
 
     const fetchActivities = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/client/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/client/${id}`);
             if (res.data.success) {
                 setActivities(res.data.data || []);
             }
         } catch (error) {
-            console.error('Failed to fetch activities:', error);
+            // silently ignore
         }
     };
 
     const fetchProjects = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/projects?clientId=${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get('/projects', { params: { clientId: id } });
             setProjects(res.data.projects || res.data || []);
         } catch (error) {
-            console.error('Failed to fetch projects:', error);
+            // silently ignore
         }
     };
 
@@ -112,15 +100,12 @@ export default function ClientDetail() {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_URL}/activities`, {
+            await apiClient.post('/activities', {
                 entityType: 'client',
                 entityId: id,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             toast.success('Activity added');

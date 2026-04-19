@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
 import { useAuth } from '../../contexts/AuthContext';
 import { leadsAPI } from '../../api';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Activity type configurations
 const ACTIVITY_TYPES = {
@@ -82,7 +80,7 @@ export default function LeadDetail() {
             const response = await leadsAPI.getAssignableUsers();
             setAssignableUsers(response.data || []);
         } catch (error) {
-            console.error('Failed to fetch assignable users:', error);
+            // silently ignore
         }
     };
 
@@ -102,13 +100,9 @@ export default function LeadDetail() {
 
     const fetchLead = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/leads/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/leads/${id}`);
             setLead(res.data.lead);
         } catch (error) {
-            console.error('Failed to fetch lead:', error);
             toast.error('Failed to load lead details');
             navigate('/leads');
         } finally {
@@ -118,15 +112,12 @@ export default function LeadDetail() {
 
     const fetchActivities = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_URL}/activities/lead/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await apiClient.get(`/activities/lead/${id}`);
             if (res.data.success) {
                 setActivities(res.data.data || []);
             }
         } catch (error) {
-            console.error('Failed to fetch activities:', error);
+            // silently ignore
         }
     };
 
@@ -136,15 +127,12 @@ export default function LeadDetail() {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
-            await axios.post(`${API_URL}/activities`, {
+            await apiClient.post('/activities', {
                 entityType: 'lead',
                 entityId: id,
                 type: activityType,
                 summary: `${ACTIVITY_TYPES[activityType].label} logged`,
                 details: newNote
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
             });
 
             toast.success('Activity added');
@@ -159,10 +147,7 @@ export default function LeadDetail() {
 
     const handleStatusChange = async (newStatus) => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.put(`${API_URL}/leads/${id}`, { status: newStatus }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await apiClient.put(`/leads/${id}`, { status: newStatus });
             toast.success('Status updated');
             fetchLead();
             fetchActivities();

@@ -7,7 +7,6 @@ const apiClient = axios.create({
     },
 });
 
-// Request interceptor to add token
 apiClient.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -21,24 +20,78 @@ apiClient.interceptors.request.use(
     }
 );
 
-// Response interceptor for error handling
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+        if (error) {
+            reject(error);
+        } else {
+            resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
     (response) => response,
-    (error) => {
-        // Only redirect to login for 401 errors on non-auth endpoints
-        // Don't redirect if the error is from login/signin attempt (let the component handle it)
-        const isAuthEndpoint = error.config?.url?.includes('/auth/signin') ||
-            error.config?.url?.includes('/auth/login');
+    async (error) => {
+        const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !isAuthEndpoint) {
-            // Unauthorized - clear token and redirect to login
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+        const isAuthEndpoint = originalRequest?.url?.includes('/auth/signin') ||
+            originalRequest?.url?.includes('/auth/signup') ||
+            originalRequest?.url?.includes('/auth/refresh-token');
+
+        if (error.response?.status === 401 && !isAuthEndpoint && !originalRequest._retry) {
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then((token) => {
+                    originalRequest.headers.Authorization = `Bearer ${token}`;
+                    return apiClient(originalRequest);
+                });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            try {
+                const currentToken = localStorage.getItem('token');
+                if (!currentToken) {
+                    throw new Error('No token available');
+                }
+
+                const response = await axios.post(
+                    `${apiClient.defaults.baseURL}/auth/refresh-token`,
+                    {},
+                    { headers: { Authorization: `Bearer ${currentToken}` } }
+                );
+
+                const { token, user } = response.data;
+
+                localStorage.setItem('token', token);
+                if (user) {
+                    localStorage.setItem('user', JSON.stringify(user));
+                }
+
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                processQueue(null, token);
+
+                return apiClient(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError, null);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
         }
+
         return Promise.reject(error);
     }
 );
 
 export default apiClient;
-
