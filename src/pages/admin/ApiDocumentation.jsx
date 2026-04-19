@@ -123,6 +123,7 @@ const Icons = {
 };
 
 const ApiDocumentation = () => {
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
     const { isDark } = useTheme();
     const [expandedCategories, setExpandedCategories] = useState(['Core']);
     const [expandedEndpoints, setExpandedEndpoints] = useState({});
@@ -151,7 +152,7 @@ const ApiDocumentation = () => {
             icon: 'shield',
             description: 'Authentication, configuration, and dashboard',
             endpoints: [
-                { method: 'POST', path: '/lookup', desc: 'Lookup tenant by email', server: 'registry.nexspiresolutions.co.in', body: { email: 'user@company.com' }, response: { found: true, tenant: { slug: 'acme', api_url: '...' } } },
+                { method: 'POST', path: '/lookup', desc: 'Lookup tenant by email', server: `registry.${domain}`, body: { email: 'user@company.com' }, response: { found: true, tenant: { slug: 'acme', api_url: '...' } } },
                 { method: 'POST', path: '/api/auth/login', desc: 'User login', body: { email: '...', password: '...' }, response: { success: true, token: 'eyJhbGci...' } },
                 { method: 'GET', path: '/api/auth/me', desc: 'Get current user', auth: true, response: { id: 1, email: '...', role: 'admin' } },
                 { method: 'GET', path: '/api/config', desc: 'Get tenant configuration', response: { industry: 'ecommerce', plan: 'growth' } },
@@ -418,10 +419,10 @@ const ApiDocumentation = () => {
                         <div className="flex-1 min-w-0">
                             <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>BASE URL</span>
                             <code className={`block font-mono text-sm truncate ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                                https://{'{tenant}'}-crm-api.nexspiresolutions.co.in
+                                https://{'{tenant}'}-crm-api.{domain}
                             </code>
                         </div>
-                        <button onClick={() => copyToClipboard('https://{tenant}-crm-api.nexspiresolutions.co.in', 'baseurl')} className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}>
+                        <button onClick={() => copyToClipboard(`https://{tenant}-crm-api.${domain}`, 'baseurl')} className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}>
                             {copiedPath === 'baseurl' ? <span className="text-green-400">{Icons.check}</span> : Icons.copy}
                         </button>
                     </div>
@@ -502,7 +503,7 @@ const ApiDocumentation = () => {
 
                 {/* Footer */}
                 <div className={`mt-8 p-6 text-center text-sm rounded-xl ${isDark ? 'bg-slate-800/50 text-slate-500 border-slate-700' : 'bg-white text-gray-400 border-gray-200'} border`}>
-                    <p>Need help? Contact <a href="mailto:support@nexspiresolutions.co.in" className="text-brand-400 hover:underline">support@nexspiresolutions.co.in</a></p>
+                    <p>Need help? Contact <a href={`mailto:support@${domain}`} className="text-brand-400 hover:underline">support@{domain}</a></p>
                     <p className="mt-1 text-xs">© 2024 NexSpire Solutions</p>
                 </div>
             </div>

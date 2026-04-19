@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { BlogService } from '../../api/blogs';
+import { blogsAPI } from '../../api';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiClock } from '../../components/icons/FeatherIcons';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function BlogsList() {
     const navigate = useNavigate();
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination, resetPage } = usePagination(10);
 
     useEffect(() => {
@@ -22,39 +24,44 @@ export default function BlogsList() {
             setLoading(true);
             const params = { page: currentPage, limit: pageSize };
             if (searchTerm) params.search = searchTerm;
-            const response = await BlogService.getAll(params);
+            const response = await blogsAPI.getAll(params);
             if (response.success) {
                 setBlogs(response.blogs || []);
                 if (response.pagination) setPagination(response.pagination);
             }
         } catch (error) {
-            console.error('Failed to fetch blogs:', error);
             toast.error('Failed to load blogs');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this blog?')) return;
-
-        try {
-            await BlogService.delete(id);
-            toast.success('Blog deleted successfully');
-            fetchBlogs();
-        } catch (error) {
-            console.error('Delete error:', error);
-            toast.error('Failed to delete blog');
-        }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Delete Blog',
+            message: 'Are you sure you want to delete this blog? This action cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    await blogsAPI.delete(id);
+                    toast.success('Blog deleted successfully');
+                    fetchBlogs();
+                } catch (error) {
+                    toast.error('Failed to delete blog');
+                }
+            },
+        });
     };
 
     const handleFeatureToggle = async (blog) => {
         try {
-            await BlogService.update(blog.id, { featured: !blog.featured });
+            await blogsAPI.update(blog.id, { featured: !blog.featured });
             toast.success(`Blog ${!blog.featured ? 'featured' : 'unfeatured'} successfully`);
             fetchBlogs();
         } catch (error) {
-            console.error('Update error:', error);
             toast.error('Failed to update blog status');
         }
     };
@@ -203,6 +210,16 @@ export default function BlogsList() {
                 </div>
                 <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
             </div>
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 }

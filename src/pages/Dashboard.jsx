@@ -1,69 +1,78 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import AdminStatsSection from '../components/charts/AdminStatsSection';
 import { dashboardAPI } from '../api';
-import toast from 'react-hot-toast';
+
+// Static Tailwind class map — dynamic interpolation breaks JIT purging
+const colorClasses = {
+    brand: {
+        icon: 'bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400',
+        hover: 'group-hover:text-brand-700 dark:group-hover:text-brand-400',
+    },
+    purple: {
+        icon: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400',
+        hover: 'group-hover:text-purple-700 dark:group-hover:text-purple-400',
+    },
+    blue: {
+        icon: 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400',
+        hover: 'group-hover:text-blue-700 dark:group-hover:text-blue-400',
+    },
+    emerald: {
+        icon: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400',
+        hover: 'group-hover:text-emerald-700 dark:group-hover:text-emerald-400',
+    },
+};
 
 // Mock data removed - fetching from API
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const [isLoading, setIsLoading] = useState(true);
-    const [stats, setStats] = useState([]);
-    const [recentLeads, setRecentLeads] = useState([]);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const [statsData, activityData] = await Promise.all([
-                    dashboardAPI.getStats(),
-                    dashboardAPI.getRecentActivity()
-                ]);
+    const { data: statsData, isLoading: statsLoading } = useQuery({
+        queryKey: ['dashboard-stats'],
+        queryFn: () => dashboardAPI.getStats(),
+    });
 
-                const transformedStats = [
-                    {
-                        label: 'Total Revenue',
-                        value: `Rs.${(statsData.revenue || 0).toLocaleString()}`,
-                        change: '+0%',
-                        isPositive: true,
-                        icon: 'dollar'
-                    },
-                    {
-                        label: 'Active Projects',
-                        value: statsData.activeProjects || 0,
-                        change: '+0',
-                        isPositive: true,
-                        icon: 'briefcase'
-                    },
-                    {
-                        label: 'New Leads',
-                        value: statsData.newLeads || 0,
-                        change: `${statsData.totalLeads || 0} Total`,
-                        isPositive: true,
-                        icon: 'users'
-                    },
-                    {
-                        label: 'Pending Inquiries',
-                        value: statsData.pendingInquiries || 0,
-                        change: 'Action Needed',
-                        isPositive: false,
-                        icon: 'inbox'
-                    },
-                ];
+    const { data: activityData, isLoading: activityLoading } = useQuery({
+        queryKey: ['dashboard-recent-activity'],
+        queryFn: () => dashboardAPI.getRecentActivity(),
+    });
 
-                setStats(transformedStats);
-                setRecentLeads(activityData.recentLeads || []);
-            } catch (error) {
-                console.error('Dashboard error:', error);
-                toast.error('Failed to load dashboard data');
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const isLoading = statsLoading || activityLoading;
 
-        fetchDashboardData();
-    }, []);
+    const stats = statsData ? [
+        {
+            label: 'Total Revenue',
+            value: `Rs.${(statsData.revenue || 0).toLocaleString()}`,
+            change: '+0%',
+            isPositive: true,
+            icon: 'dollar'
+        },
+        {
+            label: 'Active Projects',
+            value: statsData.activeProjects || 0,
+            change: '+0',
+            isPositive: true,
+            icon: 'briefcase'
+        },
+        {
+            label: 'New Leads',
+            value: statsData.newLeads || 0,
+            change: `${statsData.totalLeads || 0} Total`,
+            isPositive: true,
+            icon: 'users'
+        },
+        {
+            label: 'Pending Inquiries',
+            value: statsData.pendingInquiries || 0,
+            change: 'Action Needed',
+            isPositive: false,
+            icon: 'inbox'
+        },
+    ] : [];
+
+    const recentLeads = activityData?.recentLeads || [];
 
     const getIcon = (type) => {
         switch (type) {
@@ -295,12 +304,12 @@ export default function Dashboard() {
                         <div className="grid grid-cols-2 gap-3">
                             {currentActions.map(action => (
                                 <button key={action.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-brand-200 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all group flex flex-col items-center justify-center gap-2 text-center">
-                                    <div className={`w-10 h-10 rounded-full bg-${action.color}-100 dark:bg-${action.color}-900/50 text-${action.color}-600 dark:text-${action.color}-400 flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                                    <div className={`w-10 h-10 rounded-full ${colorClasses[action.color].icon} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
                                         </svg>
                                     </div>
-                                    <span className={`text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-${action.color}-700 dark:group-hover:text-${action.color}-400`}>{action.label}</span>
+                                    <span className={`text-xs font-semibold text-slate-600 dark:text-slate-300 ${colorClasses[action.color].hover}`}>{action.label}</span>
                                 </button>
                             ))}
                         </div>

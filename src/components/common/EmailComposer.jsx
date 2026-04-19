@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { emailTemplatesAPI, documentTemplatesAPI } from '../../api';
+import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 /**
@@ -49,13 +49,11 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
         try {
             try {
                 const [emailRes, docRes] = await Promise.all([
-                    emailTemplatesAPI.getAll().catch(err => {
-                        console.error('Failed to fetch email templates:', err);
+                    templatesAPI.getAll().catch(err => {
                         toast.error('Could not load email templates');
                         return { data: [] };
                     }),
                     documentTemplatesAPI.getAll().catch(err => {
-                        console.error('Failed to fetch document templates:', err);
                         toast.error('Could not load document templates');
                         return { data: [] };
                     })
@@ -63,11 +61,10 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                 setEmailTemplates(emailRes.data || []);
                 setDocumentTemplates(docRes.data || []);
             } catch (error) {
-                console.error('Error fetching templates:', error);
                 toast.error('Failed to fetch templates');
             }
         } catch (error) {
-            console.error('Failed to fetch templates:', error);
+            // silently ignore
         } finally {
             setLoading(false);
         }
@@ -78,7 +75,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
         if (template) {
             try {
                 // Fetch full template content
-                const res = await emailTemplatesAPI.getById(template.id);
+                const res = await templatesAPI.getById(template.id);
                 const fullTemplate = res.data;
                 setEmailData(prev => ({
                     ...prev,
@@ -107,7 +104,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                                 extractedVars.push(...extractVariables(docContent));
                             }
                         } catch (e) {
-                            console.error('Failed to pre-load doc variables:', e);
+                            // silently ignore
                         }
                     }
                 } else {
@@ -180,7 +177,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                 doc.content = fullDoc.data.content;
                 doc.variables = fullDoc.data.variables || extractVariables(doc.content);
             } catch (e) {
-                console.error('Failed to fetch doc details for vars');
+                // silently ignore
             }
         }
 
@@ -220,7 +217,7 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                     });
                 }
             } catch (error) {
-                console.error('Error extracting variables from doc:', error);
+                // silently ignore
             }
         }
     };
@@ -271,14 +268,13 @@ export default function EmailComposer({ isOpen, onClose, recipient, entityType, 
                             });
                         }
                     } catch (e) {
-                        console.error('Failed to prepare document attachment:', doc.id, e);
                         toast.error(`Failed to attach document: ${doc.name}`);
                     }
                 }
             }
 
             // Send the email with attachments
-            await emailTemplatesAPI.send({
+            await templatesAPI.send({
                 to: emailData.to,
                 subject: emailData.subject,
                 html: renderedContent, // Only email body

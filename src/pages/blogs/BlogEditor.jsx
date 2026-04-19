@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { BlogService } from '../../api/blogs';
+import { blogsAPI } from '../../api';
 import { FiArrowLeft, FiSave, FiImage, FiType } from '../../components/icons/FeatherIcons';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
@@ -38,7 +38,7 @@ export default function BlogEditor() {
     const fetchBlog = async () => {
         try {
             setFetching(true);
-            const response = await BlogService.getById(id);
+            const response = await blogsAPI.getById(id);
             if (response.success && response.blog) {
                 setFormData(response.blog);
             } else {
@@ -46,7 +46,6 @@ export default function BlogEditor() {
                 navigate('/blogs');
             }
         } catch (error) {
-            console.error('Fetch error:', error);
             toast.error('Failed to load blog details');
         } finally {
             setFetching(false);
@@ -89,15 +88,14 @@ export default function BlogEditor() {
         try {
             setLoading(true);
             if (isEditMode) {
-                await BlogService.update(id, formData);
+                await blogsAPI.update(id, formData);
                 toast.success('Blog updated successfully');
             } else {
-                await BlogService.create(formData);
+                await blogsAPI.create(formData);
                 toast.success('Blog created successfully');
             }
             navigate('/blogs');
         } catch (error) {
-            console.error('Save error:', error);
             toast.error(error.response?.data?.error || 'Failed to save blog');
         } finally {
             setLoading(false);
