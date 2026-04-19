@@ -3,6 +3,7 @@ import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 // SVG Icon components for template types
 const TypeIcons = {
@@ -57,6 +58,8 @@ export default function Templates() {
     const [previewHtml, setPreviewHtml] = useState(null);
     const [activeTypeFilter, setActiveTypeFilter] = useState('all');
     const [stats, setStats] = useState(null);
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -78,14 +81,14 @@ export default function Templates() {
         fetchTemplates();
         fetchStats();
         fetchAvailableDocuments();
-    }, [activeTypeFilter, currentPage]);
+    }, [activeTypeFilter, currentPage, searchTerm]);
 
     const fetchAvailableDocuments = async () => {
         try {
             const response = await documentTemplatesAPI.getAll();
             setAvailableDocuments(response.data || []);
         } catch (error) {
-            console.error('Failed to load document templates:', error);
+            // silently ignore
         }
     };
 
@@ -95,12 +98,12 @@ export default function Templates() {
             if (activeTypeFilter !== 'all') {
                 params.type = activeTypeFilter;
             }
+            if (searchTerm) params.search = searchTerm;
             const response = await templatesAPI.getAll(params);
             setTemplates(Array.isArray(response.data) ? response.data : []);
             if (response.pagination) setPagination(response.pagination);
         } catch (error) {
             toast.error('Failed to load templates');
-            console.error(error);
         } finally {
             setLoading(false);
         }
@@ -111,7 +114,7 @@ export default function Templates() {
             const response = await templatesAPI.getStats();
             setStats(response.data);
         } catch (error) {
-            console.error('Failed to load stats:', error);
+            // silently ignore
         }
     };
 
@@ -141,16 +144,25 @@ export default function Templates() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this template?')) return;
-        try {
-            await templatesAPI.delete(id);
-            toast.success('Template deleted successfully');
-            fetchTemplates();
-            fetchStats();
-        } catch (error) {
-            toast.error('Failed to delete template');
-        }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Delete Template',
+            message: 'Are you sure you want to delete this template? This action cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    await templatesAPI.delete(id);
+                    toast.success('Template deleted successfully');
+                    fetchTemplates();
+                    fetchStats();
+                } catch (error) {
+                    toast.error('Failed to delete template');
+                }
+            },
+        });
     };
 
     const handleEdit = (template) => {
@@ -253,6 +265,17 @@ export default function Templates() {
                     </svg>
                     New Template
                 </button>
+            </div>
+
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search templates..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* Stats Cards */}
@@ -580,6 +603,16 @@ export default function Templates() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 }

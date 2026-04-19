@@ -2,39 +2,43 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+    email: z.string().min(1, 'Email is required').email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+});
 
 export default function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
+    const { register, handleSubmit, formState: { errors } } = useForm({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: '', password: '' }
+    });
+
     // Redirect if already authenticated
     useEffect(() => {
-        console.log('[Login] Auth state changed:', { isAuthenticated });
         if (isAuthenticated) {
-            console.log('[Login] User is authenticated, redirecting to dashboard');
             navigate('/dashboard', { replace: true });
         }
     }, [isAuthenticated, navigate]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const onSubmit = async (data) => {
         setLoading(true);
 
-        console.log('[Login] Attempting login with:', { email });
-        const result = await login(email, password);
-        console.log('[Login] Login result:', result);
+        const result = await login(data.email, data.password);
 
         if (result.success) {
             toast.success('Welcome back!');
-            console.log('[Login] Login successful, navigating to dashboard');
             navigate('/dashboard', { replace: true });
         } else {
             toast.error(result.message || 'Invalid credentials');
-            console.log('[Login] Login failed:', result.message);
         }
 
         setLoading(false);
@@ -72,7 +76,7 @@ export default function Login() {
                         <p className="text-slate-500 dark:text-slate-400 mt-3 font-medium">Enterprise Management Portal</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6 relative">
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 relative">
                         <div className="space-y-2">
                             <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                                 Email Credentials
@@ -86,13 +90,14 @@ export default function Login() {
                                 <input
                                     id="email"
                                     type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
+                                    {...register('email')}
+                                    className={`block w-full pl-11 pr-4 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200 ${errors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     placeholder="name@nexspire.com"
-                                    required
                                 />
                             </div>
+                            {errors.email && (
+                                <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{errors.email.message}</p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
@@ -108,11 +113,9 @@ export default function Login() {
                                 <input
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-11 pr-12 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
+                                    {...register('password')}
+                                    className={`block w-full pl-11 pr-12 py-3.5 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:focus:ring-brand-400/30 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200 ${errors.password ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     placeholder="••••••••"
-                                    required
                                 />
                                 <button
                                     type="button"
@@ -132,6 +135,9 @@ export default function Login() {
                                     )}
                                 </button>
                             </div>
+                            {errors.password && (
+                                <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{errors.password.message}</p>
+                            )}
                         </div>
 
                         <button

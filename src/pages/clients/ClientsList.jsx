@@ -1,87 +1,107 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientsAPI, billingAPI } from '../../api';
 
 import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const clientSchema = z.object({
+    companyName: z.string().min(1, 'Company name is required'),
+    contactName: z.string().min(1, 'Contact name is required'),
+    email: z.string().min(1, 'Email is required').email('Invalid email'),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    industry: z.string().optional(),
+    status: z.string().default('active'),
+});
 
 export default function ClientsList() {
     const navigate = useNavigate();
-    const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [showModal, setShowModal] = useState(false);
     const [editingClient, setEditingClient] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('growth');
-    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
+    const [billingCycle, setBillingCycle] = useState('monthly');
     const [generatingLink, setGeneratingLink] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    const [formData, setFormData] = useState({
-        companyName: '',
-        contactName: '',
-        email: '',
-        phone: '',
-        address: '',
-        industry: '',
-        status: 'active',
+    const { data: clientsData, isLoading: loading } = useQuery({
+        queryKey: ['clients', { page: currentPage, search: searchTerm }],
+        queryFn: () => clientsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
     });
 
+    const clients = clientsData ? (Array.isArray(clientsData) ? clientsData : clientsData.clients || []) : [];
+
     useEffect(() => {
-        fetchClients();
-    }, [currentPage]);
+        if (clientsData?.pagination) setPagination(clientsData.pagination);
+    }, [clientsData, setPagination]);
 
-    const fetchClients = async () => {
-        try {
-            const data = await clientsAPI.getAll({ page: currentPage, limit: pageSize });
-            setClients(Array.isArray(data) ? data : data.clients || []);
-            if (data.pagination) setPagination(data.pagination);
-        } catch (error) {
-            toast.error('Failed to load clients');
-            console.error(error);
-        } finally {
-            setLoading(false);
+    const form = useForm({
+        resolver: zodResolver(clientSchema),
+        defaultValues: {
+            companyName: '',
+            contactName: '',
+            email: '',
+            phone: '',
+            address: '',
+            industry: '',
+            status: 'active',
         }
-    };
+    });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const onSubmit = async (data) => {
         try {
             if (editingClient) {
-                await clientsAPI.update(editingClient.id, formData);
+                await clientsAPI.update(editingClient.id, data);
                 toast.success('Client updated successfully');
             } else {
-                await clientsAPI.create(formData);
+                await clientsAPI.create(data);
                 toast.success('Client created successfully');
             }
             setShowModal(false);
             resetForm();
-            fetchClients();
+            queryClient.invalidateQueries({ queryKey: ['clients'] });
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this client?')) return;
-
-        try {
-            await clientsAPI.delete(id);
-            toast.success('Client deleted successfully');
-            fetchClients();
-        } catch (error) {
-            toast.error('Failed to delete client');
-        }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Delete Client',
+            message: 'Are you sure you want to delete this client? This action cannot be undone.',
+            variant: 'danger',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    await clientsAPI.delete(id);
+                    toast.success('Client deleted successfully');
+                    queryClient.invalidateQueries({ queryKey: ['clients'] });
+                } catch {
+                    toast.error('Failed to delete client');
+                }
+            },
+        });
     };
 
     const handleEdit = (client) => {
         setEditingClient(client);
-        setFormData({
+        form.reset({
             companyName: client.companyName || '',
             contactName: client.contactName || '',
             email: client.email || '',
@@ -95,7 +115,7 @@ export default function ClientsList() {
 
     const resetForm = () => {
         setEditingClient(null);
-        setFormData({
+        form.reset({
             companyName: '',
             contactName: '',
             email: '',
@@ -139,6 +159,19 @@ export default function ClientsList() {
                 >
                     + Add Client
                 </button>
+            </div>
+
+            <div className="mb-6">
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                    />
+                    <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden border border-transparent dark:border-slate-700">
@@ -233,43 +266,46 @@ export default function ClientsList() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
                         <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">{editingClient ? 'Edit Client' : 'Add New Client'}</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Company Name *</label>
                                     <input
                                         type="text"
-                                        value={formData.companyName}
-                                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                                        required
+                                        {...form.register('companyName')}
+                                        className={`w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none ${form.formState.errors.companyName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {form.formState.errors.companyName && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{form.formState.errors.companyName.message}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Contact Name *</label>
                                     <input
                                         type="text"
-                                        value={formData.contactName}
-                                        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
-                                        required
+                                        {...form.register('contactName')}
+                                        className={`w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none ${form.formState.errors.contactName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {form.formState.errors.contactName && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{form.formState.errors.contactName.message}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email *</label>
                                     <input
                                         type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+                                        {...form.register('email')}
+                                        className={`w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none ${form.formState.errors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {form.formState.errors.email && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{form.formState.errors.email.message}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
                                     <input
                                         type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        {...form.register('phone')}
                                         className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                                     />
                                 </div>
@@ -277,16 +313,14 @@ export default function ClientsList() {
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Industry</label>
                                     <input
                                         type="text"
-                                        value={formData.industry}
-                                        onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                                        {...form.register('industry')}
                                         className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
                                     <select
-                                        value={formData.status}
-                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                        {...form.register('status')}
                                         className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                                     >
                                         <option value="active">Active</option>
@@ -298,8 +332,7 @@ export default function ClientsList() {
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Address</label>
                                 <textarea
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    {...form.register('address')}
                                     className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
                                     rows="3"
                                 />
@@ -419,7 +452,7 @@ export default function ClientsList() {
                                                 setGeneratedLink(response.url);
                                                 toast.success('Payment link generated!');
                                             }
-                                        } catch (err) {
+                                        } catch {
                                             toast.error('Failed to generate link');
                                         } finally {
                                             setGeneratingLink(false);
@@ -435,6 +468,16 @@ export default function ClientsList() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
 
         </div>
     );

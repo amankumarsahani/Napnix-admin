@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
-import axios from 'axios';
+import apiClient from '../../api/axios';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function Team() {
     const { user } = useAuth();
@@ -17,6 +16,8 @@ export default function Team() {
     const [isAddingDept, setIsAddingDept] = useState(false);
     const [departments, setDepartments] = useState(['Management', 'Sales', 'Marketing', 'Development', 'Support']);
     const [newDept, setNewDept] = useState('');
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
@@ -33,11 +34,9 @@ export default function Team() {
 
     const fetchMembers = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/teams`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { page: currentPage, limit: pageSize }
-            });
+            const params = { page: currentPage, limit: pageSize };
+            if (searchTerm) params.search = searchTerm;
+            const response = await apiClient.get('/teams', { params });
             if (response.data.success) {
                 setMembers(response.data.data);
                 if (response.data.pagination) setPagination(response.data.pagination);
@@ -46,7 +45,6 @@ export default function Team() {
                 setDepartments(prev => [...new Set([...prev, ...uniqueDepts])]);
             }
         } catch (error) {
-            console.error('Failed to fetch stats', error);
             toast.error('Failed to load team members');
         } finally {
             setLoading(false);
@@ -55,7 +53,7 @@ export default function Team() {
 
     useEffect(() => {
         fetchMembers();
-    }, [currentPage]);
+    }, [currentPage, searchTerm]);
 
     const handleAddDepartment = () => {
         if (newDept.trim() && !departments.includes(newDept)) {
@@ -70,10 +68,7 @@ export default function Team() {
     const handleInvite = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/teams`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const response = await apiClient.post('/teams', formData);
 
             // Success handling - email is now sent with credentials
             setCreatedUser({
@@ -94,19 +89,24 @@ export default function Team() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to remove this team member?')) {
-            try {
-                const token = localStorage.getItem('token');
-                await axios.delete(`${API_URL}/teams/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setMembers(members.filter(m => m.id !== id));
-                toast.success('Member removed');
-            } catch (error) {
-                toast.error('Failed to remove member');
-            }
-        }
+    const handleDelete = (id) => {
+        setConfirmState({
+            isOpen: true,
+            title: 'Remove Team Member',
+            message: 'Are you sure you want to remove this team member? They will lose access to the platform.',
+            variant: 'danger',
+            confirmText: 'Remove',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                try {
+                    await apiClient.delete(`/teams/${id}`);
+                    setMembers(members.filter(m => m.id !== id));
+                    toast.success('Member removed');
+                } catch (error) {
+                    toast.error('Failed to remove member');
+                }
+            },
+        });
     };
 
     return (
@@ -124,6 +124,17 @@ export default function Team() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                     Add Employee
                 </button>
+            </div>
+
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search team members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* List */}
@@ -332,6 +343,16 @@ export default function Team() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 }

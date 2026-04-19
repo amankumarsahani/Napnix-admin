@@ -4,6 +4,7 @@ import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 const Campaigns = () => {
     const navigate = useNavigate();
@@ -13,6 +14,8 @@ const Campaigns = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [actionLoading, setActionLoading] = useState({});
+    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [searchTerm, setSearchTerm] = useState('');
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
     const intervalRef = useRef(null);
@@ -24,7 +27,7 @@ const Campaigns = () => {
         try {
             if (showLoading) setLoading(true);
             const [campaignsRes, statsRes] = await Promise.all([
-                campaignsAPI.getAll({ page: currentPage, limit: pageSize }),
+                campaignsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
                 campaignsAPI.getDashboardStats()
             ]);
             setCampaigns(campaignsRes.data || []);
@@ -32,12 +35,11 @@ const Campaigns = () => {
             setStats(statsRes.data);
             setLastUpdated(new Date());
         } catch (error) {
-            console.error('Fetch campaigns error:', error);
             if (showLoading) toast.error('Failed to fetch campaigns');
         } finally {
             if (showLoading) setLoading(false);
         }
-    }, [currentPage, pageSize, setPagination]);
+    }, [currentPage, pageSize, searchTerm, setPagination]);
 
     // Initial load and page change
     useEffect(() => {
@@ -79,11 +81,26 @@ const Campaigns = () => {
                     toast.success('Campaign resumed');
                     break;
                 case 'delete':
-                    if (window.confirm('Delete this campaign?')) {
-                        await campaignsAPI.delete(campaignId);
-                        toast.success('Campaign deleted');
-                    }
-                    break;
+                    setConfirmState({
+                        isOpen: true,
+                        title: 'Delete Campaign',
+                        message: 'Are you sure you want to delete this campaign? This action cannot be undone.',
+                        variant: 'danger',
+                        confirmText: 'Delete',
+                        onConfirm: async () => {
+                            setConfirmState({ isOpen: false });
+                            try {
+                                await campaignsAPI.delete(campaignId);
+                                toast.success('Campaign deleted');
+                                fetchData();
+                            } catch (error) {
+                                toast.error('Failed to delete campaign');
+                            } finally {
+                                setActionLoading(prev => ({ ...prev, [campaignId]: null }));
+                            }
+                        },
+                    });
+                    return;
             }
             fetchData();
         } catch (error) {
@@ -158,6 +175,17 @@ const Campaigns = () => {
                         New Campaign
                     </button>
                 </div>
+            </div>
+
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search campaigns..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* Stats Cards */}
@@ -326,6 +354,16 @@ const Campaigns = () => {
                     onSaved={() => { setShowCreateModal(false); setSelectedCampaign(null); fetchData(); }}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={() => setConfirmState({ isOpen: false })}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                variant={confirmState.variant}
+                confirmText={confirmState.confirmText}
+            />
         </div>
     );
 };
@@ -356,7 +394,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
             const res = await campaignsAPI.getTemplates();
             setTemplates(res.data || []);
         } catch (error) {
-            console.error('Failed to load templates:', error);
+            // silently ignore
         }
     };
 

@@ -79,21 +79,23 @@ const Workflows = () => {
     const [loading, setLoading] = useState(true);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedWorkflow, setSelectedWorkflow] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     useEffect(() => {
         fetchWorkflows();
-    }, [currentPage]);
+    }, [currentPage, searchTerm]);
 
     const fetchWorkflows = async () => {
         try {
             setLoading(true);
-            const response = await workflowsAPI.getAll({ page: currentPage, limit: pageSize });
+            const params = { page: currentPage, limit: pageSize };
+            if (searchTerm) params.search = searchTerm;
+            const response = await workflowsAPI.getAll(params);
             setWorkflows(response.data || []);
             if (response.pagination) setPagination(response.pagination);
         } catch (error) {
-            console.error('Failed to fetch workflows:', error);
             toast.error('Failed to load workflows');
         } finally {
             setLoading(false);
@@ -106,7 +108,6 @@ const Workflows = () => {
             toast.success(workflow.is_active ? 'Workflow deactivated' : 'Workflow activated');
             fetchWorkflows();
         } catch (error) {
-            console.error('Failed to toggle workflow:', error);
             toast.error('Failed to toggle workflow');
         }
     };
@@ -120,7 +121,6 @@ const Workflows = () => {
             setSelectedWorkflow(null);
             fetchWorkflows();
         } catch (error) {
-            console.error('Failed to delete workflow:', error);
             toast.error('Failed to delete workflow');
         }
     };
@@ -130,7 +130,6 @@ const Workflows = () => {
             await workflowsAPI.test(workflow.id);
             toast.success('Workflow triggered for testing!');
         } catch (error) {
-            console.error('Failed to test workflow:', error);
             toast.error('Failed to test workflow');
         }
     };
@@ -184,6 +183,17 @@ const Workflows = () => {
                     <Icons.Plus />
                     Create Workflow
                 </button>
+            </div>
+
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Search workflows..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* Stats */}

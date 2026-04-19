@@ -2,6 +2,24 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { settingsAPI } from '../../api';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+const profileSchema = z.object({
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    phone: z.string().optional(),
+});
+
+const passwordSchema = z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+});
 
 export default function Settings() {
     const { user } = useAuth();
@@ -9,19 +27,24 @@ export default function Settings() {
     const [loading, setLoading] = useState(false);
     const [testingProvider, setTestingProvider] = useState(null);
 
-    // Profile State
-    const [profileData, setProfileData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
-        email: user?.email || '',
-        phone: user?.phone || ''
+    // Profile Form
+    const profileForm = useForm({
+        resolver: zodResolver(profileSchema),
+        defaultValues: {
+            firstName: user?.firstName || '',
+            lastName: user?.lastName || '',
+            phone: user?.phone || ''
+        }
     });
 
-    // Password State
-    const [passwordData, setPasswordData] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+    // Password Form
+    const passwordForm = useForm({
+        resolver: zodResolver(passwordSchema),
+        defaultValues: {
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        }
     });
 
     // AI Settings State
@@ -101,15 +124,14 @@ export default function Settings() {
                 }
             }
         } catch (error) {
-            console.error('Failed to fetch settings:', error);
+            // silently ignore
         }
     };
 
-    const handleProfileUpdate = async (e) => {
-        e.preventDefault();
+    const handleProfileUpdate = async (data) => {
         setLoading(true);
         try {
-            // await authAPI.updateProfile(profileData);
+            // await authAPI.updateProfile(data);
             toast.success('Profile updated successfully');
         } catch (error) {
             toast.error('Failed to update profile');
@@ -118,16 +140,12 @@ export default function Settings() {
         }
     };
 
-    const handlePasswordUpdate = async (e) => {
-        e.preventDefault();
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            return toast.error('New passwords do not match');
-        }
+    const handlePasswordUpdate = async (data) => {
         setLoading(true);
         try {
-            // await authAPI.changePassword(passwordData);
+            // await authAPI.changePassword(data);
             toast.success('Password changed successfully');
-            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            passwordForm.reset();
         } catch (error) {
             toast.error('Failed to change password');
         } finally {
@@ -219,10 +237,10 @@ export default function Settings() {
                     {activeTab === 'profile' && (
                         <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Profile Information</h2>
-                            <form onSubmit={handleProfileUpdate} className="space-y-6">
+                            <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
                                 <div className="flex items-center gap-6 mb-8">
                                     <div className="w-24 h-24 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-3xl font-bold text-brand-600 dark:text-brand-400 border-4 border-white dark:border-slate-700 shadow-lg">
-                                        {profileData.firstName[0]}
+                                        {profileForm.watch('firstName')?.[0] || ''}
                                     </div>
                                     <button type="button" className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                         Change Avatar
@@ -233,19 +251,23 @@ export default function Settings() {
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">First Name</label>
                                         <input
                                             type="text"
-                                            value={profileData.firstName}
-                                            onChange={e => setProfileData({ ...profileData, firstName: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            {...profileForm.register('firstName')}
+                                            className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${profileForm.formState.errors.firstName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                         />
+                                        {profileForm.formState.errors.firstName && (
+                                            <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{profileForm.formState.errors.firstName.message}</p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Last Name</label>
                                         <input
                                             type="text"
-                                            value={profileData.lastName}
-                                            onChange={e => setProfileData({ ...profileData, lastName: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                            {...profileForm.register('lastName')}
+                                            className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${profileForm.formState.errors.lastName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                         />
+                                        {profileForm.formState.errors.lastName && (
+                                            <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{profileForm.formState.errors.lastName.message}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div>
@@ -253,7 +275,7 @@ export default function Settings() {
                                     <input
                                         type="email"
                                         disabled
-                                        value={profileData.email}
+                                        value={user?.email || ''}
                                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed"
                                     />
                                 </div>
@@ -261,8 +283,7 @@ export default function Settings() {
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone Number</label>
                                     <input
                                         type="tel"
-                                        value={profileData.phone}
-                                        onChange={e => setProfileData({ ...profileData, phone: e.target.value })}
+                                        {...profileForm.register('phone')}
                                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
                                     />
                                 </div>
@@ -282,36 +303,39 @@ export default function Settings() {
                     {activeTab === 'security' && (
                         <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Security Settings</h2>
-                            <form onSubmit={handlePasswordUpdate} className="space-y-6">
+                            <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Current Password</label>
                                     <input
                                         type="password"
-                                        required
-                                        value={passwordData.currentPassword}
-                                        onChange={e => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        {...passwordForm.register('currentPassword')}
+                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.currentPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {passwordForm.formState.errors.currentPassword && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.currentPassword.message}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">New Password</label>
                                     <input
                                         type="password"
-                                        required
-                                        value={passwordData.newPassword}
-                                        onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        {...passwordForm.register('newPassword')}
+                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {passwordForm.formState.errors.newPassword && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.newPassword.message}</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Confirm New Password</label>
                                     <input
                                         type="password"
-                                        required
-                                        value={passwordData.confirmPassword}
-                                        onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        {...passwordForm.register('confirmPassword')}
+                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     />
+                                    {passwordForm.formState.errors.confirmPassword && (
+                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.confirmPassword.message}</p>
+                                    )}
                                 </div>
                                 <div className="pt-4">
                                     <button
