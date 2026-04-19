@@ -332,7 +332,8 @@ const NODE_PALETTE = {
         { id: 'ai_pick_topic', label: 'AI Pick Topic', type: 'action', actionType: 'ai_pick_topic' },
         { id: 'ai_write_blog', label: 'AI Write Blog', type: 'action', actionType: 'ai_write_blog' },
         { id: 'ai_fetch_image', label: 'Fetch Image (Unsplash)', type: 'action', actionType: 'ai_fetch_image' },
-        { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' }
+        { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' },
+        { id: 'index_url', label: 'Google Search URL Index', type: 'action', actionType: 'index_url' }
     ],
     conditions: [
         { id: 'condition', label: 'If/Else Condition', type: 'condition' }
@@ -2268,7 +2269,82 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
-                        {selectedNode.type === 'delay' && (
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'index_url' && (
+                            <>
+                                <div className="p-3 bg-cyan-50 dark:bg-cyan-900/30 rounded-lg border border-cyan-100 dark:border-cyan-800">
+                                    <div className="flex items-center gap-2 text-cyan-700 dark:text-cyan-300 mb-1">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <span className="font-semibold text-sm">Search Engine Indexing</span>
+                                    </div>
+                                    <p className="text-xs text-cyan-600 dark:text-cyan-400">
+                                        Submits URLs to Google, Bing, Yandex for faster indexing.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        URL to Index (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={localConfig?.url || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })}
+                                        placeholder="https://yoursite.com/page or {{blog_slug}}"
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">Leave blank to auto-detect from previous nodes (blog_slug, page_slug).</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Search Engines
+                                    </label>
+                                    <div className="space-y-2 mt-1">
+                                        {[
+                                            { key: 'indexnow', label: 'IndexNow (Bing, Yandex, Naver)' },
+                                            { key: 'google', label: 'Google Indexing API' },
+                                            { key: 'websub', label: 'WebSub (RSS notification)' },
+                                        ].map(engine => (
+                                            <label key={engine.key} className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={(localConfig?.engines || ['indexnow', 'google', 'websub']).includes(engine.key)}
+                                                    onChange={(e) => {
+                                                        const current = localConfig?.engines || ['indexnow', 'google', 'websub'];
+                                                        const updated = e.target.checked ? [...current, engine.key] : current.filter(k => k !== engine.key);
+                                                        setLocalConfig({ ...localConfig, engines: updated });
+                                                    }}
+                                                    className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                />
+                                                <span className="text-sm text-slate-700 dark:text-slate-300">{engine.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Auto-detects:</strong> blog_slug, page_slug, product_id<br />
+                                    <strong>Best after:</strong> Post Blog
+                                </div>
+                                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
+                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Credentials (optional — falls back to global settings)</label>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Website URL</label>
+                                            <input type="text" value={localConfig?.websiteUrl || ''} onChange={(e) => setLocalConfig({ ...localConfig, websiteUrl: e.target.value })} placeholder="https://yoursite.com (uses global if empty)" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">IndexNow API Key</label>
+                                            <input type="text" value={localConfig?.indexnowKey || ''} onChange={(e) => setLocalConfig({ ...localConfig, indexnowKey: e.target.value })} placeholder="Uses global key if empty" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Google Service Account JSON</label>
+                                            <textarea value={localConfig?.googleServiceAccountJson || ''} onChange={(e) => setLocalConfig({ ...localConfig, googleServiceAccountJson: e.target.value })} placeholder='Paste service account JSON (uses global if empty)' rows={3} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                            <p className="text-xs text-slate-500 mt-1">Required for Google Indexing API. Add the service account as a site owner in Google Search Console.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                             <>
                                 <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
                                     <p className="text-sm text-cyan-700 dark:text-cyan-400 font-medium">
@@ -2533,7 +2609,7 @@ const WorkflowEditor = () => {
 
                         {/* Generic / No Settings Fallback */}
                         {!['trigger', 'action', 'condition', 'delay'].includes(selectedNode.type) ||
-                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog'].includes(selectedNode.data.actionType)) ? (
+                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url'].includes(selectedNode.data.actionType)) ? (
                             <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
                                 <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
                                 <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
