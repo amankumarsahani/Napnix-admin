@@ -9,8 +9,9 @@ import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
+const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
+
 const Tenants = () => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
     const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
     const [stats, setStats] = useState(null);
