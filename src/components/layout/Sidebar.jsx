@@ -57,6 +57,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             ]
         },
         {
+            title: 'NexMail',
+            id: 'nexmail-menu',
+            items: [
+                { name: 'EM Dashboard', path: '/email-marketing', icon: <FiBarChart2 />, roles: ['admin'] },
+                { name: 'Contacts', path: '/email-marketing/contacts', icon: <FiUsers />, roles: ['admin'] },
+                { name: 'Templates', path: '/email-marketing/templates', icon: <FiLayout />, roles: ['admin'] },
+                { name: 'Campaigns', path: '/email-marketing/campaigns', icon: <FiMail />, roles: ['admin'] },
+                { name: 'Automations', path: '/email-marketing/automations', icon: <FiActivity />, roles: ['admin'] },
+                { name: 'SMTP', path: '/email-marketing/smtp', icon: <FiServer />, roles: ['admin'] },
+            ]
+        },
+        {
             title: 'System',
             id: 'system-menu',
             items: [

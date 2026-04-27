@@ -601,4 +601,46 @@ export const blogsAPI = {
     },
 };
 
+// Tool Registry API
+export const toolsAPI = {
+    getAll: async () => {
+        const response = await apiClient.get('/tools');
+        return response.data;
+    },
+
+    getPlans: async (toolId) => {
+        const response = await apiClient.get(`/tools/${toolId}/plans`);
+        return response.data;
+    },
+
+    getTenantTools: async (tenantId) => {
+        const response = await apiClient.get(`/tools/tenant/${tenantId}`);
+        return response.data;
+    },
+
+    enableTool: async (tenantId, data) => {
+        const response = await apiClient.post(`/tools/tenant/${tenantId}/enable`, data);
+        return response.data;
+    },
+
+    disableTool: async (tenantId, data) => {
+        const response = await apiClient.post(`/tools/tenant/${tenantId}/disable`, data);
+        return response.data;
+    },
+
+    getToolStats: async (tenantId, toolSlug) => {
+        const response = await apiClient.get(`/tools/tenant/${tenantId}/${toolSlug}/stats`);
+        return response.data;
+    },
+};
+
+// NexMail API (proxied through nexs-backend or direct)
+export const nexmailAPI = {
+    baseUrl: import.meta.env.VITE_NEXMAIL_API_URL || '',
+
+    getDashboard: async (tenantId) => {
+        const response = await apiClient.get(`/tools/tenant/${tenantId}/nexmail/stats`);
+        return response.data;
+    },
+};
 

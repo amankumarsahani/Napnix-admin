@@ -38,6 +38,20 @@ const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage'));
 const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
 const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
 
+const EmailMarketingDashboard = React.lazy(() => import('./pages/email-marketing/Dashboard'));
+const EmailContacts = React.lazy(() => import('./pages/email-marketing/Contacts'));
+const EmailContactDetail = React.lazy(() => import('./pages/email-marketing/ContactDetail'));
+const EmailTemplates = React.lazy(() => import('./pages/email-marketing/Templates'));
+const TemplateEditor = React.lazy(() => import('./pages/email-marketing/TemplateEditor'));
+const EmailCampaigns = React.lazy(() => import('./pages/email-marketing/Campaigns'));
+const CampaignWizard = React.lazy(() => import('./pages/email-marketing/CampaignWizard'));
+const EmailCampaignDetail = React.lazy(() => import('./pages/email-marketing/CampaignDetail'));
+const EmailAutomations = React.lazy(() => import('./pages/email-marketing/Automations'));
+const AutomationEditor = React.lazy(() => import('./pages/email-marketing/AutomationEditor'));
+const EmailSmtp = React.lazy(() => import('./pages/email-marketing/SmtpAccounts'));
+const EmailDomains = React.lazy(() => import('./pages/email-marketing/Domains'));
+const ToolRegistry = React.lazy(() => import('./pages/tools/ToolRegistry'));
+
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -88,6 +102,21 @@ function AppRoutes() {
             <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
             <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
             <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
+            <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
+            <Route path="email-marketing" element={<LazyRoute element={<EmailMarketingDashboard />} />} />
+            <Route path="email-marketing/contacts" element={<LazyRoute element={<EmailContacts />} />} />
+            <Route path="email-marketing/contacts/:id" element={<LazyRoute element={<EmailContactDetail />} />} />
+            <Route path="email-marketing/templates" element={<LazyRoute element={<EmailTemplates />} />} />
+            <Route path="email-marketing/templates/new" element={<LazyRoute element={<TemplateEditor />} />} />
+            <Route path="email-marketing/templates/:id/edit" element={<LazyRoute element={<TemplateEditor />} />} />
+            <Route path="email-marketing/campaigns" element={<LazyRoute element={<EmailCampaigns />} />} />
+            <Route path="email-marketing/campaigns/new" element={<LazyRoute element={<CampaignWizard />} />} />
+            <Route path="email-marketing/campaigns/:id" element={<LazyRoute element={<EmailCampaignDetail />} />} />
+            <Route path="email-marketing/automations" element={<LazyRoute element={<EmailAutomations />} />} />
+            <Route path="email-marketing/automations/new" element={<LazyRoute element={<AutomationEditor />} />} />
+            <Route path="email-marketing/automations/:id/edit" element={<LazyRoute element={<AutomationEditor />} />} />
+            <Route path="email-marketing/smtp" element={<LazyRoute element={<EmailSmtp />} />} />
+            <Route path="email-marketing/domains" element={<LazyRoute element={<EmailDomains />} />} />
           </Route>
         </Route>
       </Route>
