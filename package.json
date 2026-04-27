@@ -30,7 +30,10 @@
     "react-router-dom": "^7.9.6",
     "recharts": "^3.5.1",
     "swagger-ui-react": "^5.31.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
