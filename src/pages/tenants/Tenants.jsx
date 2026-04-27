@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantsAPI } from '../../api';
 import { plansAPI } from '../../api';
+import { toolsAPI } from '../../api';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
@@ -393,6 +394,7 @@ const Tenants = () => {
 const CreateTenantModal = ({ onClose, onCreated }) => {
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
+    const [availableTools, setAvailableTools] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -401,7 +403,8 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
         industry_type: 'general',
         plan_id: '',
         server_id: '',
-        custom_domain: ''
+        custom_domain: '',
+        tools: ['nexcrm', 'nexmail']
     });
     const [loading, setLoading] = useState(false);
 
@@ -422,6 +425,15 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                         setFormData(prev => ({ ...prev, server_id: bestServer.id }));
                     }
                 }
+                try {
+                    const toolsRes = await toolsAPI.getAll();
+                    if (toolsRes.success) setAvailableTools(toolsRes.data || []);
+                } catch (e) {
+                    setAvailableTools([
+                        { id: 1, slug: 'nexcrm', name: 'NexCRM', description: 'Customer Relationship Management', icon: 'briefcase' },
+                        { id: 2, slug: 'nexmail', name: 'NexMail', description: 'Email Marketing Engine', icon: 'mail' }
+                    ]);
+                }
             } catch (_error) {
                 toast.error('Failed to load form data');
             }
@@ -435,6 +447,15 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
             ...prev,
             [name]: value,
             ...(name === 'name' && { slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') })
+        }));
+    };
+
+    const toggleTool = (slug) => {
+        setFormData(prev => ({
+            ...prev,
+            tools: prev.tools.includes(slug)
+                ? prev.tools.filter(t => t !== slug)
+                : [...prev.tools, slug]
         }));
     };
 
@@ -579,12 +600,54 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Tools to Enable
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {(availableTools.length > 0 ? availableTools : [
+                                    { slug: 'nexcrm', name: 'NexCRM', description: 'CRM with leads, invoicing, workflows' },
+                                    { slug: 'nexmail', name: 'NexMail', description: 'Email marketing & automations' }
+                                ]).filter(t => t.status !== 'deprecated').map(tool => (
+                                    <button
+                                        key={tool.slug}
+                                        type="button"
+                                        onClick={() => toggleTool(tool.slug)}
+                                        className={`flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-all ${
+                                            formData.tools.includes(tool.slug)
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                            formData.tools.includes(tool.slug)
+                                                ? 'bg-brand-600 border-brand-600 text-white'
+                                                : 'border-slate-300 dark:border-slate-500'
+                                        }`}>
+                                            {formData.tools.includes(tool.slug) && (
+                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{tool.name}</p>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{tool.description}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            {formData.tools.length === 0 && (
+                                <p className="text-xs text-amber-600 mt-1">Select at least one tool. You can enable more later from the tenant detail page.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
-                                <FiServer className="text-indigo-500" /> Destination Server
+                                <FiServer className="text-indigo-500" /> Destination Server {formData.tools.includes('nexcrm') && '*'}
                             </label>
                             <select
-                                required
+                                required={formData.tools.includes('nexcrm')}
                                 name="server_id"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                 value={formData.server_id}
