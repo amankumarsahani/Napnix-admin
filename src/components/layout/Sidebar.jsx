@@ -75,6 +75,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Documents', path: '/documents', icon: <FiFileText />, roles: ['admin', 'sales_operator'] },
                 { name: 'Templates', path: '/templates', icon: <FiLayout />, roles: ['admin'] },
                 { name: 'Mobile App', path: '/mobile-app', icon: <FiGrid />, roles: ['admin'] },
+                { name: 'Telemetry', path: '/telemetry', icon: <FiActivity />, roles: ['admin'] },
                 { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] },
                 { name: 'Settings', path: '/settings', icon: <FiSettings />, roles: ['admin'] },
                 { name: 'Team', path: '/team', icon: <FiUsers />, roles: ['admin'] },
