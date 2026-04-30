@@ -74,4 +74,11 @@ export const mobileAppAdminAPI = {
     }
 };
 
+export const telemetryAdminAPI = {
+    getStats: async () => {
+        const response = await axios.get('/admin/telemetry/stats');
+        return response.data;
+    }
+};
+
 export default serverService;
