@@ -2357,6 +2357,8 @@ const WorkflowEditor = () => {
                                 </div>
                             </>
                         )}
+
+                        {selectedNode.type === 'delay' && (
                             <>
                                 <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
                                     <p className="text-sm text-cyan-700 dark:text-cyan-400 font-medium">
