@@ -29,6 +29,7 @@ const TenantDetail = React.lazy(() => import('./pages/tenants/TenantDetail'));
 const Servers = React.lazy(() => import('./pages/servers/Servers'));
 const BackupAccounts = React.lazy(() => import('./pages/backups/BackupAccounts'));
 const ApiDocumentation = React.lazy(() => import('./pages/admin/ApiDocumentation'));
+const MobileApp = React.lazy(() => import('./pages/admin/MobileApp'));
 const Campaigns = React.lazy(() => import('./pages/marketing/Campaigns'));
 const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail'));
 const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
@@ -98,6 +99,7 @@ function AppRoutes() {
             <Route path="workflows/:id" element={<LazyRoute element={<Workflows />} />} />
             <Route path="workflows/:id/edit" element={<LazyRoute element={<WorkflowEditor />} />} />
             <Route path="api-docs" element={<LazyRoute element={<ApiDocumentation />} />} />
+            <Route path="mobile-app" element={<LazyRoute element={<MobileApp />} />} />
             <Route path="pricing" element={<LazyRoute element={<PricingPage />} />} />
             <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
             <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />

@@ -100,6 +100,7 @@ export default function DashboardLayout() {
         if (path.includes('clients')) return 'Clients';
         if (path.includes('projects')) return 'Projects';
         if (path.includes('leads')) return 'Leads';
+        if (path.includes('mobile-app')) return 'Mobile App';
         return 'Dashboard';
     };
 
