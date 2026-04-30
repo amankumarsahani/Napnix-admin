@@ -58,4 +58,20 @@ const serverService = {
     }
 };
 
+export const mobileAppAdminAPI = {
+    getCurrentRelease: async () => {
+        const response = await axios.get('/admin/mobile-app');
+        return response.data;
+    },
+
+    uploadRelease: async (formData) => {
+        const response = await axios.post('/admin/mobile-app/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    }
+};
+
 export default serverService;

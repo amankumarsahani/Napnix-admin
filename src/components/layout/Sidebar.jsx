@@ -11,7 +11,7 @@ import { LuSun, LuMoon } from 'react-icons/lu';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
-    const { theme, toggleTheme, isDark } = useTheme();
+    const { toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
     const [openMenus, setOpenMenus] = useState(['main-menu', 'infrastructure']);
 
@@ -74,6 +74,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Documents', path: '/documents', icon: <FiFileText />, roles: ['admin', 'sales_operator'] },
                 { name: 'Templates', path: '/templates', icon: <FiLayout />, roles: ['admin'] },
+                { name: 'Mobile App', path: '/mobile-app', icon: <FiGrid />, roles: ['admin'] },
                 { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] },
                 { name: 'Settings', path: '/settings', icon: <FiSettings />, roles: ['admin'] },
                 { name: 'Team', path: '/team', icon: <FiUsers />, roles: ['admin'] },
