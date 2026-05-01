@@ -12,6 +12,12 @@ import { telemetryAdminAPI } from '../../api/admin';
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
+// Helper to parse SQLite UTC strings safely into local JS Date objects
+const parseSqliteDate = (dateStr) => {
+    if (!dateStr) return new Date();
+    return new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
@@ -67,7 +73,7 @@ export default function Telemetry() {
 
             // Daily Active
             if (device.last_seen_at) {
-                const date = new Date(device.last_seen_at).toLocaleDateString();
+                const date = parseSqliteDate(device.last_seen_at).toLocaleDateString();
                 dailyActive[date] = (dailyActive[date] || 0) + 1;
             }
 
@@ -348,10 +354,10 @@ export default function Telemetry() {
                                     <td className="py-5 px-6 text-right align-top">
                                         <div className="flex items-center justify-end gap-2 text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-flex">
                                             <FiClock className="w-4 h-4 text-indigo-500" />
-                                            {new Date(device.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {parseSqliteDate(device.last_seen_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                         <p className="text-xs text-slate-400 mt-1 mr-1 font-medium">
-                                            {new Date(device.last_seen_at).toLocaleDateString()}
+                                            {parseSqliteDate(device.last_seen_at).toLocaleDateString()}
                                         </p>
                                     </td>
                                 </tr>
