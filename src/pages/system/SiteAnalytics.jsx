@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import { useQuery } from '@tanstack/react-query';
 import {
-    AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import {
@@ -190,7 +191,6 @@ function HeatmapCanvas({ data }) {
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         const ctx = canvas.getContext('2d');
         const W = canvas.width;
         const H = canvas.height;
@@ -201,24 +201,12 @@ function HeatmapCanvas({ data }) {
         const scaleY = H / refH;
 
         ctx.clearRect(0, 0, W, H);
-
-        // Viewport background
-        ctx.fillStyle = '#0f172a';
+        ctx.fillStyle = '#080c14';
         ctx.fillRect(0, 0, W, H);
 
-        // Subtle nav-bar guide
-        ctx.fillStyle = 'rgba(99, 102, 241, 0.07)';
-        ctx.fillRect(0, 0, W, Math.round(70 * scaleY));
-        ctx.strokeStyle = 'rgba(99, 102, 241, 0.15)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, Math.round(70 * scaleY));
-        ctx.lineTo(W, Math.round(70 * scaleY));
-        ctx.stroke();
-
         if (!data?.points?.length) {
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
-            ctx.font = '14px system-ui';
+            ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
+            ctx.font = '13px system-ui';
             ctx.textAlign = 'center';
             ctx.fillText('No click data for this page in the selected range', W / 2, H / 2);
             return;
@@ -226,90 +214,225 @@ function HeatmapCanvas({ data }) {
 
         const maxCount = Math.max(...data.points.map(p => p.count), 1);
 
-        // ── Draw heat blobs (blurred layer) ──
+        // ── Glow layer (large blurred blobs) ──
         ctx.save();
-        if (typeof ctx.filter !== 'undefined') {
-            ctx.filter = 'blur(18px)';
-        }
-
+        ctx.filter = 'blur(48px)';
         for (const pt of data.points) {
             const x = pt.x * scaleX;
             const y = pt.y * scaleY;
-            const intensity = pt.count / maxCount;
+            const t = pt.count / maxCount;          // 0..1
+            const hue    = Math.round((1 - t) * 215); // 215=blue → 0=red
+            const radius = (70 + t * 110) * Math.min(scaleX, scaleY);
 
-            // Hue: 240 = blue (cool/low) → 0 = red (hot/high)
-            const hue    = Math.round((1 - intensity) * 220);
-            const radius = (28 + intensity * 55) * Math.min(scaleX, scaleY);
-
-            const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
-            grad.addColorStop(0,   `hsla(${hue}, 100%, 60%, ${0.85 * intensity + 0.1})`);
-            grad.addColorStop(0.5, `hsla(${hue}, 100%, 55%, ${0.4  * intensity})`);
-            grad.addColorStop(1,   `hsla(${hue}, 100%, 50%, 0)`);
-
-            ctx.fillStyle = grad;
+            const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            g.addColorStop(0,    `hsla(${hue},100%,58%,${0.7 + t * 0.25})`);
+            g.addColorStop(0.35, `hsla(${hue},100%,52%,${0.35 * t})`);
+            g.addColorStop(1,    `hsla(${hue},100%,48%,0)`);
+            ctx.fillStyle = g;
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
 
-        // ── Overlay: label top 5 hotspots ──
-        const top = data.points.slice(0, 5);
-        for (const pt of top) {
-            const x  = pt.x * scaleX;
-            const y  = pt.y * scaleY;
-            const lbl = (pt.text || pt.element || '?').slice(0, 18);
-
-            // White dot
+        // ── Sharp inner core (unblurred) ──
+        for (const pt of data.points) {
+            const x = pt.x * scaleX;
+            const y = pt.y * scaleY;
+            const t = pt.count / maxCount;
+            const hue    = Math.round((1 - t) * 215);
+            const radius = (12 + t * 22) * Math.min(scaleX, scaleY);
+            const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            g.addColorStop(0,   `hsla(${hue},100%,72%,${0.5 + t * 0.4})`);
+            g.addColorStop(0.6, `hsla(${hue},100%,58%,${0.2 * t})`);
+            g.addColorStop(1,   'transparent');
+            ctx.fillStyle = g;
             ctx.beginPath();
-            ctx.arc(x, y, 4, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
-
-            // Label pill
-            ctx.font = 'bold 9px system-ui, sans-serif';
-            ctx.textAlign = 'center';
-            const tw = ctx.measureText(lbl).width;
-            const bx = x - tw / 2 - 4;
-            const by = y - 22;
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
-            ctx.beginPath();
-            ctx.roundRect(bx, by, tw + 8, 14, 3);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.92)';
-            ctx.fillText(lbl, x, by + 10);
         }
 
-        // ── Legend ──
-        const legendItems = [
-            { hue: 220, label: 'Low' },
-            { hue: 120, label: 'Mid' },
-            { hue: 30,  label: 'High' },
+        // ── Labels: white dot + pill for top 8 hotspots ──
+        const top = data.points.slice(0, 8);
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        for (const pt of top) {
+            const x   = pt.x * scaleX;
+            const y   = pt.y * scaleY;
+            const lbl = (pt.text || pt.element || '?').slice(0, 22);
+
+            // Dot
+            ctx.beginPath();
+            ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            // Pill
+            ctx.textAlign = 'center';
+            const tw  = ctx.measureText(lbl).width;
+            const pw  = tw + 10;
+            const ph  = 16;
+            const px  = x - pw / 2;
+            const py  = y - ph - 8;
+            ctx.fillStyle = 'rgba(8, 12, 20, 0.85)';
+            ctx.beginPath();
+            ctx.roundRect(px, py, pw, ph, 4);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.93)';
+            ctx.fillText(lbl, x, py + 11);
+        }
+
+        // ── Legend (top-right) ──
+        const items = [
+            { hue: 215, label: 'Low' },
+            { hue: 115, label: 'Mid' },
+            { hue: 28,  label: 'High' },
             { hue: 0,   label: 'Peak' },
         ];
-        const lx = W - 60;
-        let ly = 12;
-        legendItems.forEach(({ hue, label }) => {
+        let ly = 14;
+        const lx = W - 56;
+        for (const { hue, label } of items) {
             ctx.beginPath();
             ctx.arc(lx, ly + 5, 5, 0, Math.PI * 2);
-            ctx.fillStyle = `hsl(${hue}, 100%, 55%)`;
+            ctx.fillStyle = `hsl(${hue},100%,55%)`;
             ctx.fill();
-            ctx.font = '9px system-ui';
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '9.5px system-ui';
+            ctx.fillStyle = 'rgba(255,255,255,0.65)';
             ctx.textAlign = 'left';
-            ctx.fillText(label, lx + 8, ly + 9);
-            ly += 16;
-        });
+            ctx.fillText(label, lx + 9, ly + 9);
+            ly += 18;
+        }
     }, [data]);
 
     return (
         <canvas
             ref={canvasRef}
-            width={1024}
-            height={620}
+            width={1200}
+            height={680}
             className="w-full rounded-xl"
-            style={{ background: '#0f172a' }}
+            style={{ background: '#080c14' }}
         />
+    );
+}
+
+// ── World Map Heatmap ─────────────────────────────────────────────────────────
+const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+// ISO 3166-1 numeric → alpha-2 (covers 170+ countries)
+const ISO_NUM_A2 = {
+    '4':'AF','8':'AL','12':'DZ','24':'AO','32':'AR','36':'AU','40':'AT',
+    '50':'BD','56':'BE','64':'BT','68':'BO','76':'BR','100':'BG','104':'MM',
+    '116':'KH','120':'CM','124':'CA','144':'LK','152':'CL','156':'CN',
+    '170':'CO','180':'CD','191':'HR','192':'CU','196':'CY','203':'CZ',
+    '208':'DK','214':'DO','218':'EC','818':'EG','231':'ET','233':'EE',
+    '246':'FI','250':'FR','276':'DE','288':'GH','300':'GR','320':'GT',
+    '332':'HT','340':'HN','348':'HU','356':'IN','360':'ID','364':'IR',
+    '368':'IQ','372':'IE','376':'IL','380':'IT','392':'JP','400':'JO',
+    '404':'KE','408':'KP','410':'KR','414':'KW','418':'LA','422':'LB',
+    '428':'LV','434':'LY','440':'LT','442':'LU','458':'MY','484':'MX',
+    '496':'MN','504':'MA','508':'MZ','516':'NA','524':'NP','528':'NL',
+    '554':'NZ','558':'NI','562':'NE','566':'NG','578':'NO','586':'PK',
+    '591':'PA','598':'PG','604':'PE','608':'PH','616':'PL','620':'PT',
+    '630':'PR','634':'QA','642':'RO','643':'RU','646':'RW','682':'SA',
+    '686':'SN','694':'SL','703':'SK','705':'SI','706':'SO','710':'ZA',
+    '716':'ZW','724':'ES','729':'SD','740':'SR','752':'SE','756':'CH',
+    '760':'SY','762':'TJ','764':'TH','768':'TG','780':'TT','788':'TN',
+    '792':'TR','800':'UG','804':'UA','784':'AE','826':'GB','834':'TZ',
+    '840':'US','858':'UY','860':'UZ','862':'VE','704':'VN','887':'YE',
+    '894':'ZM','275':'PS','076':'BR','032':'AR','076':'BR',
+};
+
+function worldHeatColor(t) {
+    // t: 0 = no traffic, 1 = peak
+    if (t <= 0)   return '#111d2e';           // dark slate – no data
+    if (t < 0.08) return '#1e3a5f';           // very low – dark blue
+    if (t < 0.25) return '#1d4ed8';           // low – blue
+    if (t < 0.5)  return '#7c3aed';           // medium – purple
+    if (t < 0.75) return '#ea580c';           // high – orange
+    return '#dc2626';                          // peak – red
+}
+
+function WorldMapHeatmap({ data, loading }) {
+    const [tooltip, setTooltip] = useState(null);
+
+    const maxEvents = useMemo(
+        () => Math.max(...(data?.countries || []).map(c => c.events), 1),
+        [data]
+    );
+
+    const byCode = useMemo(() => {
+        const m = {};
+        for (const c of (data?.countries || [])) m[c.country] = c;
+        return m;
+    }, [data]);
+
+    if (loading) return <div className="h-72 bg-[#0d1829] rounded-xl animate-pulse" />;
+
+    return (
+        <div className="relative rounded-xl overflow-hidden bg-[#0a0f1e] border border-slate-700/40">
+            <ComposableMap
+                projection="geoNaturalEarth1"
+                width={900}
+                height={440}
+                style={{ width: '100%', height: 'auto' }}
+            >
+                <ZoomableGroup zoom={1}>
+                    <Geographies geography={GEO_URL}>
+                        {({ geographies }) =>
+                            geographies.map(geo => {
+                                const a2  = ISO_NUM_A2[String(geo.id)];
+                                const row = a2 ? byCode[a2] : null;
+                                const t   = row ? row.events / maxEvents : 0;
+                                return (
+                                    <Geography
+                                        key={geo.rsmKey}
+                                        geography={geo}
+                                        fill={worldHeatColor(t)}
+                                        stroke="#0a0f1e"
+                                        strokeWidth={0.4}
+                                        style={{
+                                            default:  { outline: 'none' },
+                                            hover:    { fill: t > 0 ? worldHeatColor(Math.min(t * 1.5, 1)) : '#1e3a5f', outline: 'none', cursor: row ? 'pointer' : 'default' },
+                                            pressed:  { outline: 'none' },
+                                        }}
+                                        onMouseMove={(evt) => {
+                                            if (!row) return;
+                                            setTooltip({ a2, events: row.events, sessions: row.sessions, x: evt.clientX, y: evt.clientY });
+                                        }}
+                                        onMouseLeave={() => setTooltip(null)}
+                                    />
+                                );
+                            })
+                        }
+                    </Geographies>
+                </ZoomableGroup>
+            </ComposableMap>
+
+            {/* Legend */}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                {[
+                    { color: '#1d4ed8', label: 'Low' },
+                    { color: '#7c3aed', label: 'Mid' },
+                    { color: '#ea580c', label: 'High' },
+                    { color: '#dc2626', label: 'Peak' },
+                ].map(({ color, label }) => (
+                    <div key={label} className="flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                        <span className="text-[10px] text-slate-400">{label}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Tooltip */}
+            {tooltip && (
+                <div
+                    className="fixed z-50 pointer-events-none bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl shadow-2xl"
+                    style={{ left: tooltip.x + 14, top: tooltip.y - 44 }}
+                >
+                    <p className="font-bold text-slate-100 mb-0.5">{tooltip.a2}</p>
+                    <p className="text-slate-300">{fmt(tooltip.events)} events · {fmt(tooltip.sessions)} sessions</p>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -546,69 +669,55 @@ export default function SiteAnalytics() {
                 </div>
             </Card>
 
-            {/* ── Geography ── */}
+            {/* ── Geography + World Map ── */}
             <Card className="p-5">
-                <SectionTitle icon={<FiGlobe size={16} />} title="Geographic Distribution" subtitle="Where your visitors are coming from" />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Bar chart */}
-                    <div>
-                        {geoLoading ? (
-                            <Skeleton h="h-56" />
-                        ) : (
-                            <ResponsiveContainer width="100%" height={220}>
-                                <BarChart
-                                    layout="vertical"
-                                    data={(geography?.countries || []).slice(0, 10)}
-                                    margin={{ top: 0, right: 10, bottom: 0, left: 10 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" strokeOpacity={0.5} />
-                                    <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                                    <YAxis type="category" dataKey="country" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={40} />
-                                    <Tooltip content={<ChartTooltip />} />
-                                    <Bar dataKey="events" name="Events" radius={[0, 4, 4, 0]}>
-                                        {(geography?.countries || []).slice(0, 10).map((_, i) => (
-                                            <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
+                <SectionTitle icon={<FiGlobe size={16} />} title="Geographic Distribution" subtitle="Where your visitors are coming from · hover a country for details" />
 
-                    {/* Table */}
-                    <div className="overflow-auto">
-                        <table className="w-full text-xs">
-                            <thead>
-                                <tr className="text-slate-400 dark:text-slate-500 uppercase tracking-wide">
-                                    <th className="text-left py-1 font-semibold">#</th>
-                                    <th className="text-left py-1 font-semibold">Country</th>
-                                    <th className="text-right py-1 font-semibold">Sessions</th>
-                                    <th className="text-right py-1 font-semibold">Events</th>
-                                    <th className="text-right py-1 font-semibold">Share</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {geoLoading ? (
-                                    [...Array(6)].map((_, i) => (
-                                        <tr key={i}><td colSpan={5}><Skeleton h="h-6" /></td></tr>
-                                    ))
-                                ) : (
-                                    (geography?.countries || []).slice(0, 15).map((c, i) => {
-                                        const pct = Math.round((Number(c.events) / maxCountry) * 100);
-                                        return (
-                                            <tr key={i} className="border-t border-slate-50 dark:border-slate-700/50">
-                                                <td className="py-1.5 text-slate-400">{i + 1}</td>
-                                                <td className="py-1.5 font-medium text-slate-700 dark:text-slate-200">{c.country}</td>
-                                                <td className="py-1.5 text-right text-slate-500">{fmt(c.sessions)}</td>
-                                                <td className="py-1.5 text-right font-semibold text-slate-700 dark:text-slate-200">{fmt(c.events)}</td>
-                                                <td className="py-1.5 text-right text-indigo-500">{pct}%</td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                {/* World map heatmap */}
+                <div className="mb-5">
+                    <WorldMapHeatmap data={geography} loading={geoLoading} />
+                </div>
+
+                {/* Country table */}
+                <div className="overflow-auto">
+                    <table className="w-full text-xs">
+                        <thead>
+                            <tr className="text-slate-400 dark:text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700">
+                                <th className="text-left pb-2 font-semibold">#</th>
+                                <th className="text-left pb-2 font-semibold">Country</th>
+                                <th className="text-right pb-2 font-semibold">Sessions</th>
+                                <th className="text-right pb-2 font-semibold">Events</th>
+                                <th className="text-right pb-2 font-semibold w-24">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {geoLoading ? (
+                                [...Array(6)].map((_, i) => (
+                                    <tr key={i}><td colSpan={5} className="py-1"><Skeleton h="h-6" /></td></tr>
+                                ))
+                            ) : (
+                                (geography?.countries || []).slice(0, 15).map((c, i) => {
+                                    const pct = Math.round((Number(c.events) / maxCountry) * 100);
+                                    return (
+                                        <tr key={i} className="border-b border-slate-50 dark:border-slate-700/40 hover:bg-slate-50 dark:hover:bg-slate-700/20">
+                                            <td className="py-1.5 text-slate-400 pr-2">{i + 1}</td>
+                                            <td className="py-1.5 font-medium text-slate-700 dark:text-slate-200 pr-2">{c.country}</td>
+                                            <td className="py-1.5 text-right text-slate-500 pr-2">{fmt(c.sessions)}</td>
+                                            <td className="py-1.5 text-right font-semibold text-slate-700 dark:text-slate-200 pr-2">{fmt(c.events)}</td>
+                                            <td className="py-1.5 pr-2">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+                                                        <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                    <span className="text-indigo-500 w-8 text-right">{pct}%</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </Card>
 
