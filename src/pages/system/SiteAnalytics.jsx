@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { geoNaturalEarth1, geoPath } from 'd3-geo';
+import { feature as topoFeature } from 'topojson-client';
 import { useQuery } from '@tanstack/react-query';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -313,177 +315,182 @@ function HeatmapCanvas({ data }) {
     );
 }
 
-// ── World Map Heatmap (pure SVG, no external library) ────────────────────────
-// Country centroids: [longitude, latitude]
-const CENTROIDS = {
-    IN:[78.96,20.59],  US:[-95.71,37.09], GB:[-3.44,55.38],  AU:[133.78,-25.27],
-    DE:[10.45,51.17],  FR:[2.21,46.23],   CA:[-96.82,56.13],  BR:[-51.93,-14.24],
-    CN:[104.20,35.86], JP:[138.25,36.20],  RU:[105.32,61.52],  SG:[103.82,1.35],
-    AE:[53.85,23.42],  PK:[69.35,30.38],  BD:[90.36,23.68],   ID:[113.92,-0.79],
-    NG:[8.68,9.08],    ZA:[25.08,-29.00],  EG:[30.80,26.82],   SA:[45.08,23.89],
-    MX:[-102.55,23.63],PH:[121.77,12.88], TH:[100.99,15.87],  VN:[108.28,14.06],
-    TR:[35.24,38.96],  IT:[12.57,41.87],   ES:[-3.75,40.46],   PL:[19.14,51.92],
-    NL:[5.29,52.13],   SE:[18.64,60.13],   NO:[8.47,60.47],    DK:[9.50,56.26],
-    FI:[25.75,61.92],  CH:[8.23,46.82],    AT:[14.55,47.52],   BE:[4.47,50.50],
-    PT:[-8.22,39.40],  GR:[21.82,39.07],   RO:[24.97,45.94],   CZ:[15.47,49.82],
-    HU:[19.50,47.16],  UA:[31.17,48.38],   NZ:[172.49,-40.90], AR:[-63.62,-38.42],
-    CL:[-71.54,-35.68],CO:[-74.30,4.10],   PE:[-75.02,-9.19],  MY:[109.70,4.21],
-    LK:[80.77,7.87],   NP:[84.12,28.39],   KE:[37.91,0.02],    GH:[-1.02,7.95],
-    ET:[40.49,9.15],   TZ:[34.89,-6.37],   KR:[127.77,35.91],  IQ:[43.68,33.22],
-    IR:[53.69,32.42],  IL:[34.85,31.05],   MA:[-7.09,31.79],   TN:[9.54,33.89],
-    DZ:[3.00,28.03],   KW:[47.48,29.31],   QA:[51.18,25.35],   OM:[57.54,21.51],
-    BH:[50.64,26.15],  JO:[36.24,31.24],   LB:[35.86,33.85],   SY:[38.30,34.80],
-    CU:[-79.52,21.52], DO:[-70.16,18.74],  EC:[-78.18,-1.83],  BO:[-64.62,-16.29],
-    VE:[-66.59,6.42],  UY:[-56.02,-32.52], IE:[-8.24,53.41],   SK:[19.70,48.67],
-    HR:[15.20,45.10],  RS:[21.01,44.02],   BG:[25.49,42.73],   LT:[23.88,55.17],
-    LV:[24.60,56.88],  EE:[25.01,58.60],   IS:[-18.94,64.96],  MK:[21.74,41.61],
-    MM:[95.96,21.91],  KH:[104.99,12.56],  LA:[102.50,17.97],  MN:[103.85,46.86],
-    AF:[67.71,33.94],  UZ:[64.59,41.38],   KZ:[66.92,48.02],   GE:[43.36,42.32],
-    AM:[44.56,40.07],  AZ:[47.58,40.14],   BY:[28.04,53.71],   MD:[28.37,47.41],
-    AL:[20.17,41.15],  BA:[17.68,43.92],   MK:[21.74,41.61],   ME:[19.37,42.71],
-    XK:[20.90,42.60],  TW:[120.96,23.70],  HK:[114.11,22.40],  MO:[113.55,22.20],
-    MU:[57.55,-20.35], LY:[17.23,26.33],   SD:[29.98,12.86],   SS:[31.30,6.88],
-    CM:[12.35,5.69],   SN:[-14.45,14.50],  CI:[-5.54,7.54],    TG:[0.82,8.62],
-    BJ:[2.32,9.31],    CD:[24.68,-2.88],   AO:[17.87,-11.20],  ZM:[27.85,-13.13],
-    ZW:[29.15,-19.02], MZ:[35.53,-18.67],  MG:[46.87,-18.77],  RW:[29.87,-1.94],
-    UG:[32.29,1.37],   TZ:[34.89,-6.37],   BW:[24.68,-22.33],  NA:[18.49,-22.96],
+// ── World Map Heatmap (canvas + d3-geo + topojson) ────────────────────────────
+// ISO 3166-1 numeric → alpha-2
+const NUM_TO_A2 = {
+    '4':'AF','8':'AL','12':'DZ','24':'AO','32':'AR','36':'AU','40':'AT',
+    '50':'BD','56':'BE','64':'BT','68':'BO','76':'BR','100':'BG','104':'MM',
+    '116':'KH','120':'CM','124':'CA','144':'LK','152':'CL','156':'CN',
+    '170':'CO','180':'CD','191':'HR','192':'CU','196':'CY','203':'CZ',
+    '208':'DK','214':'DO','218':'EC','818':'EG','231':'ET','233':'EE',
+    '246':'FI','250':'FR','276':'DE','288':'GH','300':'GR','320':'GT',
+    '332':'HT','340':'HN','348':'HU','356':'IN','360':'ID','364':'IR',
+    '368':'IQ','372':'IE','376':'IL','380':'IT','392':'JP','400':'JO',
+    '404':'KE','408':'KP','410':'KR','414':'KW','418':'LA','422':'LB',
+    '428':'LV','434':'LY','440':'LT','442':'LU','458':'MY','484':'MX',
+    '496':'MN','504':'MA','508':'MZ','516':'NA','524':'NP','528':'NL',
+    '554':'NZ','558':'NI','562':'NE','566':'NG','578':'NO','586':'PK',
+    '591':'PA','598':'PG','604':'PE','608':'PH','616':'PL','620':'PT',
+    '634':'QA','642':'RO','643':'RU','646':'RW','682':'SA','686':'SN',
+    '694':'SL','703':'SK','705':'SI','706':'SO','710':'ZA','716':'ZW',
+    '724':'ES','729':'SD','740':'SR','752':'SE','756':'CH','760':'SY',
+    '762':'TJ','764':'TH','768':'TG','780':'TT','788':'TN','792':'TR',
+    '800':'UG','804':'UA','784':'AE','826':'GB','834':'TZ','840':'US',
+    '858':'UY','860':'UZ','862':'VE','704':'VN','887':'YE','894':'ZM',
+    '275':'PS','882':'WS','780':'TT','050':'BD','076':'BR',
 };
 
-function worldBubbleColor(t) {
-    if (t <= 0)    return null;               // no bubble
-    if (t < 0.15)  return '#1d4ed8';          // low – blue
-    if (t < 0.40)  return '#7c3aed';          // medium – purple
-    if (t < 0.70)  return '#ea580c';          // high – orange
-    return '#dc2626';                          // peak – red
-}
+const TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+let _topoCache = null;
+const getTopo = () => {
+    if (!_topoCache) _topoCache = fetch(TOPO_URL).then(r => r.json());
+    return _topoCache;
+};
 
-const MAP_W = 900, MAP_H = 430;
-function projectEq(lon, lat) {
-    // Equirectangular: simple and dependency-free
-    return [
-        ((lon + 180) / 360) * MAP_W,
-        ((90 - lat)  / 180) * MAP_H,
-    ];
+function mapFillColor(t) {
+    if (t <= 0)    return '#0c1624';
+    if (t < 0.08)  return '#13294a';
+    if (t < 0.25)  return '#1d4ed8';
+    if (t < 0.55)  return '#7c3aed';
+    if (t < 0.80)  return '#ea580c';
+    return '#dc2626';
 }
 
 function WorldMapHeatmap({ data, loading }) {
+    const mainRef  = useRef(null);
+    const pickRef  = useRef(null);
+    const featsRef = useRef([]);
     const [tooltip, setTooltip] = useState(null);
 
     const maxEvents = useMemo(
         () => Math.max(...(data?.countries || []).map(c => c.events), 1),
         [data]
     );
+    const byCode = useMemo(() => {
+        const m = {};
+        for (const c of (data?.countries || [])) m[c.country] = c;
+        return m;
+    }, [data]);
 
-    const points = useMemo(() => {
-        return (data?.countries || [])
-            .filter(c => CENTROIDS[c.country])
-            .map(c => {
-                const t = c.events / maxEvents;
-                const [x, y] = projectEq(...CENTROIDS[c.country]);
-                const r = 5 + t * 32;
-                return { ...c, x, y, r, t, color: worldBubbleColor(t) };
-            })
-            .filter(p => p.color);
-    }, [data, maxEvents]);
+    useEffect(() => {
+        const canvas = mainRef.current;
+        const pick   = pickRef.current;
+        if (!canvas || !pick) return;
 
-    if (loading) return <div className="h-64 bg-[#080c14] rounded-xl animate-pulse" />;
+        const W = canvas.width;
+        const H = canvas.height;
+        const ctx  = canvas.getContext('2d');
+        const pCtx = pick.getContext('2d');
 
-    // Lat/lon grid lines
-    const latLines = [-60, -30, 0, 30, 60].map(lat => {
-        const [, y] = projectEq(0, lat);
-        return { y, eq: lat === 0 };
-    });
-    const lonLines = [-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150].map(lon => {
-        const [x] = projectEq(lon, 0);
-        return { x, pm: lon === 0 };
-    });
+        ctx.fillStyle = '#080c14';
+        ctx.fillRect(0, 0, W, H);
+
+        let cancelled = false;
+
+        getTopo().then(topology => {
+            if (cancelled) return;
+            const countries = topoFeature(topology, topology.objects.countries);
+
+            const proj = geoNaturalEarth1()
+                .scale(W / 5.8)
+                .translate([W / 2, H / 2 + 24]);
+
+            const pathMain = geoPath(proj, ctx);
+            const pathPick = geoPath(proj, pCtx);
+
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#080c14';
+            ctx.fillRect(0, 0, W, H);
+            pCtx.clearRect(0, 0, W, H);
+
+            const feats = [];
+
+            countries.features.forEach((geo, i) => {
+                const a2  = NUM_TO_A2[String(geo.id)];
+                const row = a2 ? byCode[a2] : null;
+                const t   = row ? row.events / maxEvents : 0;
+
+                // Main canvas — actual country shape
+                ctx.beginPath();
+                pathMain(geo);
+                ctx.fillStyle = mapFillColor(t);
+                ctx.fill();
+                ctx.strokeStyle = '#060b14';
+                ctx.lineWidth = 0.4;
+                ctx.stroke();
+
+                // Pick buffer — unique color per country that has data
+                if (row) {
+                    const idx = i + 1;
+                    pCtx.beginPath();
+                    pathPick(geo);
+                    pCtx.fillStyle = `rgb(${(idx >> 16) & 255},${(idx >> 8) & 255},${idx & 255})`;
+                    pCtx.fill();
+                    feats.push({ idx, a2, events: row.events, sessions: row.sessions });
+                }
+            });
+
+            featsRef.current = feats;
+        }).catch(() => {
+            ctx.fillStyle = 'rgba(100,116,139,0.4)';
+            ctx.font = '13px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('World map unavailable — check network', W / 2, H / 2);
+        });
+
+        return () => { cancelled = true; };
+    }, [data, loading, byCode, maxEvents]);
+
+    const handleMouseMove = useCallback((e) => {
+        const main = mainRef.current;
+        const pick = pickRef.current;
+        if (!main || !pick || !featsRef.current.length) { setTooltip(null); return; }
+
+        const rect   = main.getBoundingClientRect();
+        const scaleX = pick.width  / rect.width;
+        const scaleY = pick.height / rect.height;
+        const px = Math.round((e.clientX - rect.left) * scaleX);
+        const py = Math.round((e.clientY - rect.top)  * scaleY);
+
+        const px4 = pick.getContext('2d').getImageData(px, py, 1, 1).data;
+        const idx  = (px4[0] << 16) | (px4[1] << 8) | px4[2];
+        if (idx === 0) { setTooltip(null); return; }
+
+        const feat = featsRef.current.find(f => f.idx === idx);
+        setTooltip(feat ? { ...feat, mx: e.clientX, my: e.clientY } : null);
+    }, []);
+
+    if (loading) return <div className="h-72 bg-[#080c14] rounded-xl animate-pulse" />;
 
     return (
         <div
-            className="relative rounded-xl overflow-hidden bg-[#080c14] border border-slate-700/40 select-none"
+            className="relative rounded-xl overflow-hidden bg-[#080c14] border border-slate-700/40"
             onMouseLeave={() => setTooltip(null)}
         >
-            <svg
-                viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-                className="w-full"
-                style={{ display: 'block', height: 'auto' }}
-            >
-                {/* Ocean background */}
-                <rect width={MAP_W} height={MAP_H} fill="#080c14" />
+            <canvas
+                ref={mainRef}
+                width={960}
+                height={480}
+                className="w-full block"
+                onMouseMove={handleMouseMove}
+            />
+            <canvas ref={pickRef} width={960} height={480} style={{ display: 'none' }} />
 
-                {/* Grid */}
-                {latLines.map(({ y, eq }) => (
-                    <line key={y} x1={0} y1={y} x2={MAP_W} y2={y}
-                        stroke={eq ? 'rgba(148,163,184,0.14)' : 'rgba(148,163,184,0.05)'}
-                        strokeWidth={eq ? 0.8 : 0.5} />
-                ))}
-                {lonLines.map(({ x, pm }) => (
-                    <line key={x} x1={x} y1={0} x2={x} y2={MAP_H}
-                        stroke={pm ? 'rgba(148,163,184,0.14)' : 'rgba(148,163,184,0.05)'}
-                        strokeWidth={pm ? 0.8 : 0.5} />
-                ))}
-
-                {/* Glow blobs (outer) */}
-                {points.map(p => (
-                    <circle key={`g-${p.country}`}
-                        cx={p.x} cy={p.y} r={p.r * 3}
-                        fill={p.color} opacity={0.10 + p.t * 0.08}
-                    />
-                ))}
-
-                {/* Mid glow */}
-                {points.map(p => (
-                    <circle key={`m-${p.country}`}
-                        cx={p.x} cy={p.y} r={p.r * 1.8}
-                        fill={p.color} opacity={0.22 + p.t * 0.1}
-                    />
-                ))}
-
-                {/* Core */}
-                {points.map(p => (
-                    <circle key={`c-${p.country}`}
-                        cx={p.x} cy={p.y} r={p.r}
-                        fill={p.color} opacity={0.85}
-                        className="cursor-pointer"
-                        onMouseEnter={(e) => setTooltip({ ...p, mx: e.clientX, my: e.clientY })}
-                        onMouseMove={(e)  => setTooltip(t => t ? { ...t, mx: e.clientX, my: e.clientY } : t)}
-                        onMouseLeave={() => setTooltip(null)}
-                    />
-                ))}
-
-                {/* Country labels for top 6 */}
-                {points.slice(0, 6).map(p => (
-                    <text key={`l-${p.country}`}
-                        x={p.x} y={p.y - p.r - 5}
-                        textAnchor="middle"
-                        fill="rgba(255,255,255,0.72)"
-                        fontSize={9}
-                        fontFamily="system-ui, sans-serif"
-                        fontWeight="600"
-                        pointerEvents="none"
-                    >
-                        {p.country}
-                    </text>
-                ))}
-            </svg>
-
-            {/* Legend */}
-            <div className="absolute bottom-3 left-3 flex items-center gap-3 bg-black/40 backdrop-blur-sm px-2.5 py-1.5 rounded-lg">
-                {[['#1d4ed8','Low'],['#7c3aed','Mid'],['#ea580c','High'],['#dc2626','Peak']].map(([color, label]) => (
+            <div className="absolute bottom-3 left-3 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-2.5 py-1.5 rounded-lg">
+                {[['#13294a','None'],['#1d4ed8','Low'],['#7c3aed','Mid'],['#ea580c','High'],['#dc2626','Peak']].map(([color, label]) => (
                     <div key={label} className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                        <span className="w-2 h-2 rounded-sm" style={{ background: color }} />
                         <span className="text-[10px] text-slate-400">{label}</span>
                     </div>
                 ))}
             </div>
 
-            {/* Tooltip */}
             {tooltip && (
                 <div
                     className="fixed z-50 pointer-events-none bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded-xl shadow-2xl"
-                    style={{ left: tooltip.mx + 14, top: tooltip.my - 48 }}
+                    style={{ left: tooltip.mx + 14, top: tooltip.my - 52 }}
                 >
-                    <p className="font-bold text-slate-100">{tooltip.country}</p>
+                    <p className="font-bold text-slate-100">{tooltip.a2}</p>
                     <p className="text-slate-400 mt-0.5">{fmt(tooltip.events)} events · {fmt(tooltip.sessions)} sessions</p>
                 </div>
             )}

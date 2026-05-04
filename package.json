@@ -23,6 +23,7 @@
     "@tanstack/react-query": "^5.99.2",
     "@xyflow/react": "^12.6.1",
     "axios": "^1.7.9",
+    "d3-geo": "^3.1.1",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -33,6 +34,7 @@
     "react-router-dom": "^7.9.6",
     "recharts": "^3.5.1",
     "swagger-ui-react": "^5.31.0",
+    "topojson-client": "^3.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
