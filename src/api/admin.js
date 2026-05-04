@@ -91,6 +91,7 @@ export const siteAnalyticsAPI = {
     getJourney:        (range) => axios.get('/admin/site-analytics/journey', { params: { range } }).then(r => r.data),
     getEvents:         (range) => axios.get('/admin/site-analytics/events', { params: { range } }).then(r => r.data),
     getAIInsights:     (analytics) => axios.post('/admin/site-analytics/ai-insights', { analytics }).then(r => r.data),
+    getHeatmap:        (page, range) => axios.get('/admin/site-analytics/heatmap', { params: { page, range } }).then(r => r.data),
 };
 
 export default serverService;
