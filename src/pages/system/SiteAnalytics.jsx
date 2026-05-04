@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -183,6 +183,136 @@ const renderInsight = (text) => {
     });
 };
 
+// ── Heatmap Canvas ────────────────────────────────────────────────────────────
+function HeatmapCanvas({ data }) {
+    const canvasRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const refW = data?.viewportWidth  || 1280;
+        const refH = data?.viewportHeight || 800;
+        const scaleX = W / refW;
+        const scaleY = H / refH;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Viewport background
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, W, H);
+
+        // Subtle nav-bar guide
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.07)';
+        ctx.fillRect(0, 0, W, Math.round(70 * scaleY));
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, Math.round(70 * scaleY));
+        ctx.lineTo(W, Math.round(70 * scaleY));
+        ctx.stroke();
+
+        if (!data?.points?.length) {
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+            ctx.font = '14px system-ui';
+            ctx.textAlign = 'center';
+            ctx.fillText('No click data for this page in the selected range', W / 2, H / 2);
+            return;
+        }
+
+        const maxCount = Math.max(...data.points.map(p => p.count), 1);
+
+        // ── Draw heat blobs (blurred layer) ──
+        ctx.save();
+        if (typeof ctx.filter !== 'undefined') {
+            ctx.filter = 'blur(18px)';
+        }
+
+        for (const pt of data.points) {
+            const x = pt.x * scaleX;
+            const y = pt.y * scaleY;
+            const intensity = pt.count / maxCount;
+
+            // Hue: 240 = blue (cool/low) → 0 = red (hot/high)
+            const hue    = Math.round((1 - intensity) * 220);
+            const radius = (28 + intensity * 55) * Math.min(scaleX, scaleY);
+
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            grad.addColorStop(0,   `hsla(${hue}, 100%, 60%, ${0.85 * intensity + 0.1})`);
+            grad.addColorStop(0.5, `hsla(${hue}, 100%, 55%, ${0.4  * intensity})`);
+            grad.addColorStop(1,   `hsla(${hue}, 100%, 50%, 0)`);
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // ── Overlay: label top 5 hotspots ──
+        const top = data.points.slice(0, 5);
+        for (const pt of top) {
+            const x  = pt.x * scaleX;
+            const y  = pt.y * scaleY;
+            const lbl = (pt.text || pt.element || '?').slice(0, 18);
+
+            // White dot
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fill();
+
+            // Label pill
+            ctx.font = 'bold 9px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            const tw = ctx.measureText(lbl).width;
+            const bx = x - tw / 2 - 4;
+            const by = y - 22;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+            ctx.beginPath();
+            ctx.roundRect(bx, by, tw + 8, 14, 3);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.fillText(lbl, x, by + 10);
+        }
+
+        // ── Legend ──
+        const legendItems = [
+            { hue: 220, label: 'Low' },
+            { hue: 120, label: 'Mid' },
+            { hue: 30,  label: 'High' },
+            { hue: 0,   label: 'Peak' },
+        ];
+        const lx = W - 60;
+        let ly = 12;
+        legendItems.forEach(({ hue, label }) => {
+            ctx.beginPath();
+            ctx.arc(lx, ly + 5, 5, 0, Math.PI * 2);
+            ctx.fillStyle = `hsl(${hue}, 100%, 55%)`;
+            ctx.fill();
+            ctx.font = '9px system-ui';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.textAlign = 'left';
+            ctx.fillText(label, lx + 8, ly + 9);
+            ly += 16;
+        });
+    }, [data]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={1024}
+            height={620}
+            className="w-full rounded-xl"
+            style={{ background: '#0f172a' }}
+        />
+    );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function SiteAnalytics() {
     const [range, setRange]           = useState('30d');
@@ -190,6 +320,7 @@ export default function SiteAnalytics() {
     const [aiLoading, setAiLoading]   = useState(false);
     const [aiError, setAiError]       = useState(null);
     const [expandedSession, setExpandedSession] = useState(null);
+    const [heatmapPage, setHeatmapPage] = useState('');
 
     const qOpts = (key) => ({
         queryKey: [key, range],
@@ -197,7 +328,7 @@ export default function SiteAnalytics() {
         staleTime: 2 * 60 * 1000,
     });
 
-    const { data: overview,  isLoading: ovLoading,  refetch: refetchOv }  = useQuery({ ...qOpts('getOverview'),       queryFn: () => siteAnalyticsAPI.getOverview(range) });
+    const { data: overview,  isLoading: ovLoading,  refetch: refetchOv }  = useQuery({ ...qOpts('getOverview'), queryFn: () => siteAnalyticsAPI.getOverview(range) });
     const { data: timeSeries, isLoading: tsLoading }                        = useQuery({ queryKey: ['getTimeSeries', range],  queryFn: () => siteAnalyticsAPI.getTimeSeries(range) });
     const { data: pages,      isLoading: pgLoading }                        = useQuery({ queryKey: ['getPages', range],       queryFn: () => siteAnalyticsAPI.getPages(range) });
     const { data: sources,    isLoading: srcLoading }                       = useQuery({ queryKey: ['getTrafficSources', range], queryFn: () => siteAnalyticsAPI.getTrafficSources(range) });
@@ -205,6 +336,17 @@ export default function SiteAnalytics() {
     const { data: geography,  isLoading: geoLoading }                       = useQuery({ queryKey: ['getGeography', range],  queryFn: () => siteAnalyticsAPI.getGeography(range) });
     const { data: journey,    isLoading: jrLoading }                        = useQuery({ queryKey: ['getJourney', range],    queryFn: () => siteAnalyticsAPI.getJourney(range) });
     const { data: events,     isLoading: evLoading }                        = useQuery({ queryKey: ['getEvents', range],     queryFn: () => siteAnalyticsAPI.getEvents(range) });
+    const { data: heatmapData, isLoading: hmLoading, refetch: refetchHm }  = useQuery({
+        queryKey: ['getHeatmap', heatmapPage, range],
+        queryFn:  () => siteAnalyticsAPI.getHeatmap(heatmapPage || undefined, range),
+        staleTime: 5 * 60 * 1000,
+    });
+    // Auto-select the first page with clicks once data arrives
+    useEffect(() => {
+        if (!heatmapPage && heatmapData?.availablePages?.length) {
+            setHeatmapPage(heatmapData.availablePages[0].path);
+        }
+    }, [heatmapData, heatmapPage]);
 
     const handleRefresh = useCallback(() => refetchOv(), [refetchOv]);
 
@@ -744,21 +886,88 @@ export default function SiteAnalytics() {
                 )}
             </Card>
 
-            {/* ── Heatmap notice (low priority) ── */}
-            <Card className="p-4 bg-gradient-to-r from-slate-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-950/30 border-dashed border-indigo-100 dark:border-indigo-900">
-                <div className="flex items-center gap-3">
-                    <FiMonitor size={20} className="text-indigo-400" />
-                    <div>
-                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Click Heatmap</p>
-                        <p className="text-xs text-slate-500">
-                            X/Y coordinate data is already being collected for every click (stored in metadata).
-                            Heatmap overlay rendering can be enabled in a future update using this data.
-                        </p>
+            {/* ── Click Heatmap ── */}
+            <Card className="p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                    <SectionTitle
+                        icon={<FiMonitor size={16} />}
+                        title="Click Heatmap"
+                        subtitle="Visualise where visitors click on each page"
+                    />
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Page selector */}
+                        <select
+                            value={heatmapPage}
+                            onChange={e => setHeatmapPage(e.target.value)}
+                            className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                            {!heatmapData?.availablePages?.length && (
+                                <option value="">Loading pages…</option>
+                            )}
+                            {(heatmapData?.availablePages || []).map(p => (
+                                <option key={p.path} value={p.path}>
+                                    {p.path} ({fmt(p.clicks)} clicks)
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={() => refetchHm()}
+                            className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500 hover:text-indigo-600"
+                            title="Refresh heatmap"
+                        >
+                            <FiRefreshCw size={13} className={hmLoading ? 'animate-spin' : ''} />
+                        </button>
                     </div>
-                    <span className="ml-auto text-[10px] font-bold px-2 py-1 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 rounded-full uppercase tracking-wide whitespace-nowrap">
-                        Coming Soon
-                    </span>
                 </div>
+
+                {/* Stats row */}
+                {heatmapData?.totalClicks > 0 && (
+                    <div className="flex gap-4 mb-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span><strong className="text-slate-700 dark:text-slate-200">{fmt(heatmapData.totalClicks)}</strong> total clicks</span>
+                        <span><strong className="text-slate-700 dark:text-slate-200">{heatmapData.points?.length}</strong> unique positions</span>
+                        <span>Reference viewport: <strong className="text-slate-700 dark:text-slate-200">{heatmapData.viewportWidth}×{heatmapData.viewportHeight}</strong></span>
+                    </div>
+                )}
+
+                {/* Canvas */}
+                <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                    {hmLoading && (
+                        <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center z-10 rounded-xl">
+                            <div className="flex items-center gap-2 text-white text-sm">
+                                <FiRefreshCw size={16} className="animate-spin" />
+                                Loading heatmap…
+                            </div>
+                        </div>
+                    )}
+                    <HeatmapCanvas data={heatmapPage ? heatmapData : null} />
+                </div>
+
+                {/* Legend note */}
+                <p className="text-[10px] text-slate-400 mt-2">
+                    Coordinates are viewport-relative (normalised to the most common screen size for this page).
+                    Red/orange = high click frequency · Blue/purple = low frequency.
+                </p>
+
+                {/* Top click list */}
+                {heatmapData?.points?.length > 0 && (
+                    <div className="mt-4">
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Top Hot Spots</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                            {heatmapData.points.slice(0, 10).map((pt, i) => (
+                                <div key={i} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 text-xs border border-slate-100 dark:border-slate-700">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="font-mono text-[10px] text-slate-400">{pt.x},{pt.y}</span>
+                                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{fmt(pt.count)}</span>
+                                    </div>
+                                    <p className="text-slate-600 dark:text-slate-300 truncate">{pt.text || pt.element}</p>
+                                    {pt.href && (
+                                        <p className="text-indigo-400 truncate text-[10px]">{pt.href.replace('https://nexspiresolutions.co.in', '')}</p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </Card>
 
         </div>
