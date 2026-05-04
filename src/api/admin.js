@@ -81,4 +81,16 @@ export const telemetryAdminAPI = {
     }
 };
 
+export const siteAnalyticsAPI = {
+    getOverview:       (range) => axios.get('/admin/site-analytics/overview', { params: { range } }).then(r => r.data),
+    getTimeSeries:     (range) => axios.get('/admin/site-analytics/time-series', { params: { range } }).then(r => r.data),
+    getPages:          (range) => axios.get('/admin/site-analytics/pages', { params: { range } }).then(r => r.data),
+    getTrafficSources: (range) => axios.get('/admin/site-analytics/traffic-sources', { params: { range } }).then(r => r.data),
+    getDevices:        (range) => axios.get('/admin/site-analytics/devices', { params: { range } }).then(r => r.data),
+    getGeography:      (range) => axios.get('/admin/site-analytics/geography', { params: { range } }).then(r => r.data),
+    getJourney:        (range) => axios.get('/admin/site-analytics/journey', { params: { range } }).then(r => r.data),
+    getEvents:         (range) => axios.get('/admin/site-analytics/events', { params: { range } }).then(r => r.data),
+    getAIInsights:     (analytics) => axios.post('/admin/site-analytics/ai-insights', { analytics }).then(r => r.data),
+};
+
 export default serverService;
