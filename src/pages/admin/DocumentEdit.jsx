@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 export default function DocumentEdit() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [template, setTemplate] = useState(null);
     const [formData, setFormData] = useState({
@@ -16,9 +16,12 @@ export default function DocumentEdit() {
         content: ''
     });
 
-    const { isLoading: loading } = useQuery({
-        queryKey: ['documentTemplate', id],
-        queryFn: async () => {
+    useEffect(() => {
+        fetchTemplate();
+    }, [id]);
+
+    const fetchTemplate = async () => {
+        try {
             const response = await documentTemplatesAPI.getById(id);
             const data = response.data;
             setTemplate(data);
@@ -28,9 +31,13 @@ export default function DocumentEdit() {
                 category: data.category || 'sales',
                 content: data.content || ''
             });
-            return data;
-        },
-    });
+        } catch (error) {
+            toast.error('Failed to load template');
+            navigate('/documents');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!formData.name.trim() || !formData.content.trim()) {

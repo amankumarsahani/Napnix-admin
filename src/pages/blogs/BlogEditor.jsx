@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { blogsAPI } from '../../api';
 import { FiArrowLeft, FiSave, FiImage, FiType } from '../../components/icons/FeatherIcons';
@@ -14,6 +13,7 @@ export default function BlogEditor() {
     const isEditMode = !!id;
 
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(isEditMode);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -29,21 +29,28 @@ export default function BlogEditor() {
         keywords: []
     });
 
-    const { isLoading: fetching } = useQuery({
-        queryKey: ['blog', id],
-        queryFn: async () => {
+    useEffect(() => {
+        if (isEditMode) {
+            fetchBlog();
+        }
+    }, [id]);
+
+    const fetchBlog = async () => {
+        try {
+            setFetching(true);
             const response = await blogsAPI.getById(id);
             if (response.success && response.blog) {
                 setFormData(response.blog);
-                return response.blog;
             } else {
                 toast.error('Blog not found');
                 navigate('/blogs');
-                return null;
             }
-        },
-        enabled: isEditMode,
-    });
+        } catch (error) {
+            toast.error('Failed to load blog details');
+        } finally {
+            setFetching(false);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;

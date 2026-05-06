@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
@@ -52,10 +51,13 @@ const CATEGORIES = [
 
 
 export default function Templates() {
+    const [templates, setTemplates] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [previewHtml, setPreviewHtml] = useState(null);
     const [activeTypeFilter, setActiveTypeFilter] = useState('all');
+    const [stats, setStats] = useState(null);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -71,39 +73,50 @@ export default function Templates() {
         is_active: true,
     });
 
+    const [availableDocuments, setAvailableDocuments] = useState([]);
+
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(9);
 
-    const queryClient = useQueryClient();
+    useEffect(() => {
+        fetchTemplates();
+        fetchStats();
+        fetchAvailableDocuments();
+    }, [activeTypeFilter, currentPage, searchTerm]);
 
-    const { data: templatesData, isLoading: loading } = useQuery({
-        queryKey: ['emailTemplates', { page: currentPage, type: activeTypeFilter, search: searchTerm }],
-        queryFn: async () => {
+    const fetchAvailableDocuments = async () => {
+        try {
+            const response = await documentTemplatesAPI.getAll();
+            setAvailableDocuments(response.data || []);
+        } catch (error) {
+            // silently ignore
+        }
+    };
+
+    const fetchTemplates = async () => {
+        try {
             const params = { page: currentPage, limit: pageSize };
-            if (activeTypeFilter !== 'all') params.type = activeTypeFilter;
+            if (activeTypeFilter !== 'all') {
+                params.type = activeTypeFilter;
+            }
             if (searchTerm) params.search = searchTerm;
             const response = await templatesAPI.getAll(params);
+            setTemplates(Array.isArray(response.data) ? response.data : []);
             if (response.pagination) setPagination(response.pagination);
-            return Array.isArray(response.data) ? response.data : [];
-        },
-    });
+        } catch (error) {
+            toast.error('Failed to load templates');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const templates = templatesData || [];
-
-    const { data: stats = null } = useQuery({
-        queryKey: ['emailTemplateStats'],
-        queryFn: async () => {
+    const fetchStats = async () => {
+        try {
             const response = await templatesAPI.getStats();
-            return response.data;
-        },
-    });
-
-    const { data: availableDocuments = [] } = useQuery({
-        queryKey: ['availableDocuments'],
-        queryFn: async () => {
-            const response = await documentTemplatesAPI.getAll();
-            return response.data || [];
-        },
-    });
+            setStats(response.data);
+        } catch (error) {
+            // silently ignore
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -124,8 +137,8 @@ export default function Templates() {
             }
             setShowModal(false);
             resetForm();
-            queryClient.invalidateQueries({ queryKey: ['emailTemplates'] });
-            queryClient.invalidateQueries({ queryKey: ['emailTemplateStats'] });
+            fetchTemplates();
+            fetchStats();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Operation failed');
         }
@@ -143,8 +156,8 @@ export default function Templates() {
                 try {
                     await templatesAPI.delete(id);
                     toast.success('Template deleted successfully');
-                    queryClient.invalidateQueries({ queryKey: ['emailTemplates'] });
-                    queryClient.invalidateQueries({ queryKey: ['emailTemplateStats'] });
+                    fetchTemplates();
+                    fetchStats();
                 } catch (error) {
                     toast.error('Failed to delete template');
                 }
@@ -245,7 +258,7 @@ export default function Templates() {
                         resetForm();
                         setShowModal(true);
                     }}
-                    className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
+                    className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors flex items-center gap-2"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -556,7 +569,7 @@ export default function Templates() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-brand-500/25 hover:bg-brand-700 transition-all"
+                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
                                 >
                                     {editingTemplate ? 'Update Template' : 'Create Template'}
                                 </button>

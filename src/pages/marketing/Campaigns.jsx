@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
@@ -9,7 +8,9 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 
 const Campaigns = () => {
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
+    const [campaigns, setCampaigns] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
     const [actionLoading, setActionLoading] = useState({});
@@ -21,29 +22,38 @@ const Campaigns = () => {
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    const { data: campaignsData, isLoading: loading, refetch } = useQuery({
-        queryKey: ['campaigns', { page: currentPage, search: searchTerm }],
-        queryFn: async () => {
+    // Fetch data function
+    const fetchData = useCallback(async (showLoading = true) => {
+        try {
+            if (showLoading) setLoading(true);
             const [campaignsRes, statsRes] = await Promise.all([
                 campaignsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
                 campaignsAPI.getDashboardStats()
             ]);
+            setCampaigns(campaignsRes.data || []);
             if (campaignsRes.pagination) setPagination(campaignsRes.pagination);
+            setStats(statsRes.data);
             setLastUpdated(new Date());
-            return { campaigns: campaignsRes.data || [], stats: statsRes.data };
-        },
-    });
+        } catch (error) {
+            if (showLoading) toast.error('Failed to fetch campaigns');
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    }, [currentPage, pageSize, searchTerm, setPagination]);
 
-    const campaigns = campaignsData?.campaigns || [];
-    const stats = campaignsData?.stats || null;
+    // Initial load and page change
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     // Auto-refresh polling when campaigns are sending
     useEffect(() => {
         const hasActiveCampaigns = campaigns.some(c => c.status === 'sending');
 
         if (autoRefresh && hasActiveCampaigns) {
+            // Refresh every 10 seconds when campaigns are sending
             intervalRef.current = setInterval(() => {
-                refetch();
+                fetchData(false); // Silent refresh
             }, 10000);
         }
 
@@ -52,7 +62,7 @@ const Campaigns = () => {
                 clearInterval(intervalRef.current);
             }
         };
-    }, [autoRefresh, campaigns, refetch]);
+    }, [autoRefresh, campaigns, fetchData]);
 
     const handleAction = async (campaignId, action) => {
         setActionLoading(prev => ({ ...prev, [campaignId]: action }));
@@ -82,7 +92,7 @@ const Campaigns = () => {
                             try {
                                 await campaignsAPI.delete(campaignId);
                                 toast.success('Campaign deleted');
-                                queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+                                fetchData();
                             } catch (error) {
                                 toast.error('Failed to delete campaign');
                             } finally {
@@ -92,7 +102,7 @@ const Campaigns = () => {
                     });
                     return;
             }
-            queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+            fetchData();
         } catch (error) {
             toast.error(`Failed to ${action} campaign`);
         } finally {
@@ -147,7 +157,7 @@ const Campaigns = () => {
                         </span>
                     )}
                     <button
-                        onClick={() => refetch()}
+                        onClick={() => fetchData()}
                         className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                         title="Refresh"
                     >
@@ -341,7 +351,7 @@ const Campaigns = () => {
                 <CampaignModal
                     campaign={selectedCampaign}
                     onClose={() => { setShowCreateModal(false); setSelectedCampaign(null); }}
-                    onSaved={() => { setShowCreateModal(false); setSelectedCampaign(null); queryClient.invalidateQueries({ queryKey: ['campaigns'] }); }}
+                    onSaved={() => { setShowCreateModal(false); setSelectedCampaign(null); fetchData(); }}
                 />
             )}
 

@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../api/axios';
@@ -9,7 +8,8 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function Team() {
     const { user } = useAuth();
-    const queryClient = useQueryClient();
+    const [members, setMembers] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [createdUser, setCreatedUser] = useState(null);
@@ -32,21 +32,28 @@ export default function Team() {
         status: 'active'
     });
 
-    const { data: members = [], isLoading: loading } = useQuery({
-        queryKey: ['team', { page: currentPage, search: searchTerm }],
-        queryFn: async () => {
+    const fetchMembers = async () => {
+        try {
             const params = { page: currentPage, limit: pageSize };
             if (searchTerm) params.search = searchTerm;
             const response = await apiClient.get('/teams', { params });
             if (response.data.success) {
+                setMembers(response.data.data);
                 if (response.data.pagination) setPagination(response.data.pagination);
+                // Extract unique departments from data to update list dynamically
                 const uniqueDepts = [...new Set(response.data.data.map(m => m.department).filter(Boolean))];
                 setDepartments(prev => [...new Set([...prev, ...uniqueDepts])]);
-                return response.data.data;
             }
-            return [];
-        },
-    });
+        } catch (error) {
+            toast.error('Failed to load team members');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchMembers();
+    }, [currentPage, searchTerm]);
 
     const handleAddDepartment = () => {
         if (newDept.trim() && !departments.includes(newDept)) {
@@ -76,7 +83,7 @@ export default function Team() {
                 name: '', email: '', phone: '', position: '',
                 joinDate: '', role: 'sales_operator', department: '', status: 'active'
             });
-            queryClient.invalidateQueries({ queryKey: ['team'] });
+            fetchMembers(); // Refresh list
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send invite');
         }
@@ -93,8 +100,8 @@ export default function Team() {
                 setConfirmState({ isOpen: false });
                 try {
                     await apiClient.delete(`/teams/${id}`);
+                    setMembers(members.filter(m => m.id !== id));
                     toast.success('Member removed');
-                    queryClient.invalidateQueries({ queryKey: ['team'] });
                 } catch (error) {
                     toast.error('Failed to remove member');
                 }
@@ -131,7 +138,7 @@ export default function Team() {
             </div>
 
             {/* List */}
-            <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
