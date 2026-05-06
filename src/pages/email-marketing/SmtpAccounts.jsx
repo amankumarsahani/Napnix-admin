@@ -1,28 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FiServer, FiPlus } from '../../components/icons/FeatherIcons';
 import { nmSmtpAPI } from '../../api/nexmail';
 
 export default function SmtpAccounts() {
-    const [accounts, setAccounts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [showModal, setShowModal] = useState(false);
     const [testing, setTesting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({ name: '', host: '', port: '587', secure: false, username: '', password: '', from_email: '', from_name: '', daily_limit: '500', is_default: false });
 
-    useEffect(() => { fetchAccounts(); }, []);
-
-    const fetchAccounts = async () => {
-        try {
+    const { data: accounts = [], isLoading: loading } = useQuery({
+        queryKey: ['nexmail-smtp'],
+        queryFn: async () => {
             const res = await nmSmtpAPI.getAll();
-            setAccounts(res.data || []);
-        } catch (e) {
-            console.error('Fetch SMTP error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return res.data || [];
+        },
+    });
 
     const handleTest = async () => {
         if (!form.host || !form.username || !form.password) return toast.error('Host, username, and password required');
@@ -45,7 +40,7 @@ export default function SmtpAccounts() {
             toast.success('SMTP account added');
             setShowModal(false);
             setForm({ name: '', host: '', port: '587', secure: false, username: '', password: '', from_email: '', from_name: '', daily_limit: '500', is_default: false });
-            fetchAccounts();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-smtp'] });
         } catch (e) {
             toast.error(e.response?.data?.error || 'Failed to add account');
         } finally {
@@ -58,7 +53,7 @@ export default function SmtpAccounts() {
         try {
             await nmSmtpAPI.delete(id);
             toast.success('Account deleted');
-            fetchAccounts();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-smtp'] });
         } catch (e) {
             toast.error('Failed to delete');
         }

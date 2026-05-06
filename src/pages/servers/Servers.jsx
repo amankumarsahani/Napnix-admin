@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     FiServer, FiPlus, FiCheckCircle, FiRefreshCw, FiDatabase, FiCloud, FiEdit2
 } from '../../components/icons/FeatherIcons';
@@ -6,8 +7,7 @@ import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 
 const Servers = () => {
-    const [servers, setServers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [testingId, setTestingId] = useState(null);
     const [editingId, setEditingId] = useState(null);
@@ -21,23 +21,18 @@ const Servers = () => {
         is_active: true
     });
 
-    const fetchServers = async () => {
-        try {
+    const { data: serversData, isLoading: loading } = useQuery({
+        queryKey: ['servers', { search: searchTerm }],
+        queryFn: async () => {
             const params = {};
             if (searchTerm) params.search = searchTerm;
             const res = await serverService.getAllServers(params);
-            if (res.success) setServers(res.data);
-        } catch (_error) {
-            toast.error('Failed to load servers');
-        } finally {
-            setLoading(false);
-        }
-    };
+            if (res.success) return res.data;
+            return [];
+        },
+    });
 
-    useEffect(() => {
-        fetchServers();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm]);
+    const servers = serversData || [];
 
     const handleTestConnection = async (id) => {
         setTestingId(id);
@@ -74,7 +69,7 @@ const Servers = () => {
             const res = await serverService.updateServer(server.id, { is_active: newStatus });
             if (res.success) {
                 toast.success(`Server ${newStatus ? 'activated' : 'deactivated'}`);
-                fetchServers();
+                queryClient.invalidateQueries({ queryKey: ['servers'] });
             }
         } catch (error) {
             toast.error('Failed to update status');
@@ -107,7 +102,7 @@ const Servers = () => {
             if (res.success) {
                 toast.success(`Server ${editingId ? 'updated' : 'added'} successfully`);
                 closeModal();
-                fetchServers();
+                queryClient.invalidateQueries({ queryKey: ['servers'] });
             }
         } catch (_error) {
             toast.error(`Failed to ${editingId ? 'update' : 'add'} server`);
@@ -118,8 +113,8 @@ const Servers = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Server Management</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Distribute your tenants across multiple servers</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Server Management</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Distribute your tenants across multiple servers</p>
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}

@@ -1,27 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FiLayout, FiPlus, FiSearch, FiCopy } from '../../components/icons/FeatherIcons';
 import { nmTemplatesAPI } from '../../api/nexmail';
 
 export default function Templates() {
     const navigate = useNavigate();
-    const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
 
-    useEffect(() => { fetchTemplates(); }, [search]);
-
-    const fetchTemplates = async () => {
-        try {
+    const { data: templates = [], isLoading: loading } = useQuery({
+        queryKey: ['nexmail-templates', { search }],
+        queryFn: async () => {
             const res = await nmTemplatesAPI.getAll({ search: search || undefined });
-            setTemplates(res.data || []);
-        } catch (e) {
-            console.error('Fetch templates error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return res.data || [];
+        },
+    });
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
@@ -29,7 +24,7 @@ export default function Templates() {
         try {
             await nmTemplatesAPI.delete(id);
             toast.success('Template deleted');
-            fetchTemplates();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-templates'] });
         } catch (e) {
             toast.error('Failed to delete');
         }

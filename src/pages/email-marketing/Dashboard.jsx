@@ -1,34 +1,31 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FiMail, FiUsers, FiSend, FiTrendingUp, FiMousePointer, FiBarChart2 } from '../../components/icons/FeatherIcons';
 import { nmAnalyticsAPI } from '../../api/nexmail';
 
 export default function EmailMarketingDashboard() {
     const navigate = useNavigate();
-    const [stats, setStats] = useState({ contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } });
-    const [sendVolume, setSendVolume] = useState([]);
-    const [growth, setGrowth] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { fetchData(); }, []);
-
-    const fetchData = async () => {
-        try {
+    const { data: dashData, isLoading: loading } = useQuery({
+        queryKey: ['nexmail-dashboard'],
+        queryFn: async () => {
             const [dashRes, volumeRes, growthRes] = await Promise.allSettled([
                 nmAnalyticsAPI.getDashboard(),
                 nmAnalyticsAPI.getSendVolume(30),
                 nmAnalyticsAPI.getGrowth(90)
             ]);
-            if (dashRes.status === 'fulfilled' && dashRes.value?.data) setStats(dashRes.value.data);
-            if (volumeRes.status === 'fulfilled' && volumeRes.value?.data) setSendVolume(volumeRes.value.data);
-            if (growthRes.status === 'fulfilled' && growthRes.value?.data) setGrowth(growthRes.value.data);
-        } catch (e) {
-            console.error('Dashboard fetch error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return {
+                stats: dashRes.status === 'fulfilled' && dashRes.value?.data ? dashRes.value.data : { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } },
+                sendVolume: volumeRes.status === 'fulfilled' && volumeRes.value?.data ? volumeRes.value.data : [],
+                growth: growthRes.status === 'fulfilled' && growthRes.value?.data ? growthRes.value.data : [],
+            };
+        },
+    });
+
+    const stats = dashData?.stats || { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } };
+    const sendVolume = dashData?.sendVolume || [];
+    const growth = dashData?.growth || [];
 
     const cards = [
         { title: 'Total Contacts', value: (stats.contacts?.total || 0).toLocaleString(), icon: <FiUsers />, color: 'indigo', path: '/email-marketing/contacts' },

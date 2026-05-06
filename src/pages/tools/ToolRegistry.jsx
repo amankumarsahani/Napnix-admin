@@ -1,26 +1,17 @@
-import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 import { toolsAPI } from '../../api';
-import { FiGrid, FiPlus } from '../../components/icons/FeatherIcons';
+import { FiGrid } from '../../components/icons/FeatherIcons';
 
 export default function ToolRegistry() {
-    const [tools, setTools] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchTools();
-    }, []);
-
-    const fetchTools = async () => {
-        try {
+    const { data: toolsData, isLoading: loading } = useQuery({
+        queryKey: ['tools'],
+        queryFn: async () => {
             const res = await toolsAPI.getAll();
-            setTools(res.data || []);
-        } catch (error) {
-            console.error('Failed to load tools:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return res.data || [];
+        },
+    });
+
+    const tools = toolsData || [];
 
     const toolIcons = {
         nexcrm: '💼',

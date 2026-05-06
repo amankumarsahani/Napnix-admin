@@ -1,27 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FiSend, FiPlus, FiSearch } from '../../components/icons/FeatherIcons';
 import { nmCampaignsAPI } from '../../api/nexmail';
 
 export default function Campaigns() {
     const navigate = useNavigate();
-    const [campaigns, setCampaigns] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
 
-    useEffect(() => { fetchCampaigns(); }, [page]);
-
-    const fetchCampaigns = async () => {
-        try {
+    const { data: campaigns = [], isLoading: loading } = useQuery({
+        queryKey: ['nexmail-campaigns', { page }],
+        queryFn: async () => {
             const res = await nmCampaignsAPI.getAll({ page, limit: 20 });
-            setCampaigns(res.data || []);
-        } catch (e) {
-            console.error('Fetch campaigns error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return res.data || [];
+        },
+    });
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
@@ -29,7 +24,7 @@ export default function Campaigns() {
         try {
             await nmCampaignsAPI.delete(id);
             toast.success('Campaign deleted');
-            fetchCampaigns();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-campaigns'] });
         } catch (e) {
             toast.error(e.response?.data?.error || 'Failed to delete');
         }

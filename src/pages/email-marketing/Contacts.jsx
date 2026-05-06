@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { FiUsers, FiSearch, FiPlus, FiUpload } from '../../components/icons/FeatherIcons';
 import { nmContactsAPI } from '../../api/nexmail';
@@ -7,9 +8,7 @@ import Pagination from '../../components/common/Pagination';
 
 export default function Contacts() {
     const navigate = useNavigate();
-    const [contacts, setContacts] = useState([]);
-    const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState('');
@@ -19,21 +18,16 @@ export default function Contacts() {
     const [importData, setImportData] = useState('');
     const limit = 25;
 
-    const fetchContacts = useCallback(async () => {
-        setLoading(true);
-        try {
+    const { data: contactsData, isLoading: loading } = useQuery({
+        queryKey: ['nexmail-contacts', { page, search, statusFilter }],
+        queryFn: async () => {
             const res = await nmContactsAPI.getAll({ page, limit, search, status: statusFilter || undefined });
-            setContacts(res.data || []);
-            setTotal(res.total || 0);
-        } catch (e) {
-            console.error('Fetch contacts error:', e);
-            setContacts([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [page, search, statusFilter]);
+            return { contacts: res.data || [], total: res.total || 0 };
+        },
+    });
 
-    useEffect(() => { fetchContacts(); }, [fetchContacts]);
+    const contacts = contactsData?.contacts || [];
+    const total = contactsData?.total || 0;
 
     useEffect(() => { setPage(1); }, [search, statusFilter]);
 
@@ -44,7 +38,7 @@ export default function Contacts() {
             toast.success('Contact added');
             setShowAdd(false);
             setAddForm({ email: '', first_name: '', last_name: '', phone: '', company: '' });
-            fetchContacts();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-contacts'] });
         } catch (e) {
             toast.error(e.response?.data?.error || 'Failed to add contact');
         }
@@ -70,7 +64,7 @@ export default function Contacts() {
             toast.success(`Imported: ${res.imported}, Skipped: ${res.skipped}`);
             setShowImport(false);
             setImportData('');
-            fetchContacts();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-contacts'] });
         } catch (e) {
             toast.error(e.response?.data?.error || 'Import failed');
         }
