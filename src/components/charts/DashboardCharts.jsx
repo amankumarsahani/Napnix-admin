@@ -141,33 +141,60 @@ export function ConversionRateCard({ inquiryStats, leadStats }) {
     const wonLeads = leadStats?.won || 0;
     const winRate = totalLeads > 0 ? ((wonLeads / totalLeads) * 100).toFixed(1) : 0;
 
+    const metrics = [
+        { label: 'Inquiry → Lead', value: conversionRate, count: convertedInquiries, total: totalInquiries },
+        { label: 'Lead Win Rate', value: winRate, count: wonLeads, total: totalLeads },
+    ];
+
     return (
-        <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 p-5 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-1">Inquiry → Lead</p>
-                <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">{conversionRate}%</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{convertedInquiries} of {totalInquiries}</p>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 p-5 rounded-xl border border-emerald-100 dark:border-emerald-800">
-                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Lead Win Rate</p>
-                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-300">{winRate}%</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{wonLeads} of {totalLeads}</p>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {metrics.map((metric) => (
+                <div key={metric.label} className="flex items-center gap-4 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                    <div className="relative w-16 h-16 shrink-0">
+                        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                            <circle
+                                cx="18" cy="18" r="14"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                className="text-slate-100 dark:text-slate-700"
+                            />
+                            <circle
+                                cx="18" cy="18" r="14"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeDasharray={`${metric.value * 0.88} 88`}
+                                strokeLinecap="round"
+                                className="text-brand-600 dark:text-brand-400"
+                            />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            {metric.value}%
+                        </span>
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{metric.label}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{metric.count} of {metric.total}</p>
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
 
 // Revenue Trend Line Chart
 export function RevenueTrendChart({ data }) {
-    // Mock data if not provided
-    const chartData = data || [
-        { month: 'Jan', revenue: 4000 },
-        { month: 'Feb', revenue: 3000 },
-        { month: 'Mar', revenue: 5000 },
-        { month: 'Apr', revenue: 4500 },
-        { month: 'May', revenue: 6000 },
-        { month: 'Jun', revenue: 5500 },
-    ];
+    const chartData = data || [];
+    const hasData = chartData.length > 0 && chartData.some(d => d.revenue > 0);
+
+    if (!hasData) {
+        return (
+            <div className="h-64 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
+                No revenue data yet
+            </div>
+        );
+    }
 
     return (
         <ResponsiveContainer width="100%" height={280}>
@@ -176,10 +203,11 @@ export function RevenueTrendChart({ data }) {
                     dataKey="month"
                     tick={{ fontSize: 12, fill: '#64748b' }}
                     axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={false}
                 />
                 <YAxis
                     tick={{ fontSize: 12, fill: '#64748b' }}
-                    axisLine={{ stroke: '#e2e8f0' }}
+                    axisLine={false}
                     tickFormatter={(value) => `Rs.${(value / 1000).toFixed(0)}k`}
                     tickLine={false}
                 />
@@ -191,9 +219,9 @@ export function RevenueTrendChart({ data }) {
                     type="monotone"
                     dataKey="revenue"
                     stroke="#6366f1"
-                    strokeWidth={3}
-                    dot={{ fill: '#6366f1', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#4f46e5' }}
+                    strokeWidth={2}
+                    dot={{ fill: '#6366f1', strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, fill: '#4f46e5' }}
                 />
             </LineChart>
         </ResponsiveContainer>
