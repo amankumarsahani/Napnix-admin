@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { blogsAPI } from '../../api';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiClock } from '../../components/icons/FeatherIcons';
@@ -9,32 +10,25 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function BlogsList() {
     const navigate = useNavigate();
-    const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination, resetPage } = usePagination(10);
 
-    useEffect(() => {
-        fetchBlogs();
-    }, [currentPage, searchTerm]);
-
-    const fetchBlogs = async () => {
-        try {
-            setLoading(true);
+    const { data: response, isLoading: loading } = useQuery({
+        queryKey: ['blogs', { page: currentPage, search: searchTerm }],
+        queryFn: () => {
             const params = { page: currentPage, limit: pageSize };
             if (searchTerm) params.search = searchTerm;
-            const response = await blogsAPI.getAll(params);
-            if (response.success) {
-                setBlogs(response.blogs || []);
-                if (response.pagination) setPagination(response.pagination);
-            }
-        } catch (error) {
-            toast.error('Failed to load blogs');
-        } finally {
-            setLoading(false);
-        }
-    };
+            return blogsAPI.getAll(params);
+        },
+    });
+
+    const blogs = response?.success ? (response.blogs || []) : [];
+
+    if (response?.pagination && response.pagination.totalPages !== totalPages) {
+        setPagination(response.pagination);
+    }
 
     const handleDelete = (id) => {
         setConfirmState({
@@ -48,7 +42,7 @@ export default function BlogsList() {
                 try {
                     await blogsAPI.delete(id);
                     toast.success('Blog deleted successfully');
-                    fetchBlogs();
+                    queryClient.invalidateQueries({ queryKey: ['blogs'] });
                 } catch (error) {
                     toast.error('Failed to delete blog');
                 }
@@ -60,7 +54,7 @@ export default function BlogsList() {
         try {
             await blogsAPI.update(blog.id, { featured: !blog.featured });
             toast.success(`Blog ${!blog.featured ? 'featured' : 'unfeatured'} successfully`);
-            fetchBlogs();
+            queryClient.invalidateQueries({ queryKey: ['blogs'] });
         } catch (error) {
             toast.error('Failed to update blog status');
         }
