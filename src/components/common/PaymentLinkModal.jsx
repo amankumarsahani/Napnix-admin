@@ -13,8 +13,8 @@ export default function PaymentLinkModal({ isOpen, onClose, entity, entityType }
     const metadataKey = entityType === 'client' ? 'client_id' : 'lead_id';
 
     return (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-md w-full shadow-2xl border border-transparent dark:border-slate-700">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
                     <button onClick={onClose} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -66,7 +66,7 @@ export default function PaymentLinkModal({ isOpen, onClose, entity, entityType }
                                         navigator.clipboard.writeText(generatedLink);
                                         toast.success('Link copied to clipboard');
                                     }}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                                    className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
                                 >
                                     Copy
                                 </button>
