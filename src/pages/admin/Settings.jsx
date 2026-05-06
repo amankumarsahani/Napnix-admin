@@ -210,7 +210,7 @@ export default function Settings() {
     const inputBase = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all text-sm';
     const inputError = 'border-rose-500 dark:border-rose-500 ring-2 ring-rose-500/20';
     const labelBase = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
-    const sectionCard = 'rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60';
+    const sectionCard = 'rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60';
     const btnPrimary = 'px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 focus:ring-4 focus:ring-brand-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm';
     const btnSecondary = 'px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-all disabled:opacity-50 text-sm';
 
@@ -258,7 +258,7 @@ export default function Settings() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`group w-full flex items-center gap-3.5 px-4 py-3 text-left rounded-xl transition-all duration-200 ${activeTab === tab.id
-                                    ? 'bg-gradient-to-r from-brand-50 to-brand-50/40 dark:from-brand-900/30 dark:to-brand-900/10 text-brand-700 dark:text-brand-300 shadow-sm ring-1 ring-brand-100 dark:ring-brand-800/60'
+                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 ring-1 ring-brand-200 dark:ring-brand-800/60'
                                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                             >
@@ -287,7 +287,7 @@ export default function Settings() {
                     {/* Content header bar */}
                     <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-8 py-5">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/40 dark:to-brand-800/30 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center">
                                 <svg className="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={activeTabData?.icon} />
                                 </svg>
@@ -302,13 +302,13 @@ export default function Settings() {
                     <div className="p-8">
                         {/* ======== PROFILE TAB ======== */}
                         {activeTab === 'profile' && (
-                            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="max-w-2xl">
                                 <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-8">
                                     {/* Avatar section */}
                                     <div className={`${sectionCard} p-6`}>
                                         <div className="flex items-center gap-6">
                                             <div className="relative">
-                                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/60 dark:to-brand-800/40 flex items-center justify-center text-2xl font-bold text-brand-600 dark:text-brand-400 ring-4 ring-white dark:ring-slate-800 shadow-lg">
+                                                <div className="w-20 h-20 rounded-xl bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-2xl font-bold text-brand-600 dark:text-brand-400 ring-2 ring-white dark:ring-slate-800">
                                                     {profileForm.watch('firstName')?.[0] || ''}
                                                 </div>
                                             </div>
@@ -391,7 +391,7 @@ export default function Settings() {
 
                         {/* ======== SECURITY TAB ======== */}
                         {activeTab === 'security' && (
-                            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="max-w-2xl">
                                 <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-8">
                                     <div className={`${sectionCard} p-6 space-y-5`}>
                                         <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
@@ -452,7 +452,7 @@ export default function Settings() {
 
                         {/* ======== NOTIFICATIONS TAB ======== */}
                         {activeTab === 'notifications' && (
-                            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="max-w-2xl">
                                 <div className={`${sectionCard} divide-y divide-slate-100 dark:divide-slate-700/60`}>
                                     <div className="px-6 py-5">
                                         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Email Notifications</h3>
@@ -475,7 +475,7 @@ export default function Settings() {
 
                         {/* ======== PREFERENCES TAB ======== */}
                         {activeTab === 'preferences' && (
-                            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="max-w-2xl">
                                 <div className={`${sectionCard} p-6 space-y-5`}>
                                     <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
                                         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Default Timezone</h3>
@@ -549,7 +549,7 @@ export default function Settings() {
 
                         {/* ======== PAYMENTS TAB ======== */}
                         {activeTab === 'payments' && (
-                            <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                            <div className="max-w-4xl space-y-8">
                                 {/* Pricing Page Mode */}
                                 <div className={`${sectionCard} p-6 space-y-5`}>
                                     <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
@@ -620,8 +620,8 @@ export default function Settings() {
                                     {/* Stripe Credentials */}
                                     <div className={`${sectionCard} p-6 space-y-5`}>
                                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
-                                                <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
+                                            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="currentColor">
                                                     <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.915 0-1.17 1.107-1.72 2.965-1.72 1.903 0 3.004.59 3.486.978l.843-2.92c-.63-.267-1.954-.622-3.485-.622-4.14 0-6.726 1.933-6.726 5.22 0 3.867 3.518 4.604 6.136 5.488 2.37.892 2.872 1.83 2.872 3.167 0 1.258-1.257 2.15-3.627 2.15-2.26 0-3.655-.66-4.526-1.144l-.873 3.01c.715.357 2.508.85 4.685.85 4.544 0 7.373-1.97 7.373-5.32 0-4.47-4.9-5.35-5.766-5.89z" />
                                                 </svg>
                                             </div>
@@ -776,7 +776,7 @@ export default function Settings() {
 
                         {/* ======== AI INTEGRATION TAB ======== */}
                         {activeTab === 'ai' && (
-                            <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="max-w-3xl">
                                 <form onSubmit={handleAIUpdate} className="space-y-6">
                                     {/* Provider Cards */}
                                     {[
