@@ -295,13 +295,13 @@ const BackupAccounts = () => {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Backup Infrastructure</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Manage Google Drive accounts for automated tenant backups</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Backup Infrastructure</h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage Google Drive accounts for automated tenant backups</p>
                 </div>
                 <div className="flex gap-3">
                     <button
                         onClick={handleRunBackup}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                        className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition text-sm font-medium"
                     >
                         <FiRefreshCw /> Run Backup Now
                     </button>
@@ -317,15 +317,15 @@ const BackupAccounts = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                 {[
-                    { label: 'Total Accounts', value: stats.total, icon: <FiHardDrive />, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20' },
+                    { label: 'Total Accounts', value: stats.total, icon: <FiHardDrive />, color: 'text-brand-600 bg-brand-50 dark:bg-brand-900/20' },
                     { label: 'Active', value: stats.active, icon: <FiCheckCircle />, color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
                     { label: 'Personal OAuth', value: stats.personal, icon: <FiKey />, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' },
                     { label: 'Service Account', value: stats.service, icon: <FiServer />, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' },
                 ].map(s => (
-                    <div key={s.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+                    <div key={s.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-5">
                         <div className={`inline-flex p-2 rounded-lg mb-3 ${s.color}`}>{s.icon}</div>
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{s.value}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{s.label}</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</p>
                     </div>
                 ))}
             </div>
@@ -336,12 +336,12 @@ const BackupAccounts = () => {
                     <FiRefreshCw className="animate-spin text-4xl text-green-600" />
                 </div>
             ) : accounts.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-gray-300 dark:border-slate-700">
+                <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-full mb-4">
                         <FiHardDrive className="w-8 h-8 text-green-600 dark:text-green-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Backup Accounts</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-center mb-6 max-w-sm">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No Backup Accounts</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-center mb-6 max-w-sm">
                         Connect a Google Drive account (Personal OAuth or Service Account) to enable automated backups.
                     </p>
                     <button onClick={openCreate} className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
@@ -362,7 +362,7 @@ const BackupAccounts = () => {
                         }
 
                         return (
-                            <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 relative group">
+                            <div key={account.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 relative group">
                                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => handleEdit(account)}
                                         className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Edit">
@@ -379,7 +379,7 @@ const BackupAccounts = () => {
                                         <FiHardDrive size={22} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="text-base font-bold text-gray-800 dark:text-white truncate">{account.account_name}</h3>
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-white truncate">{account.account_name}</h3>
                                         <div className="flex flex-wrap gap-1.5 mt-1">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${account.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                                                 {account.is_active ? 'Active' : 'Inactive'}
@@ -393,16 +393,16 @@ const BackupAccounts = () => {
 
                                 <div className="space-y-2">
                                     {account.folder_id && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                            <FiFolder size={13} className="shrink-0 text-gray-400" />
+                                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                            <FiFolder size={13} className="shrink-0 text-slate-400" />
                                             <span className="truncate">Folder: {account.folder_id}</span>
                                         </div>
                                     )}
                                     {isPersonal ? (
                                         <>
                                             {account.oauth_client_id && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    <FiKey size={13} className="shrink-0 text-gray-400" />
+                                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                    <FiKey size={13} className="shrink-0 text-slate-400" />
                                                     <span className="truncate">Client ID: {account.oauth_client_id.slice(0, 20)}…</span>
                                                 </div>
                                             )}
@@ -416,22 +416,22 @@ const BackupAccounts = () => {
                                     ) : (
                                         <>
                                             {clientEmail && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    <FiKey size={13} className="shrink-0 text-gray-400" />
+                                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                    <FiKey size={13} className="shrink-0 text-slate-400" />
                                                     <span className="truncate">{clientEmail}</span>
                                                 </div>
                                             )}
                                             {account.subject_email && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    <span className="text-gray-400 shrink-0">↳</span>
+                                                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                    <span className="text-slate-400 shrink-0">↳</span>
                                                     <span className="truncate">Impersonating: {account.subject_email}</span>
                                                 </div>
                                             )}
                                         </>
                                     )}
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                        <FiRefreshCw size={13} className="shrink-0 text-gray-400" />
-                                        <span>Used for <strong className="text-gray-900 dark:text-white">{account.usage_count ?? 0}</strong> backups</span>
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                        <FiRefreshCw size={13} className="shrink-0 text-slate-400" />
+                                        <span>Used for <strong className="text-slate-900 dark:text-white">{account.usage_count ?? 0}</strong> backups</span>
                                     </div>
                                 </div>
                             </div>
@@ -442,8 +442,8 @@ const BackupAccounts = () => {
 
             {/* Add / Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center z-[60] p-4 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl border border-slate-100 dark:border-slate-700 my-8">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start justify-center z-[60] p-4 overflow-y-auto">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-2xl p-8 shadow-2xl border border-slate-100 dark:border-slate-700 my-8">
                         {/* Modal header */}
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
@@ -530,7 +530,7 @@ const BackupAccounts = () => {
 
                                     {/* Connect button */}
                                     <button type="button" onClick={handleConnectGoogleDrive} disabled={oauthConnecting}
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition disabled:opacity-60">
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-medium transition disabled:opacity-60">
                                         🔗 {oauthConnecting ? 'Connecting…' : 'Connect Google Drive (OAuth)'}
                                     </button>
 

@@ -20,16 +20,16 @@ const TenantDomains = ({
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiGlobe className="w-5 h-5 text-slate-500" />
                     Domains
-                    <button onClick={onOpenDomainModal} className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                    <button onClick={onOpenDomainModal} className="ml-auto text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Configure
                     </button>
                 </h3>
                 <div className="grid md:grid-cols-3 gap-4">
                     {/* CRM Dashboard */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
@@ -44,12 +44,12 @@ const TenantDomains = ({
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* API (always uses default nexspiresolutions domain) */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-500">
                                 <FiGlobe />
@@ -60,14 +60,14 @@ const TenantDomains = ({
                                 <span className="text-[10px] text-slate-400">Managed by NexSpire</span>
                             </div>
                         </div>
-                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* Storefront */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
@@ -82,7 +82,7 @@ const TenantDomains = ({
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
@@ -91,7 +91,7 @@ const TenantDomains = ({
 
             {/* Custom Domain Modal */}
             {showDomainModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -140,21 +140,21 @@ const TenantDomains = ({
                             {showDomainHelp && (
                                 <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 space-y-3 bg-white dark:bg-slate-800">
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">1</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">1</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Enter the tenant's custom domains above</p>
                                             <p className="text-xs mt-0.5">CRM and Storefront are both optional. You can set up one or both.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">2</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">2</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Click "Save Domains"</p>
                                             <p className="text-xs mt-0.5">This registers the custom domains with Cloudflare Pages automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">3</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">3</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Tenant adds CNAME records in their DNS provider</p>
                                             <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
@@ -166,7 +166,7 @@ const TenantDomains = ({
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">4</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">4</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Wait for DNS propagation</p>
                                             <p className="text-xs mt-0.5">Usually takes a few minutes. Cloudflare Pages handles SSL certificates automatically.</p>
@@ -188,7 +188,7 @@ const TenantDomains = ({
                             <button
                                 onClick={onSetupDomain}
                                 disabled={domainLoading}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                                className="px-4 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50"
                             >
                                 {domainLoading ? 'Configuring...' : 'Save Domains'}
                             </button>

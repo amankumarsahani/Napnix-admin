@@ -25,7 +25,7 @@ export default function ToolRegistry() {
         maintenance: 'bg-slate-100 text-slate-600',
     };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
     return (
         <div className="space-y-6">
@@ -40,7 +40,7 @@ export default function ToolRegistry() {
                 {tools.map((tool) => (
                     <div key={tool.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-2xl">
+                            <div className="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-2xl">
                                 {toolIcons[tool.slug] || <FiGrid />}
                             </div>
                             <div>

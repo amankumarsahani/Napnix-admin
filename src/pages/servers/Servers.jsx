@@ -123,7 +123,7 @@ const Servers = () => {
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                    className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
                 >
                     <FiPlus /> Add Server
                 </button>
@@ -142,14 +142,14 @@ const Servers = () => {
 
             {loading ? (
                 <div className="flex justify-center p-12">
-                    <FiRefreshCw className="animate-spin text-4xl text-indigo-600" />
+                    <FiRefreshCw className="animate-spin text-4xl text-brand-600" />
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {servers.length === 0 ? (
                         <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-full mb-4">
-                                <FiServer className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                            <div className="p-4 bg-brand-50 dark:bg-brand-900/20 rounded-full mb-4">
+                                <FiServer className="w-8 h-8 text-brand-600 dark:text-brand-400" />
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No Servers Configured</h3>
                             <p className="text-slate-500 dark:text-slate-400 text-center mb-6 max-w-sm">
@@ -157,7 +157,7 @@ const Servers = () => {
                             </p>
                             <button
                                 onClick={() => setIsModalOpen(true)}
-                                className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                                className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 transition"
                             >
                                 <FiPlus /> Add First Server
                             </button>
@@ -166,14 +166,14 @@ const Servers = () => {
                         servers.map(server => (
                             <div key={server.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition hover:shadow-md">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                    <div className="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg text-brand-600 dark:text-brand-400">
                                         <FiServer size={24} />
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => handleToggleStatus(server)}
-                                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${server.is_active ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
+                                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${server.is_active ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'
                                                     }`}
                                                 title={server.is_active ? 'Deactivate (Maintenance Mode)' : 'Activate'}
                                             >
@@ -225,7 +225,7 @@ const Servers = () => {
                                     </button>
                                     <button
                                         onClick={() => handleEdit(server)}
-                                        className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                                        className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-brand-600 dark:hover:text-brand-400 transition"
                                         title="Edit Server"
                                     >
                                         <FiEdit2 />
@@ -239,8 +239,8 @@ const Servers = () => {
 
             {/* Add/Edit Server Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-md p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {editingId ? 'Edit Server' : 'Add New Server'}
@@ -254,7 +254,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
                                     placeholder="e.g. Server-2"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -264,7 +264,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hostname (via CF Tunnel)</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
                                     placeholder="e.g. ssh2.domain.com"
                                     value={formData.hostname}
                                     onChange={e => setFormData({ ...formData, hostname: e.target.value })}
@@ -274,7 +274,7 @@ const Servers = () => {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cloudflare Tunnel ID</label>
                                 <input
                                     type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-500"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
                                     placeholder="Tunnel UUID"
                                     value={formData.cloudflare_tunnel_id}
                                     onChange={e => setFormData({ ...formData, cloudflare_tunnel_id: e.target.value })}
@@ -290,7 +290,7 @@ const Servers = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition"
+                                    className="flex-1 py-2 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition"
                                 >
                                     {editingId ? 'Save Changes' : 'Add Server'}
                                 </button>

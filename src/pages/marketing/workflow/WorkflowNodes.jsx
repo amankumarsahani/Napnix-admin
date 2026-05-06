@@ -59,7 +59,7 @@ export const ActionNode = ({ data, selected }) => (
                     <div className="text-[10px] text-slate-500 line-clamp-2 italic">"{data.config.content}"</div>
                 )}
                 {data.actionType === 'ai_assistant' && (
-                    <div className="text-[10px] text-indigo-500 font-medium">{data.config.model}</div>
+                    <div className="text-[10px] text-brand-500 font-medium">{data.config.model}</div>
                 )}
                 {data.actionType === 'create_task' && (
                     <div className="text-[10px] text-slate-500 line-clamp-1">Task: {data.config.title}</div>

@@ -123,7 +123,7 @@ export default function ClientDetail() {
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <div className="animate-pulse space-y-6">
                     <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
                 </div>
             </div>
         );
@@ -141,7 +141,7 @@ export default function ClientDetail() {
             </div>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{client.companyName}</h1>
@@ -181,7 +181,7 @@ export default function ClientDetail() {
                 {/* Left: Info & Actions */}
                 <div className="space-y-6">
                     {/* Contact Info */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Contact Information</h3>
                         <div className="space-y-3">
                             {client.email && (
@@ -206,7 +206,7 @@ export default function ClientDetail() {
                     </div>
 
                     {/* Projects */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Projects ({projects.length})</h3>
                         {projects.length === 0 ? (
                             <p className="text-slate-400 dark:text-slate-500 text-sm">No projects yet</p>
@@ -228,7 +228,7 @@ export default function ClientDetail() {
                     </div>
 
                     {/* Meta */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Details</h3>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
@@ -245,7 +245,7 @@ export default function ClientDetail() {
 
                 {/* Right: Timeline */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         {/* Tabs */}
                         <div className="flex border-b border-slate-100 dark:border-slate-700">
                             <button
