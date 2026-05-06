@@ -4,6 +4,7 @@ import { tenantsAPI } from '../../api';
 import { plansAPI } from '../../api';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
+import { getStatusColor as getStatusColorUtil, getProcessStatusColor } from '../../utils/statusColors';
 import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
@@ -83,25 +84,9 @@ const Tenants = () => {
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'trial': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'suspended': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'cancelled': return 'bg-slate-100 text-slate-700 border-slate-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
-    };
+    const getStatusColor = (status) => getStatusColorUtil('tenant', status);
 
-    const getProcessStatusColor = (status) => {
-        switch (status) {
-            case 'running': return 'bg-emerald-500';
-            case 'stopped': return 'bg-slate-400';
-            case 'starting': return 'bg-amber-500 animate-pulse';
-            case 'error': return 'bg-rose-500';
-            default: return 'bg-slate-400';
-        }
-    };
+
 
     if (loading) {
         return (
@@ -190,7 +175,7 @@ const Tenants = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
+                                            <span className="px-2 py-1 text-xs font-medium bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 rounded capitalize">
                                                 {tenant.industry_type || 'general'}
                                             </span>
                                         </td>
@@ -313,7 +298,7 @@ const Tenants = () => {
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                            <span className="px-2 py-1 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 rounded capitalize">
+                            <span className="px-2 py-1 text-xs font-medium bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 rounded capitalize">
                                 {tenant.industry_type || 'general'}
                             </span>
                             <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded">
@@ -452,7 +437,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Create New Tenant</h2>
@@ -580,7 +565,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
-                                <FiServer className="text-indigo-500" /> Destination Server
+                                <FiServer className="text-brand-500" /> Destination Server
                             </label>
                             <select
                                 required

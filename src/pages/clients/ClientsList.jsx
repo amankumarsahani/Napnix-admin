@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientsAPI, billingAPI } from '../../api';
+import { createStatusColorFn } from '../../utils/statusColors';
 
 import toast from 'react-hot-toast';
 import DetailSidebar from '../../components/common/DetailSidebar';
@@ -126,19 +127,12 @@ export default function ClientsList() {
         });
     };
 
-    const getStatusColor = (status) => {
-        const colors = {
-            active: 'bg-green-100 text-green-800',
-            prospect: 'bg-blue-100 text-blue-800',
-            inactive: 'bg-gray-100 text-gray-800',
-        };
-        return colors[status] || colors.active;
-    };
+    const getStatusColor = createStatusColorFn('client');
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
             </div>
         );
     }
@@ -155,7 +149,7 @@ export default function ClientsList() {
                         resetForm();
                         setShowModal(true);
                     }}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+                    className="btn btn-primary"
                 >
                     + Add Client
                 </button>
@@ -174,7 +168,7 @@ export default function ClientsList() {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden border border-transparent dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden border border-transparent dark:border-slate-700">
                 <table className="w-full">
                     <thead className="bg-gray-50 dark:bg-slate-800 border-b dark:border-slate-700">
                         <tr>
@@ -220,7 +214,7 @@ export default function ClientsList() {
                                                 setShowLinkModal(true);
                                                 setGeneratedLink('');
                                             }}
-                                            className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors text-sm font-medium"
+                                            className="px-3 py-1 bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-400 rounded-lg hover:bg-brand-200 dark:hover:bg-brand-900 transition-colors text-sm font-medium"
                                             title="Generate Payment Link"
                                         >
                                             Link
@@ -263,8 +257,8 @@ export default function ClientsList() {
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
                         <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">{editingClient ? 'Edit Client' : 'Add New Client'}</h2>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -340,7 +334,7 @@ export default function ClientsList() {
                             <div className="flex gap-3 pt-4">
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 hover:shadow-xl transition-all"
+                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
                                 >
                                     {editingClient ? 'Update Client' : 'Create Client'}
                                 </button>
@@ -372,8 +366,8 @@ export default function ClientsList() {
 
             {/* Payment Link Modal */}
             {showLinkModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-md w-full shadow-2xl border border-transparent dark:border-slate-700">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
                             <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -425,7 +419,7 @@ export default function ClientsList() {
                                                 navigator.clipboard.writeText(generatedLink);
                                                 toast.success('Link copied to clipboard');
                                             }}
-                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                                            className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
                                         >
                                             Copy
                                         </button>
@@ -459,7 +453,7 @@ export default function ClientsList() {
                                         }
                                     }}
                                     disabled={generatingLink}
-                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 disabled:opacity-50 transition-all"
+                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 disabled:opacity-50 transition-all"
                                 >
                                     {generatingLink ? 'Generating...' : 'Generate Magic Link'}
                                 </button>
