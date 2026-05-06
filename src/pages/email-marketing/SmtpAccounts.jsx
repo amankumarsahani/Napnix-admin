@@ -59,7 +59,7 @@ export default function SmtpAccounts() {
         }
     };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
     return (
         <div className="space-y-6">
@@ -73,7 +73,7 @@ export default function SmtpAccounts() {
                     <FiServer className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No SMTP accounts</h3>
                     <p className="text-sm text-slate-500 mt-1 mb-4">Add an SMTP account to start sending emails</p>
-                    <button onClick={() => setShowModal(true)} className="btn btn-primary">Add SMTP Account</button>
+                    <button onClick={() => setShowModal(true)} className="btn btn-primary mx-auto">Add SMTP Account</button>
                 </div>
             ) : (
                 <div className="space-y-4">
@@ -83,7 +83,7 @@ export default function SmtpAccounts() {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{acc.name}</h3>
-                                        {acc.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">DEFAULT</span>}
+                                        {acc.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-100 text-brand-700 font-bold">DEFAULT</span>}
                                     </div>
                                     <p className="text-xs text-slate-500 mt-1">{acc.host}:{acc.port} &middot; {acc.auth_user}</p>
                                 </div>
@@ -91,7 +91,7 @@ export default function SmtpAccounts() {
                                     <div className="text-right">
                                         <p className="text-xs text-slate-500">{acc.sent_today}/{acc.daily_limit} today</p>
                                         <div className="w-24 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
-                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((acc.sent_today / acc.daily_limit) * 100, 100)}%` }} />
+                                            <div className="h-full bg-brand-500 rounded-full" style={{ width: `${Math.min((acc.sent_today / acc.daily_limit) * 100, 100)}%` }} />
                                         </div>
                                     </div>
                                     <span className={`text-xs px-2 py-1 rounded-full ${acc.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{acc.is_active ? 'Active' : 'Inactive'}</span>
@@ -106,7 +106,7 @@ export default function SmtpAccounts() {
             )}
 
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add SMTP Account</h2>
                         <div className="space-y-3">
@@ -120,7 +120,7 @@ export default function SmtpAccounts() {
                                 { k: 'from_name', label: 'From Name', ph: 'Your Company' },
                                 { k: 'daily_limit', label: 'Daily Limit', type: 'number' },
                             ].map(f => (
-                                <div key={f.k}><label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label><input type={f.type || 'text'} value={form[f.k]} onChange={e => setForm({ ...form, [f.k]: e.target.value })} placeholder={f.ph} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                                <div key={f.k}><label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label><input type={f.type || 'text'} value={form[f.k]} onChange={e => setForm({ ...form, [f.k]: e.target.value })} placeholder={f.ph} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
                             ))}
                             <div className="flex items-center gap-2">
                                 <input type="checkbox" checked={form.secure} onChange={e => setForm({ ...form, secure: e.target.checked })} id="ssl" />

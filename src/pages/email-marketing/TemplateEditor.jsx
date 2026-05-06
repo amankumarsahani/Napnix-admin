@@ -53,13 +53,13 @@ function SortableBlock({ block, isSelected, onSelect, onDelete, onDuplicate }) {
 
     return (
         <div ref={setNodeRef} style={style} {...attributes}
-            className={`group relative border-2 rounded-lg transition-all cursor-pointer ${isSelected ? 'border-indigo-500 shadow-md' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
+            className={`group relative border-2 rounded-lg transition-all cursor-pointer ${isSelected ? 'border-brand-500 shadow-md' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'}`}
             onClick={() => onSelect(block.id)}>
             <div {...listeners} className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center cursor-grab text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
                 <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="4" cy="3" r="1.5" fill="currentColor"/><circle cx="10" cy="3" r="1.5" fill="currentColor"/><circle cx="4" cy="7" r="1.5" fill="currentColor"/><circle cx="10" cy="7" r="1.5" fill="currentColor"/><circle cx="4" cy="11" r="1.5" fill="currentColor"/><circle cx="10" cy="11" r="1.5" fill="currentColor"/></svg>
             </div>
             <div className="absolute right-1 top-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <button onClick={(e) => { e.stopPropagation(); onDuplicate(block.id); }} className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs flex items-center justify-center hover:bg-indigo-100" title="Duplicate">⧉</button>
+                <button onClick={(e) => { e.stopPropagation(); onDuplicate(block.id); }} className="w-6 h-6 rounded bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs flex items-center justify-center hover:bg-brand-100" title="Duplicate">⧉</button>
                 <button onClick={(e) => { e.stopPropagation(); onDelete(block.id); }} className="w-6 h-6 rounded bg-red-100 dark:bg-red-900/30 text-red-500 text-xs flex items-center justify-center hover:bg-red-200" title="Delete">&times;</button>
             </div>
             <BlockPreview block={block} />
@@ -209,7 +209,7 @@ export default function TemplateEditor() {
                     <span className="text-xs text-slate-400">Ctrl+Z / Ctrl+Y</span>
                     <button onClick={undo} disabled={undoStack.length === 0} className="px-2 py-1 text-xs border rounded disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700">Undo</button>
                     <button onClick={redo} disabled={redoStack.length === 0} className="px-2 py-1 text-xs border rounded disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700">Redo</button>
-                    <button onClick={() => setPreviewMode(!previewMode)} className={`px-3 py-1.5 text-xs rounded font-medium ${previewMode ? 'bg-indigo-100 text-indigo-700' : 'border hover:bg-slate-100 dark:hover:bg-slate-700'}`}>{previewMode ? 'Edit' : 'Preview'}</button>
+                    <button onClick={() => setPreviewMode(!previewMode)} className={`px-3 py-1.5 text-xs rounded font-medium ${previewMode ? 'bg-brand-100 text-brand-700' : 'border hover:bg-slate-100 dark:hover:bg-slate-700'}`}>{previewMode ? 'Edit' : 'Preview'}</button>
                     {previewMode && <button onClick={() => setMobilePreview(!mobilePreview)} className={`px-3 py-1.5 text-xs rounded font-medium border ${mobilePreview ? 'bg-amber-100 text-amber-700' : 'hover:bg-slate-100'}`}>{mobilePreview ? '320px' : '600px'}</button>}
                     <button onClick={handleSave} className="btn btn-primary text-sm">Save</button>
                 </div>
@@ -232,7 +232,7 @@ export default function TemplateEditor() {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Add Blocks</p>
                         <div className="grid grid-cols-2 gap-2">
                             {BLOCK_TYPES.map(bt => (
-                                <button key={bt.type} onClick={() => addBlock(bt.type)} className="flex flex-col items-center gap-1 p-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors text-center">
+                                <button key={bt.type} onClick={() => addBlock(bt.type)} className="flex flex-col items-center gap-1 p-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors text-center">
                                     <span className="text-lg">{bt.icon}</span>
                                     <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{bt.label}</span>
                                 </button>

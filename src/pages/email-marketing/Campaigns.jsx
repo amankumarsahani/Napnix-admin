@@ -30,9 +30,9 @@ export default function Campaigns() {
         }
     };
 
-    const statusColors = { draft: 'bg-slate-100 text-slate-700', scheduled: 'bg-blue-100 text-blue-700', queued: 'bg-amber-100 text-amber-700', sending: 'bg-indigo-100 text-indigo-700', sent: 'bg-emerald-100 text-emerald-700', paused: 'bg-orange-100 text-orange-700', failed: 'bg-red-100 text-red-700', cancelled: 'bg-slate-100 text-slate-500' };
+    const statusColors = { draft: 'bg-slate-100 text-slate-700', scheduled: 'bg-blue-100 text-blue-700', queued: 'bg-amber-100 text-amber-700', sending: 'bg-brand-100 text-brand-700', sent: 'bg-emerald-100 text-emerald-700', paused: 'bg-orange-100 text-orange-700', failed: 'bg-red-100 text-red-700', cancelled: 'bg-slate-100 text-slate-500' };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
     return (
         <div className="space-y-6">
@@ -46,7 +46,7 @@ export default function Campaigns() {
                     <FiSend className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No campaigns yet</h3>
                     <p className="text-sm text-slate-500 mt-1 mb-4">Create your first campaign</p>
-                    <button onClick={() => navigate('/email-marketing/campaigns/new')} className="btn btn-primary">Create Campaign</button>
+                    <button onClick={() => navigate('/email-marketing/campaigns/new')} className="btn btn-primary mx-auto">Create Campaign</button>
                 </div>
             ) : (
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">

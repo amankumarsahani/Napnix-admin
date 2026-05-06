@@ -96,11 +96,11 @@ export default function Contacts() {
                     <div className="relative flex-1 min-w-[200px]">
                         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <input type="text" placeholder="Search by email, name, company..." value={search} onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
                     </div>
                     <div className="flex gap-1">
                         {['', 'subscribed', 'unsubscribed', 'bounced'].map(s => (
-                            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 text-xs rounded-full font-medium ${statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 text-xs rounded-full font-medium ${statusFilter === s ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                                 {s || 'All'}
                             </button>
                         ))}
@@ -108,13 +108,13 @@ export default function Contacts() {
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+                    <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
                 ) : contacts.length === 0 ? (
                     <div className="text-center py-20">
                         <FiUsers className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-slate-900 dark:text-white">{search ? 'No contacts match your search' : 'No contacts yet'}</h3>
                         <p className="text-sm text-slate-500 mt-1 mb-4">Import from CSV or add manually</p>
-                        {!search && <button onClick={() => setShowImport(true)} className="btn btn-primary">Import Contacts</button>}
+                        {!search && <button onClick={() => setShowImport(true)} className="btn btn-primary mx-auto">Import Contacts</button>}
                     </div>
                 ) : (
                     <>
@@ -153,12 +153,12 @@ export default function Contacts() {
             </div>
 
             {showAdd && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add Contact</h2>
                         <div className="space-y-3">
                             {[{ k: 'email', label: 'Email *', type: 'email', ph: 'john@example.com' }, { k: 'first_name', label: 'First Name', ph: 'John' }, { k: 'last_name', label: 'Last Name', ph: 'Doe' }, { k: 'phone', label: 'Phone', ph: '+1234567890' }, { k: 'company', label: 'Company', ph: 'Acme Inc' }].map(f => (
-                                <div key={f.k}><label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label><input type={f.type || 'text'} value={addForm[f.k]} onChange={e => setAddForm({ ...addForm, [f.k]: e.target.value })} placeholder={f.ph} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                                <div key={f.k}><label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label><input type={f.type || 'text'} value={addForm[f.k]} onChange={e => setAddForm({ ...addForm, [f.k]: e.target.value })} placeholder={f.ph} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
                             ))}
                         </div>
                         <div className="flex gap-3 mt-6"><button onClick={() => setShowAdd(false)} className="btn btn-secondary flex-1">Cancel</button><button onClick={handleAdd} className="btn btn-primary flex-1">Add Contact</button></div>
@@ -167,12 +167,12 @@ export default function Contacts() {
             )}
 
             {showImport && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowImport(false)}>
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImport(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-xl w-full" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Import Contacts</h2>
                         <p className="text-xs text-slate-500 mb-4">Paste CSV data below. First row must be headers. Required: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">email</code> column.</p>
                         <textarea value={importData} onChange={e => setImportData(e.target.value)} rows={10} placeholder={"email,first_name,last_name,company\njohn@example.com,John,Doe,Acme\njane@example.com,Jane,Smith,Globex"}
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y" />
                         <div className="flex gap-3 mt-4"><button onClick={() => setShowImport(false)} className="btn btn-secondary flex-1">Cancel</button><button onClick={handleImport} className="btn btn-primary flex-1">Import</button></div>
                     </div>
                 </div>
