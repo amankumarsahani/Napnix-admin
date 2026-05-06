@@ -1,451 +1,199 @@
 import apiClient from './axios';
 
+// ─── CRUD Factory ────────────────────────────────────────────────────────────
+// Generates standard CRUD operations for a given base path.
+// `updateMethod` defaults to 'put' but can be 'patch' for specific entities.
+
+function createCrudAPI(basePath, { updateMethod = 'put', hasParams = true } = {}) {
+    return {
+        getAll: hasParams
+            ? async (params = {}) => { const r = await apiClient.get(basePath, { params }); return r.data; }
+            : async () => { const r = await apiClient.get(basePath); return r.data; },
+        getById: async (id) => { const r = await apiClient.get(`${basePath}/${id}`); return r.data; },
+        create: async (data) => { const r = await apiClient.post(basePath, data); return r.data; },
+        update: async (id, data) => { const r = await apiClient[updateMethod](`${basePath}/${id}`, data); return r.data; },
+        delete: async (id) => { const r = await apiClient.delete(`${basePath}/${id}`); return r.data; },
+    };
+}
+
+const statsEndpoint = (basePath) => async () => { const r = await apiClient.get(`${basePath}/stats`); return r.data; };
+
+// ─── Auth API ────────────────────────────────────────────────────────────────
+
 export const authAPI = {
     login: async (email, password) => {
         const response = await apiClient.post('/auth/signin', { email, password });
         return response.data;
     },
-
     getCurrentUser: async () => {
         const response = await apiClient.get('/auth/me');
         return response.data;
     },
-
     logout: async () => {
         const response = await apiClient.post('/auth/logout');
         return response.data;
     },
-
     refreshToken: async () => {
         const response = await apiClient.post('/auth/refresh-token');
         return response.data;
     },
 };
 
+// ─── Clients API ─────────────────────────────────────────────────────────────
+
 export const clientsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/clients', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/clients/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/clients', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/clients/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/clients/${id}`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/clients/stats');
-        return response.data;
-    },
+    ...createCrudAPI('/clients'),
+    getStats: statsEndpoint('/clients'),
 };
+
+// ─── Projects API ────────────────────────────────────────────────────────────
 
 export const projectsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/projects', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/projects/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/projects', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/projects/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/projects/${id}`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/projects/stats');
-        return response.data;
-    },
+    ...createCrudAPI('/projects'),
+    getStats: statsEndpoint('/projects'),
 };
 
+// ─── Leads API ───────────────────────────────────────────────────────────────
+
 export const leadsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/leads', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/leads/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/leads', data);
-        return response.data;
-    },
-
+    ...createCrudAPI('/leads'),
     bulkCreate: async (leads) => {
         const response = await apiClient.post('/leads/bulk-create', { leads });
         return response.data;
     },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/leads/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/leads/${id}`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/leads/stats');
-        return response.data;
-    },
-
+    getStats: statsEndpoint('/leads'),
     assign: async (id, assignedTo) => {
         const response = await apiClient.patch(`/leads/${id}/assign`, { assignedTo });
         return response.data;
     },
-
     getAssignableUsers: async () => {
         const response = await apiClient.get('/leads/assignable-users');
         return response.data;
     },
 };
 
+// ─── Inquiries API ───────────────────────────────────────────────────────────
+
 export const inquiriesAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/inquiries', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/inquiries/${id}`);
-        return response.data;
-    },
-
+    getAll: async (params = {}) => { const r = await apiClient.get('/inquiries', { params }); return r.data; },
+    getById: async (id) => { const r = await apiClient.get(`/inquiries/${id}`); return r.data; },
     updateStatus: async (id, status) => {
         const response = await apiClient.patch(`/inquiries/${id}/status`, { status });
         return response.data;
     },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/inquiries/${id}`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/inquiries/stats');
-        return response.data;
-    },
-
+    delete: async (id) => { const r = await apiClient.delete(`/inquiries/${id}`); return r.data; },
+    getStats: statsEndpoint('/inquiries'),
     convertToLead: async (id, data = {}) => {
         const response = await apiClient.post(`/inquiries/${id}/convert-to-lead`, data);
         return response.data;
     },
 };
 
-// Email Templates API
+// ─── Email Templates API ─────────────────────────────────────────────────────
+
 export const templatesAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/email-templates', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/email-templates/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/email-templates', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/email-templates/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/email-templates/${id}`);
-        return response.data;
-    },
-
+    ...createCrudAPI('/email-templates'),
     preview: async (id, sampleData = {}) => {
         const response = await apiClient.post(`/email-templates/${id}/preview`, sampleData);
         return response.data;
     },
-
-    getStats: async () => {
-        const response = await apiClient.get('/email-templates/stats');
-        return response.data;
-    },
-
+    getStats: statsEndpoint('/email-templates'),
     send: async (data) => {
         const response = await apiClient.post('/email-templates/send', data);
         return response.data;
     },
 };
 
-// Activities API - for tracking notes, calls, status changes etc.
+// ─── Activities API ──────────────────────────────────────────────────────────
+
 export const activitiesAPI = {
     getByEntity: async (entityType, entityId) => {
         const response = await apiClient.get(`/activities/${entityType}/${entityId}`);
         return response.data;
     },
-
     create: async (data) => {
         const response = await apiClient.post('/activities', data);
         return response.data;
     },
-
     delete: async (id) => {
         const response = await apiClient.delete(`/activities/${id}`);
         return response.data;
     },
 };
 
-// Dashboard API - for admin dashboard stats
-export const dashboardAPI = {
-    getStats: async () => {
-        const response = await apiClient.get('/dashboard/stats');
-        return response.data;
-    },
+// ─── Dashboard API ───────────────────────────────────────────────────────────
 
+export const dashboardAPI = {
+    getStats: statsEndpoint('/dashboard'),
     getRecentActivity: async () => {
         const response = await apiClient.get('/dashboard/recent');
         return response.data;
-    }
+    },
 };
 
-// Document Templates API
+// ─── Document Templates API ──────────────────────────────────────────────────
+
 export const documentTemplatesAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/document-templates', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/document-templates/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/document-templates', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/document-templates/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/document-templates/${id}`);
-        return response.data;
-    },
-
+    ...createCrudAPI('/document-templates'),
     preview: async (id, variables) => {
         const response = await apiClient.post(`/document-templates/${id}/preview`, { variables });
         return response.data;
     },
-
     send: async (templateId, to, subject, variables) => {
         const response = await apiClient.post('/document-templates/send', { templateId, to, subject, variables });
         return response.data;
     },
 };
 
-// Tenants API (Master Admin)
+// ─── Tenants API (Master Admin) ─────────────────────────────────────────────
+
 export const tenantsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/tenants', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/tenants/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/tenants', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.patch(`/tenants/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/tenants/${id}`);
-        return response.data;
-    },
-
-    provision: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/provision`);
-        return response.data;
-    },
-
-    start: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/start`);
-        return response.data;
-    },
-
-    stop: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/stop`);
-        return response.data;
-    },
-
-    restart: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/restart`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/tenants/stats');
-        return response.data;
-    },
-
+    ...createCrudAPI('/tenants', { updateMethod: 'patch' }),
+    provision: async (id) => { const r = await apiClient.post(`/tenants/${id}/provision`); return r.data; },
+    start: async (id) => { const r = await apiClient.post(`/tenants/${id}/start`); return r.data; },
+    stop: async (id) => { const r = await apiClient.post(`/tenants/${id}/stop`); return r.data; },
+    restart: async (id) => { const r = await apiClient.post(`/tenants/${id}/restart`); return r.data; },
+    getStats: statsEndpoint('/tenants'),
     getLogs: async (id, lines = 100) => {
         const response = await apiClient.get(`/tenants/${id}/logs`, { params: { lines } });
         return response.data;
     },
-
     setupCustomDomain: async (id, domains) => {
-        // domains = { crm: string, storefront: string, api: string }
         const response = await apiClient.post(`/tenants/${id}/custom-domain`, domains);
         return response.data;
     },
-
     fullDelete: async (id, options = {}) => {
         const response = await apiClient.delete(`/tenants/${id}/full-delete`, { data: options });
         return response.data;
     },
-
-    endTrial: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/end-trial`);
-        return response.data;
-    },
-
-    sendPaymentLink: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/send-payment-link`);
-        return response.data;
-    },
-
-    sendAgreement: async (id) => {
-        const response = await apiClient.post(`/tenants/${id}/send-agreement`);
-        return response.data;
-    }
+    endTrial: async (id) => { const r = await apiClient.post(`/tenants/${id}/end-trial`); return r.data; },
+    sendPaymentLink: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-payment-link`); return r.data; },
+    sendAgreement: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-agreement`); return r.data; },
 };
 
-// Plans API
+// ─── Plans API ───────────────────────────────────────────────────────────────
+
 export const plansAPI = {
-    getAll: async () => {
-        const response = await apiClient.get('/plans');
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/plans/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/plans', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.patch(`/plans/${id}`, data);
-        return response.data;
-    },
+    getAll: async () => { const r = await apiClient.get('/plans'); return r.data; },
+    getById: async (id) => { const r = await apiClient.get(`/plans/${id}`); return r.data; },
+    create: async (data) => { const r = await apiClient.post('/plans', data); return r.data; },
+    update: async (id, data) => { const r = await apiClient.patch(`/plans/${id}`, data); return r.data; },
 };
 
-// Campaigns API (Email Marketing)
+// ─── Campaigns API (Email Marketing) ────────────────────────────────────────
+
 export const campaignsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/campaigns', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/campaigns/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/campaigns', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/campaigns/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/campaigns/${id}`);
-        return response.data;
-    },
-
-    start: async (id) => {
-        const response = await apiClient.post(`/campaigns/${id}/send`);
-        return response.data;
-    },
-
-    pause: async (id) => {
-        const response = await apiClient.post(`/campaigns/${id}/pause`);
-        return response.data;
-    },
-
-    resume: async (id) => {
-        const response = await apiClient.post(`/campaigns/${id}/resume`);
-        return response.data;
-    },
-
-    getStats: async (id) => {
-        const response = await apiClient.get(`/campaigns/${id}/stats`);
-        return response.data;
-    },
-
+    ...createCrudAPI('/campaigns'),
+    start: async (id) => { const r = await apiClient.post(`/campaigns/${id}/send`); return r.data; },
+    pause: async (id) => { const r = await apiClient.post(`/campaigns/${id}/pause`); return r.data; },
+    resume: async (id) => { const r = await apiClient.post(`/campaigns/${id}/resume`); return r.data; },
+    getStats: async (id) => { const r = await apiClient.get(`/campaigns/${id}/stats`); return r.data; },
     getRecipients: async (id, params = {}) => {
         const response = await apiClient.get(`/campaigns/${id}/recipients`, { params });
         return response.data;
     },
-
-    getDashboardStats: async () => {
-        const response = await apiClient.get('/campaigns/stats');
-        return response.data;
-    },
-
-    getTemplates: async () => {
-        const response = await apiClient.get('/campaigns/templates');
-        return response.data;
-    },
-
+    getDashboardStats: async () => { const r = await apiClient.get('/campaigns/stats'); return r.data; },
+    getTemplates: async () => { const r = await apiClient.get('/campaigns/templates'); return r.data; },
     parseEmails: async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -456,106 +204,54 @@ export const campaignsAPI = {
     },
 };
 
-// SMTP Accounts API (Email Configuration)
+// ─── SMTP Accounts API ──────────────────────────────────────────────────────
+
 export const smtpAccountsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/smtp-accounts', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/smtp-accounts/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/smtp-accounts', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/smtp-accounts/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/smtp-accounts/${id}`);
-        return response.data;
-    },
-
+    ...createCrudAPI('/smtp-accounts'),
     test: async (id) => {
         const response = await apiClient.post(`/smtp-accounts/${id}/test`);
         return response.data;
     },
 };
 
-// Workflows API (Automation)
+// ─── Workflows API (Automation) ─────────────────────────────────────────────
+
 export const workflowsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/workflows', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/workflows/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/workflows', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/workflows/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/workflows/${id}`);
-        return response.data;
-    },
-
+    ...createCrudAPI('/workflows'),
     toggle: async (id) => {
         const response = await apiClient.patch(`/workflows/${id}/toggle`);
         return response.data;
     },
-
     test: async (id, testData) => {
         const response = await apiClient.post(`/workflows/${id}/test`, { testData });
         return response.data;
     },
-
     getExecutions: async (id, params = {}) => {
         const response = await apiClient.get(`/workflows/${id}/executions`, { params });
         return response.data;
     },
-
     getExecutionLogs: async (executionId) => {
         const response = await apiClient.get(`/workflows/executions/${executionId}/logs`);
         return response.data;
     },
-
     getNodeTypes: async () => {
         const response = await apiClient.get('/workflows/meta/node-types');
         return response.data;
-    }
+    },
 };
 
+// ─── Settings API ───────────────────────────────────────────────────────────
+
 export const settingsAPI = {
-    getSettings: async () => {
-        const response = await apiClient.get('/settings');
-        return response.data;
-    },
-    updateSettings: async (settings) => {
-        const response = await apiClient.post('/settings', settings);
-        return response.data;
-    },
+    getSettings: async () => { const r = await apiClient.get('/settings'); return r.data; },
+    updateSettings: async (settings) => { const r = await apiClient.post('/settings', settings); return r.data; },
     testAI: async (provider, apiKey) => {
         const response = await apiClient.post('/settings/test-ai', { provider, apiKey });
         return response.data;
-    }
+    },
 };
+
+// ─── Billing API ────────────────────────────────────────────────────────────
 
 export const billingAPI = {
     createPaymentLink: async (data) => {
@@ -565,82 +261,42 @@ export const billingAPI = {
     getTenantPayments: async (tenantId) => {
         const response = await apiClient.get(`/billing/payments/${tenantId}`);
         return response.data;
-    }
+    },
 };
 
-// Blogs API (Content Management)
+// ─── Blogs API (Content Management) ─────────────────────────────────────────
+
 export const blogsAPI = {
-    getAll: async (params = {}) => {
-        const response = await apiClient.get('/blogs', { params });
-        return response.data;
-    },
-
-    getById: async (id) => {
-        const response = await apiClient.get(`/blogs/${id}`);
-        return response.data;
-    },
-
-    create: async (data) => {
-        const response = await apiClient.post('/blogs', data);
-        return response.data;
-    },
-
-    update: async (id, data) => {
-        const response = await apiClient.put(`/blogs/${id}`, data);
-        return response.data;
-    },
-
-    delete: async (id) => {
-        const response = await apiClient.delete(`/blogs/${id}`);
-        return response.data;
-    },
-
-    getStats: async () => {
-        const response = await apiClient.get('/blogs/stats');
-        return response.data;
-    },
+    ...createCrudAPI('/blogs'),
+    getStats: statsEndpoint('/blogs'),
 };
 
-// Tool Registry API
+// ─── Tool Registry API ──────────────────────────────────────────────────────
+
 export const toolsAPI = {
-    getAll: async () => {
-        const response = await apiClient.get('/tools');
-        return response.data;
-    },
-
-    getPlans: async (toolId) => {
-        const response = await apiClient.get(`/tools/${toolId}/plans`);
-        return response.data;
-    },
-
-    getTenantTools: async (tenantId) => {
-        const response = await apiClient.get(`/tools/tenant/${tenantId}`);
-        return response.data;
-    },
-
+    getAll: async () => { const r = await apiClient.get('/tools'); return r.data; },
+    getPlans: async (toolId) => { const r = await apiClient.get(`/tools/${toolId}/plans`); return r.data; },
+    getTenantTools: async (tenantId) => { const r = await apiClient.get(`/tools/tenant/${tenantId}`); return r.data; },
     enableTool: async (tenantId, data) => {
         const response = await apiClient.post(`/tools/tenant/${tenantId}/enable`, data);
         return response.data;
     },
-
     disableTool: async (tenantId, data) => {
         const response = await apiClient.post(`/tools/tenant/${tenantId}/disable`, data);
         return response.data;
     },
-
     getToolStats: async (tenantId, toolSlug) => {
         const response = await apiClient.get(`/tools/tenant/${tenantId}/${toolSlug}/stats`);
         return response.data;
     },
 };
 
-// NexMail API (proxied through nexs-backend or direct)
+// ─── NexMail API ────────────────────────────────────────────────────────────
+
 export const nexmailAPI = {
     baseUrl: import.meta.env.VITE_NEXMAIL_API_URL || '',
-
     getDashboard: async (tenantId) => {
         const response = await apiClient.get(`/tools/tenant/${tenantId}/nexmail/stats`);
         return response.data;
     },
 };
-
