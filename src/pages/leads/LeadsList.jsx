@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { leadsAPI, billingAPI } from '../../api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { leadsAPI } from '../../api';
 
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
@@ -8,11 +9,13 @@ import Papa from 'papaparse';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import SearchInput from '../../components/common/SearchInput';
+import { FullPageSpinner } from '../../components/common/Spinner';
+import PaymentLinkModal from '../../components/common/PaymentLinkModal';
 
 export default function LeadsList() {
-    const [leads, setLeads] = useState([]);
+    const queryClient = useQueryClient();
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
-    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingLead, setEditingLead] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
@@ -32,33 +35,21 @@ export default function LeadsList() {
     });
     const [selectedLead, setSelectedLead] = useState(null);
     const [showLinkModal, setShowLinkModal] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState('growth');
-    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
-    const [generatingLink, setGeneratingLink] = useState(false);
-    const [generatedLink, setGeneratedLink] = useState('');
-
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchLeads();
-    }, [currentPage, searchTerm]);
+    const { data: leadsData, isLoading: loading } = useQuery({
+        queryKey: ['leads', { page: currentPage, search: searchTerm }],
+        queryFn: () => leadsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
+    });
 
-    const fetchLeads = async () => {
-        try {
-            setLoading(true);
-            const response = await leadsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) });
-            // Backend returns { leads: [...], pagination: {...} }
-            const list = response?.leads || response?.data || [];
-            setLeads(Array.isArray(list) ? list : []);
-            if (response?.pagination) setPagination(response.pagination);
-        } catch (error) {
-            toast.error('Failed to load leads');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const leads = leadsData ? (Array.isArray(leadsData?.leads || leadsData?.data) ? (leadsData?.leads || leadsData?.data) : []) : [];
+
+    // Sync pagination from response
+    if (leadsData?.pagination && leadsData.pagination.totalPages !== totalPages) {
+        setPagination(leadsData.pagination);
+    }
 
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
@@ -75,12 +66,12 @@ export default function LeadsList() {
                         contactName: row.Contact || row.contactName,
                         email: row.Email || row.email,
                         phone: row.Phone || row.phone,
-                        status: 'new', // Default status
+                        status: 'new',
                         source: 'CSV Import',
                         estimatedValue: parseFloat(row.Value || row.estimatedValue) || 0,
                         notes: row.Notes || row.notes,
                         score: parseInt(row.Score || row.score) || 0
-                    })).filter(l => l.contactName); // Ensure required field
+                    })).filter(l => l.contactName);
 
                     if (parsedLeads.length === 0) {
                         toast.error('No valid leads found in CSV');
@@ -89,15 +80,15 @@ export default function LeadsList() {
 
                     const response = await leadsAPI.bulkCreate(parsedLeads);
                     toast.success(response.message || `Successfully imported leads`);
-                    fetchLeads();
+                    queryClient.invalidateQueries({ queryKey: ['leads'] });
                 } catch (error) {
                     toast.error('Failed to import leads');
                 } finally {
                     setIsImporting(false);
-                    event.target.value = null; // Reset input
+                    event.target.value = null;
                 }
             },
-            error: (error) => {
+            error: () => {
                 toast.error('Failed to parse CSV file');
                 setIsImporting(false);
                 event.target.value = null;
@@ -147,7 +138,7 @@ export default function LeadsList() {
             }
             setShowModal(false);
             resetForm();
-            fetchLeads();
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
         } catch (error) {
             toast.error(error.response?.data?.error || 'Operation failed');
         }
@@ -165,7 +156,7 @@ export default function LeadsList() {
                 try {
                     await leadsAPI.delete(id);
                     toast.success('Lead deleted successfully');
-                    fetchLeads();
+                    queryClient.invalidateQueries({ queryKey: ['leads'] });
                 } catch (error) {
                     toast.error('Failed to delete lead');
                 }
@@ -216,11 +207,7 @@ export default function LeadsList() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
-            </div>
-        );
+        return <FullPageSpinner />;
     }
 
     return (
@@ -290,16 +277,11 @@ export default function LeadsList() {
                 </div>
             </div>
 
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Search leads..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
+            <SearchInput
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search leads..."
+            />
 
             {/* View Content */}
             {viewMode === 'kanban' ? (
@@ -394,7 +376,6 @@ export default function LeadsList() {
                                                         e.stopPropagation();
                                                         setSelectedLead(lead);
                                                         setShowLinkModal(true);
-                                                        setGeneratedLink('');
                                                     }}
                                                     className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
                                                     title="Generate Payment Link"
@@ -574,104 +555,12 @@ export default function LeadsList() {
                     </div>
                 </div>
             )}
-            {/* Payment Link Modal */}
-            {showLinkModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
-                            <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Plan</label>
-                                <select
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 outline-none"
-                                    value={selectedPlan}
-                                    onChange={(e) => setSelectedPlan(e.target.value)}
-                                >
-                                    <option value="starter">Starter Plan ($0)</option>
-                                    <option value="growth">Growth Plan ($49/mo)</option>
-                                    <option value="business">Business Plan ($199/mo)</option>
-                                </select>
-                            </div>
-
-                            <div className="flex bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
-                                <button
-                                    onClick={() => setBillingCycle('monthly')}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Monthly
-                                </button>
-                                <button
-                                    onClick={() => setBillingCycle('yearly')}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Yearly (Save 15%)
-                                </button>
-                            </div>
-
-                            {generatedLink ? (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Share this link with {selectedLead?.contactName}</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={generatedLink}
-                                            className="flex-1 px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(generatedLink);
-                                                toast.success('Link copied to clipboard');
-                                            }}
-                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
-                                        >
-                                            Copy
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-slate-500 italic">This link will expire after 24 hours.</p>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={async () => {
-                                        setGeneratingLink(true);
-                                        try {
-                                            const planKey = billingCycle === 'yearly' ? `${selectedPlan}_yearly` : selectedPlan;
-                                            const response = await billingAPI.createPaymentLink({
-                                                planId: planKey,
-                                                successUrl: window.location.origin + '/pricing/success',
-                                                cancelUrl: window.location.origin + '/pricing/cancel',
-                                                metadata: {
-                                                    lead_id: selectedLead.id,
-                                                    entity_type: 'lead',
-                                                    billing_cycle: billingCycle
-                                                }
-                                            });
-                                            if (response.success) {
-                                                setGeneratedLink(response.url);
-                                                toast.success('Payment link generated!');
-                                            }
-                                        } catch (err) {
-                                            toast.error('Failed to generate link');
-                                        } finally {
-                                            setGeneratingLink(false);
-                                        }
-                                    }}
-                                    disabled={generatingLink}
-                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 disabled:opacity-50 transition-all"
-                                >
-                                    {generatingLink ? 'Generating...' : 'Generate Magic Link'}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <PaymentLinkModal
+                isOpen={showLinkModal}
+                onClose={() => setShowLinkModal(false)}
+                entity={selectedLead}
+                entityType="lead"
+            />
 
             <ConfirmModal
                 isOpen={confirmState.isOpen}
