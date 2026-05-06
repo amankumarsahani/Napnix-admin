@@ -95,27 +95,7 @@ export default function AdminStatsSection() {
                 </div>
             </div>
 
-            {/* Quick Stats Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">New Leads</p>
-                    <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">{leadStats?.newLeads || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Qualified</p>
-                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{leadStats?.qualified || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Won</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{leadStats?.won || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Total Value</p>
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                        Rs.{(leadStats?.totalValue || 0).toLocaleString()}
-                    </p>
-                </div>
-            </div>
+
         </div>
     );
 }
