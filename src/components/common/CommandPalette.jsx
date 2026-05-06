@@ -134,7 +134,7 @@ export default function CommandPalette({ isOpen, onClose }) {
 
             {/* Modal */}
             <div
-                className="relative w-full max-w-lg mx-4 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-scale-in"
+                className="relative w-full max-w-lg mx-4 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-scale-in"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
             >
