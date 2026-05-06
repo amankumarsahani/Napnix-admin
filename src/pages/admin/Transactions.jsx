@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FiDownload, FiSearch, FiFilter, FiMoreHorizontal, FiCheck, FiX, FiClock, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -6,8 +7,7 @@ import api from '../../api/axios';
 
 export default function Transactions() {
     const { isDark } = useTheme();
-    const [loading, setLoading] = useState(true);
-    const [transactions, setTransactions] = useState([]);
+    const queryClient = useQueryClient();
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
     const [filterStatus, setFilterStatus] = useState('all');
 
@@ -15,9 +15,17 @@ export default function Transactions() {
     const [syncPaymentId, setSyncPaymentId] = useState('');
     const [syncing, setSyncing] = useState(false);
 
-    useEffect(() => {
-        fetchTransactions();
-    }, [pagination.page, filterStatus]);
+    const { data: transactions = [], isLoading: loading } = useQuery({
+        queryKey: ['transactions', { page: pagination.page, status: filterStatus }],
+        queryFn: async () => {
+            const res = await api.get(`/billing/payments?page=${pagination.page}&limit=10&status=${filterStatus}`);
+            if (res.data.success) {
+                setPagination(res.data.pagination);
+                return res.data.data;
+            }
+            return [];
+        },
+    });
 
     const handleSync = async (e) => {
         e.preventDefault();
@@ -34,7 +42,7 @@ export default function Transactions() {
                 toast.success('Transaction synced successfully');
                 setSyncModalOpen(false);
                 setSyncPaymentId('');
-                fetchTransactions(); // Refresh list
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
             } else {
                 toast.error(res.data.message || 'Sync failed');
             }
@@ -42,21 +50,6 @@ export default function Transactions() {
             toast.error(error.response?.data?.error || 'Failed to sync transaction');
         } finally {
             setSyncing(false);
-        }
-    };
-
-    const fetchTransactions = async () => {
-        try {
-            setLoading(true);
-            const res = await api.get(`/billing/payments?page=${pagination.page}&limit=10&status=${filterStatus}`);
-            if (res.data.success) {
-                setTransactions(res.data.data);
-                setPagination(res.data.pagination);
-            }
-        } catch (error) {
-            toast.error('Failed to load transactions');
-        } finally {
-            setLoading(false);
         }
     };
 

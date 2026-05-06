@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { workflowsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
@@ -75,38 +76,31 @@ const Icons = {
 
 const Workflows = () => {
     const navigate = useNavigate();
-    const [workflows, setWorkflows] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedWorkflow, setSelectedWorkflow] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    useEffect(() => {
-        fetchWorkflows();
-    }, [currentPage, searchTerm]);
-
-    const fetchWorkflows = async () => {
-        try {
-            setLoading(true);
+    const { data: workflowsData, isLoading: loading } = useQuery({
+        queryKey: ['workflows', { page: currentPage, search: searchTerm }],
+        queryFn: async () => {
             const params = { page: currentPage, limit: pageSize };
             if (searchTerm) params.search = searchTerm;
             const response = await workflowsAPI.getAll(params);
-            setWorkflows(response.data || []);
             if (response.pagination) setPagination(response.pagination);
-        } catch (error) {
-            toast.error('Failed to load workflows');
-        } finally {
-            setLoading(false);
-        }
-    };
+            return response.data || [];
+        },
+    });
+
+    const workflows = workflowsData || [];
 
     const handleToggle = async (workflow) => {
         try {
             await workflowsAPI.toggle(workflow.id);
             toast.success(workflow.is_active ? 'Workflow deactivated' : 'Workflow activated');
-            fetchWorkflows();
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
         } catch (error) {
             toast.error('Failed to toggle workflow');
         }
@@ -119,7 +113,7 @@ const Workflows = () => {
             toast.success('Workflow deleted');
             setShowDeleteModal(false);
             setSelectedWorkflow(null);
-            fetchWorkflows();
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
         } catch (error) {
             toast.error('Failed to delete workflow');
         }

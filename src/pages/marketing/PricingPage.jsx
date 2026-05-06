@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { billingAPI, settingsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
@@ -34,29 +35,23 @@ export default function PricingPage() {
     const [usePaymentLink, setUsePaymentLink] = useState(true);
     const [billingCycle, setBillingCycle] = useState('monthly');
     const [contactEmail, setContactEmail] = useState('sales@nexspire.com');
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchPricingMode = async () => {
-            try {
-                const response = await settingsAPI.getSettings();
-                if (response.success) {
-                    if (response.data.pricing_page_mode) {
-                        setUsePaymentLink(response.data.pricing_page_mode === 'payment_link');
-                    }
-                    if (response.data.contact_sales_email) {
-                        setContactEmail(response.data.contact_sales_email);
-                    }
+    const { isLoading: loading } = useQuery({
+        queryKey: ['settings-pricing'],
+        queryFn: async () => {
+            const response = await settingsAPI.getSettings();
+            if (response.success) {
+                if (response.data.pricing_page_mode) {
+                    setUsePaymentLink(response.data.pricing_page_mode === 'payment_link');
                 }
-            } catch (err) {
-                // silently ignore
-            } finally {
-                setLoading(false);
+                if (response.data.contact_sales_email) {
+                    setContactEmail(response.data.contact_sales_email);
+                }
             }
-        };
-        fetchPricingMode();
-    }, []);
+            return response;
+        },
+    });
 
     const handleBuy = async (planId) => {
         if (!usePaymentLink) {

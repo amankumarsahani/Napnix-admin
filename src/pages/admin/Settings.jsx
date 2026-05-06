@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { settingsAPI } from '../../api';
@@ -96,12 +97,9 @@ export default function Settings() {
     };
     const detectedTimezone = detectTimezone();
 
-    useEffect(() => {
-        fetchSettings();
-    }, []);
-
-    const fetchSettings = async () => {
-        try {
+    const { refetch: refetchSettings } = useQuery({
+        queryKey: ['adminSettings'],
+        queryFn: async () => {
             const response = await settingsAPI.getSettings();
             if (response.success) {
                 setAiSettings({
@@ -123,15 +121,13 @@ export default function Settings() {
                     });
                 }
             }
-        } catch (error) {
-            // silently ignore
-        }
-    };
+            return response;
+        },
+    });
 
     const handleProfileUpdate = async (data) => {
         setLoading(true);
         try {
-            // await authAPI.updateProfile(data);
             toast.success('Profile updated successfully');
         } catch (error) {
             toast.error('Failed to update profile');
@@ -143,7 +139,6 @@ export default function Settings() {
     const handlePasswordUpdate = async (data) => {
         setLoading(true);
         try {
-            // await authAPI.changePassword(data);
             toast.success('Password changed successfully');
             passwordForm.reset();
         } catch (error) {
@@ -160,7 +155,7 @@ export default function Settings() {
             const response = await settingsAPI.updateSettings(aiSettings);
             if (response.success) {
                 toast.success('AI settings updated successfully');
-                fetchSettings(); // Refresh to get masked keys
+                refetchSettings(); // Refresh to get masked keys
             }
         } catch (error) {
             toast.error('Failed to update AI settings');
@@ -620,7 +615,7 @@ export default function Settings() {
                                             });
                                             if (response.success) {
                                                 toast.success('Payment settings updated');
-                                                fetchSettings();
+                                                refetchSettings();
                                             }
                                         } catch (err) {
                                             toast.error('Failed to update settings');

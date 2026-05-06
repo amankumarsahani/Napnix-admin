@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
@@ -51,13 +52,10 @@ const CATEGORIES = [
 
 
 export default function Templates() {
-    const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [previewHtml, setPreviewHtml] = useState(null);
     const [activeTypeFilter, setActiveTypeFilter] = useState('all');
-    const [stats, setStats] = useState(null);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -73,50 +71,39 @@ export default function Templates() {
         is_active: true,
     });
 
-    const [availableDocuments, setAvailableDocuments] = useState([]);
-
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(9);
 
-    useEffect(() => {
-        fetchTemplates();
-        fetchStats();
-        fetchAvailableDocuments();
-    }, [activeTypeFilter, currentPage, searchTerm]);
+    const queryClient = useQueryClient();
 
-    const fetchAvailableDocuments = async () => {
-        try {
-            const response = await documentTemplatesAPI.getAll();
-            setAvailableDocuments(response.data || []);
-        } catch (error) {
-            // silently ignore
-        }
-    };
-
-    const fetchTemplates = async () => {
-        try {
+    const { data: templatesData, isLoading: loading } = useQuery({
+        queryKey: ['emailTemplates', { page: currentPage, type: activeTypeFilter, search: searchTerm }],
+        queryFn: async () => {
             const params = { page: currentPage, limit: pageSize };
-            if (activeTypeFilter !== 'all') {
-                params.type = activeTypeFilter;
-            }
+            if (activeTypeFilter !== 'all') params.type = activeTypeFilter;
             if (searchTerm) params.search = searchTerm;
             const response = await templatesAPI.getAll(params);
-            setTemplates(Array.isArray(response.data) ? response.data : []);
             if (response.pagination) setPagination(response.pagination);
-        } catch (error) {
-            toast.error('Failed to load templates');
-        } finally {
-            setLoading(false);
-        }
-    };
+            return Array.isArray(response.data) ? response.data : [];
+        },
+    });
 
-    const fetchStats = async () => {
-        try {
+    const templates = templatesData || [];
+
+    const { data: stats = null } = useQuery({
+        queryKey: ['emailTemplateStats'],
+        queryFn: async () => {
             const response = await templatesAPI.getStats();
-            setStats(response.data);
-        } catch (error) {
-            // silently ignore
-        }
-    };
+            return response.data;
+        },
+    });
+
+    const { data: availableDocuments = [] } = useQuery({
+        queryKey: ['availableDocuments'],
+        queryFn: async () => {
+            const response = await documentTemplatesAPI.getAll();
+            return response.data || [];
+        },
+    });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -137,8 +124,8 @@ export default function Templates() {
             }
             setShowModal(false);
             resetForm();
-            fetchTemplates();
-            fetchStats();
+            queryClient.invalidateQueries({ queryKey: ['emailTemplates'] });
+            queryClient.invalidateQueries({ queryKey: ['emailTemplateStats'] });
         } catch (error) {
             toast.error(error.response?.data?.error || 'Operation failed');
         }
@@ -156,8 +143,8 @@ export default function Templates() {
                 try {
                     await templatesAPI.delete(id);
                     toast.success('Template deleted successfully');
-                    fetchTemplates();
-                    fetchStats();
+                    queryClient.invalidateQueries({ queryKey: ['emailTemplates'] });
+                    queryClient.invalidateQueries({ queryKey: ['emailTemplateStats'] });
                 } catch (error) {
                     toast.error('Failed to delete template');
                 }

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import toast from 'react-hot-toast';
 import { FiSend, FiMail, FiMousePointer, FiTrendingUp } from '../../components/icons/FeatherIcons';
@@ -8,30 +9,28 @@ import { nmCampaignsAPI } from '../../api/nexmail';
 export default function CampaignDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [campaign, setCampaign] = useState(null);
-    const [analytics, setAnalytics] = useState(null);
-    const [recipients, setRecipients] = useState([]);
+    const queryClient = useQueryClient();
     const [statusFilter, setStatusFilter] = useState('all');
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { fetchData(); }, [id]);
-
-    const fetchData = async () => {
-        try {
+    const { data: detailData, isLoading: loading } = useQuery({
+        queryKey: ['nexmail-campaign', id],
+        queryFn: async () => {
             const [campRes, analyticsRes, recipientRes] = await Promise.allSettled([
                 nmCampaignsAPI.getById(id),
                 nmCampaignsAPI.getAnalytics(id),
                 nmCampaignsAPI.getRecipients(id, { limit: 50 })
             ]);
-            if (campRes.status === 'fulfilled') setCampaign(campRes.value.data);
-            if (analyticsRes.status === 'fulfilled') setAnalytics(analyticsRes.value.data);
-            if (recipientRes.status === 'fulfilled') setRecipients(recipientRes.value.data || []);
-        } catch (e) {
-            console.error('Campaign detail error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return {
+                campaign: campRes.status === 'fulfilled' ? campRes.value.data : null,
+                analytics: analyticsRes.status === 'fulfilled' ? analyticsRes.value.data : null,
+                recipients: recipientRes.status === 'fulfilled' ? (recipientRes.value.data || []) : [],
+            };
+        },
+    });
+
+    const campaign = detailData?.campaign || null;
+    const analytics = detailData?.analytics || null;
+    const recipients = detailData?.recipients || [];
 
     const handleAction = async (action) => {
         try {
@@ -39,7 +38,7 @@ export default function CampaignDetail() {
             else if (action === 'resume') await nmCampaignsAPI.resume(id);
             else if (action === 'send') await nmCampaignsAPI.send(id);
             toast.success(`Campaign ${action}ed`);
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ['nexmail-campaign', id] });
         } catch (e) {
             toast.error(e.response?.data?.error || `Failed to ${action}`);
         }

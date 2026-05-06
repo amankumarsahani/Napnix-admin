@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { mobileAppAdminAPI } from '../../api/admin';
 
 export default function MobileApp() {
-    const [release, setRelease] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [uploading, setUploading] = useState(false);
     const [form, setForm] = useState({
         version_name: '',
@@ -13,21 +13,13 @@ export default function MobileApp() {
         file: null
     });
 
-    const loadRelease = async () => {
-        try {
+    const { data: release = null, isLoading: loading } = useQuery({
+        queryKey: ['mobileAppRelease'],
+        queryFn: async () => {
             const response = await mobileAppAdminAPI.getCurrentRelease();
-            setRelease(response.release || null);
-        } catch (error) {
-            console.error('Failed to load mobile app release:', error);
-            toast.error('Failed to load current APK');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadRelease();
-    }, []);
+            return response.release || null;
+        },
+    });
 
     const handleUpload = async (e) => {
         e.preventDefault();
@@ -45,8 +37,7 @@ export default function MobileApp() {
 
         setUploading(true);
         try {
-            const response = await mobileAppAdminAPI.uploadRelease(payload);
-            setRelease(response.release || null);
+            await mobileAppAdminAPI.uploadRelease(payload);
             setForm({
                 version_name: '',
                 build_number: '',
@@ -56,6 +47,7 @@ export default function MobileApp() {
             const fileInput = document.getElementById('mobile-apk-file');
             if (fileInput) fileInput.value = '';
             toast.success('APK uploaded successfully');
+            queryClient.invalidateQueries({ queryKey: ['mobileAppRelease'] });
         } catch (error) {
             console.error('Failed to upload APK:', error);
             toast.error(error?.response?.data?.error || 'Failed to upload APK');

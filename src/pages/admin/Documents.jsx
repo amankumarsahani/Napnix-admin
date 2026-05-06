@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,8 +15,7 @@ const CATEGORY_COLORS = {
 export default function Documents() {
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [templates, setTemplates] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [selectedTemplate, setSelectedTemplate] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [showSendModal, setShowSendModal] = useState(false);
@@ -30,22 +30,15 @@ export default function Documents() {
     const [createData, setCreateData] = useState({ name: '', slug: '', description: '', category: 'sales', content: '' });
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        fetchTemplates();
-    }, [searchTerm]);
-
-    const fetchTemplates = async () => {
-        try {
+    const { data: templates = [], isLoading: loading } = useQuery({
+        queryKey: ['documentTemplates', { search: searchTerm }],
+        queryFn: async () => {
             const params = {};
             if (searchTerm) params.search = searchTerm;
             const response = await documentTemplatesAPI.getAll(params);
-            setTemplates(response.data || []);
-        } catch (error) {
-            toast.error('Failed to load document templates');
-        } finally {
-            setLoading(false);
-        }
-    };
+            return response.data || [];
+        },
+    });
 
     const handlePreview = async (template) => {
         try {
@@ -99,7 +92,7 @@ export default function Documents() {
             });
             toast.success('Template updated successfully!');
             setShowEditModal(false);
-            fetchTemplates();
+            queryClient.invalidateQueries({ queryKey: ['documentTemplates'] })();
         } catch (error) {
             toast.error('Failed to update template');
         } finally {
@@ -126,7 +119,7 @@ export default function Documents() {
             toast.success('Template created successfully!');
             setShowCreateModal(false);
             setCreateData({ name: '', slug: '', description: '', category: 'sales', content: '' });
-            fetchTemplates();
+            queryClient.invalidateQueries({ queryKey: ['documentTemplates'] })();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to create template');
         } finally {
