@@ -163,7 +163,7 @@ export default function DashboardLayout() {
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-auto p-6 bg-brand-50/50 dark:bg-slate-950 scroll-smooth">
+                <main className="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-slate-950 scroll-smooth">
                     <Outlet />
                 </main>
             </div>

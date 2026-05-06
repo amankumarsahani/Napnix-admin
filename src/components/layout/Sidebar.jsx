@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             title: 'NexMail',
             id: 'nexmail-menu',
             items: [
-                { name: 'EM Dashboard', path: '/email-marketing', icon: <FiBarChart2 />, roles: ['admin'] },
+                { name: 'EM Dashboard', path: '/email-marketing', icon: <FiBarChart2 />, roles: ['admin'], end: true },
                 { name: 'Contacts', path: '/email-marketing/contacts', icon: <FiUsers />, roles: ['admin'] },
                 { name: 'Templates', path: '/email-marketing/templates', icon: <FiLayout />, roles: ['admin'] },
                 { name: 'Campaigns', path: '/email-marketing/campaigns', icon: <FiMail />, roles: ['admin'] },
@@ -144,6 +144,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                         <NavLink
                                             key={item.path}
                                             to={item.path}
+                                            end={item.end}
                                             onClick={() => setIsOpen(false)}
                                             className={({ isActive }) =>
                                                 `flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative ${isActive
