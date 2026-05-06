@@ -54,14 +54,14 @@ const sessionDuration = (start, end) => {
 
 // ── Subcomponents ────────────────────────────────────────────────────────────
 const Card = ({ children, className = '' }) => (
-    <div className={`bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm ${className}`}>
         {children}
     </div>
 );
 
 const SectionTitle = ({ icon, title, subtitle }) => (
     <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600">
+        <div className="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-950 flex items-center justify-center text-brand-600">
             {icon}
         </div>
         <div>
@@ -92,7 +92,7 @@ const ChartTooltip = ({ active, payload, label }) => {
 
 const KpiCard = ({ icon, label, value, sub, color = 'indigo', loading }) => {
     const colors = {
-        indigo:  { bg: 'bg-indigo-50 dark:bg-indigo-950',  text: 'text-indigo-600 dark:text-indigo-400' },
+        indigo:  { bg: 'bg-brand-50 dark:bg-brand-950',  text: 'text-brand-600 dark:text-brand-400' },
         emerald: { bg: 'bg-emerald-50 dark:bg-emerald-950', text: 'text-emerald-600 dark:text-emerald-400' },
         amber:   { bg: 'bg-amber-50 dark:bg-amber-950',    text: 'text-amber-600 dark:text-amber-400' },
         purple:  { bg: 'bg-purple-50 dark:bg-purple-950',  text: 'text-purple-600 dark:text-purple-400' },
@@ -163,7 +163,7 @@ const renderInsight = (text) => {
     if (!text) return null;
     return text.split('\n').map((line, i) => {
         if (line.startsWith('## ')) {
-            return <h3 key={i} className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mt-4 mb-1 first:mt-0">{line.slice(3)}</h3>;
+            return <h3 key={i} className="text-sm font-bold text-brand-700 dark:text-brand-300 mt-4 mb-1 first:mt-0">{line.slice(3)}</h3>;
         }
         if (line.startsWith('# ')) {
             return <h2 key={i} className="text-base font-bold text-slate-800 dark:text-white mt-3 mb-1">{line.slice(2)}</h2>;
@@ -174,7 +174,7 @@ const renderInsight = (text) => {
         if (line.startsWith('- ')) {
             return (
                 <p key={i} className="text-sm text-slate-600 dark:text-slate-300 flex gap-2 ml-2 mb-0.5 leading-relaxed">
-                    <span className="text-indigo-400 mt-0.5">•</span>
+                    <span className="text-brand-400 mt-0.5">•</span>
                     <span>{line.slice(2)}</span>
                 </p>
             );
@@ -568,7 +568,7 @@ export default function SiteAnalytics() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <FiBarChart2 size={24} className="text-indigo-600" />
+                        <FiBarChart2 size={24} className="text-brand-600" />
                         Site Analytics
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -585,7 +585,7 @@ export default function SiteAnalytics() {
                                 onClick={() => setRange(r.value)}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                     range === r.value
-                                        ? 'bg-indigo-600 text-white shadow-sm'
+                                        ? 'bg-brand-600 text-white shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white'
                                 }`}
                             >
@@ -595,7 +595,7 @@ export default function SiteAnalytics() {
                     </div>
                     <button
                         onClick={handleRefresh}
-                        className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors"
+                        className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:text-brand-600 transition-colors"
                         title="Refresh"
                     >
                         <FiRefreshCw size={16} className={ovLoading ? 'animate-spin' : ''} />
@@ -769,9 +769,9 @@ export default function SiteAnalytics() {
                                             <td className="py-1.5 pr-2">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
-                                                        <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                                                        <div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
                                                     </div>
-                                                    <span className="text-indigo-500 w-8 text-right">{pct}%</span>
+                                                    <span className="text-brand-500 w-8 text-right">{pct}%</span>
                                                 </div>
                                             </td>
                                         </tr>
@@ -848,7 +848,7 @@ export default function SiteAnalytics() {
                                                 onClick={() => setExpandedSession(isExpanded ? null : s.session_id)}
                                             >
                                                 <td className="py-2 pr-2">
-                                                    <span className="font-mono text-indigo-500 text-[10px]">
+                                                    <span className="font-mono text-brand-500 text-[10px]">
                                                         {s.session_id?.slice(0, 8)}…
                                                     </span>
                                                 </td>
@@ -864,12 +864,12 @@ export default function SiteAnalytics() {
                                                 <td className="py-2 text-right font-semibold text-slate-700 dark:text-slate-200">{fmt(s.total_events)}</td>
                                             </tr>
                                             {isExpanded && (
-                                                <tr className="bg-indigo-50 dark:bg-indigo-950/30">
+                                                <tr className="bg-brand-50 dark:bg-brand-950/30">
                                                     <td colSpan={6} className="px-4 py-3">
                                                         <p className="text-[11px] text-slate-500 mb-1 font-semibold uppercase tracking-wide">Full Journey</p>
                                                         <div className="flex flex-wrap gap-1">
                                                             {(s.journey || '').split(' → ').filter(Boolean).map((step, si) => (
-                                                                <span key={si} className="px-2 py-0.5 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-indigo-800 rounded text-[11px] font-mono text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                                                                <span key={si} className="px-2 py-0.5 bg-white dark:bg-slate-800 border border-brand-100 dark:border-brand-800 rounded text-[11px] font-mono text-brand-700 dark:text-brand-300 flex items-center gap-1">
                                                                     {si > 0 && <span className="text-slate-300">→</span>}
                                                                     {step}
                                                                 </span>
@@ -921,12 +921,12 @@ export default function SiteAnalytics() {
                                         <td className="py-2 pr-2 hidden md:table-cell font-mono text-slate-400 max-w-[120px] truncate">{e.path}</td>
                                         <td className="py-2 pr-2 hidden lg:table-cell">
                                             {e.href ? (
-                                                <span className="text-indigo-500 truncate max-w-[140px] block">
+                                                <span className="text-brand-500 truncate max-w-[140px] block">
                                                     {e.href.replace('https://nexspiresolutions.co.in', '')}
                                                 </span>
                                             ) : '—'}
                                         </td>
-                                        <td className="py-2 text-right font-bold text-indigo-600 dark:text-indigo-400">{fmt(e.count)}</td>
+                                        <td className="py-2 text-right font-bold text-brand-600 dark:text-brand-400">{fmt(e.count)}</td>
                                     </tr>
                                 ))
                             )}
@@ -960,7 +960,7 @@ export default function SiteAnalytics() {
                                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
                                                 ev.event_type === 'click'
                                                     ? 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-                                                    : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400'
+                                                    : 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-400'
                                             }`}>
                                                 {ev.event_type}
                                             </span>
@@ -991,7 +991,7 @@ export default function SiteAnalytics() {
                     <button
                         onClick={handleAIAnalysis}
                         disabled={aiLoading || ovLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-indigo-500/25"
+                        className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/25"
                     >
                         {aiLoading ? (
                             <>
@@ -1017,7 +1017,7 @@ export default function SiteAnalytics() {
 
                 {aiLoading && (
                     <div className="space-y-3 py-4">
-                        <div className="flex items-center gap-3 text-indigo-600 mb-4">
+                        <div className="flex items-center gap-3 text-brand-600 mb-4">
                             <FiCpu size={18} className="animate-spin" />
                             <span className="text-sm font-medium">AI is analysing your visitor data…</span>
                         </div>
@@ -1039,7 +1039,7 @@ export default function SiteAnalytics() {
                 {aiInsight && (
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-5 border border-slate-100 dark:border-slate-700">
                         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
-                            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">AI Analysis Complete</span>
+                            <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wide">AI Analysis Complete</span>
                             <span className="text-xs text-slate-400">· {RANGES.find(r => r.value === range)?.label || range} data</span>
                         </div>
                         <div className="prose-sm max-w-none">
@@ -1048,7 +1048,7 @@ export default function SiteAnalytics() {
                         <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex gap-2">
                             <button
                                 onClick={handleAIAnalysis}
-                                className="text-xs text-indigo-500 hover:text-indigo-700 font-medium"
+                                className="text-xs text-brand-500 hover:text-brand-700 font-medium"
                             >
                                 Regenerate
                             </button>
@@ -1070,7 +1070,7 @@ export default function SiteAnalytics() {
                         <select
                             value={heatmapPage}
                             onChange={e => setHeatmapPage(e.target.value)}
-                            className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
                         >
                             {!heatmapData?.availablePages?.length && (
                                 <option value="">Loading pages…</option>
@@ -1083,7 +1083,7 @@ export default function SiteAnalytics() {
                         </select>
                         <button
                             onClick={() => refetchHm()}
-                            className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500 hover:text-indigo-600"
+                            className="p-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-500 hover:text-brand-600"
                             title="Refresh heatmap"
                         >
                             <FiRefreshCw size={13} className={hmLoading ? 'animate-spin' : ''} />
@@ -1128,11 +1128,11 @@ export default function SiteAnalytics() {
                                 <div key={i} className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2 text-xs border border-slate-100 dark:border-slate-700">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-mono text-[10px] text-slate-400">{pt.x},{pt.y}</span>
-                                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{fmt(pt.count)}</span>
+                                        <span className="font-bold text-brand-600 dark:text-brand-400">{fmt(pt.count)}</span>
                                     </div>
                                     <p className="text-slate-600 dark:text-slate-300 truncate">{pt.text || pt.element}</p>
                                     {pt.href && (
-                                        <p className="text-indigo-400 truncate text-[10px]">{pt.href.replace('https://nexspiresolutions.co.in', '')}</p>
+                                        <p className="text-brand-400 truncate text-[10px]">{pt.href.replace('https://nexspiresolutions.co.in', '')}</p>
                                     )}
                                 </div>
                             ))}

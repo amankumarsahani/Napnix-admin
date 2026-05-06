@@ -386,7 +386,7 @@ const ApiDocumentation = () => {
 
             <div className="max-w-7xl mx-auto p-6">
                 {/* Quick Start */}
-                <div className="bg-gradient-to-br from-brand-600 via-purple-600 to-brand-700 rounded-2xl p-6 mb-6 text-white shadow-xl">
+                <div className="bg-gradient-to-br from-brand-600 via-purple-600 to-brand-700 rounded-xl p-6 mb-6 text-white shadow-xl">
                     <div className="flex items-center gap-2 mb-4">
                         <span>{Icons.rocket}</span>
                         <h2 className="text-lg font-bold">Quick Start</h2>

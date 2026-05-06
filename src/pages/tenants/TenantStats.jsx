@@ -9,7 +9,7 @@ const TenantStats = ({ tenant }) => {
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
-                    <FiServer className="text-indigo-500" /> Server
+                    <FiServer className="text-brand-500" /> Server
                 </div>
                 <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{tenant.server_name || 'Primary'}</div>
             </div>

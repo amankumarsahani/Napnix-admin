@@ -46,7 +46,7 @@ const TenantLogs = ({
                         href={`https://${tenant.slug}-crm.${domain}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-2"
                     >
                         <FiExternalLink className="w-4 h-4" />
                         Open CRM

@@ -58,7 +58,7 @@ export default function MobileApp() {
 
     return (
         <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Android Distribution</p>
@@ -81,7 +81,7 @@ export default function MobileApp() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
-                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center justify-between gap-4 mb-5">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Current Release</h2>
@@ -90,23 +90,23 @@ export default function MobileApp() {
                     </div>
 
                     {loading ? (
-                        <div className="h-48 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                        <div className="h-48 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                     ) : release ? (
                         <div className="space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
                                     <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Version</p>
                                     <p className="text-lg font-semibold text-slate-900 dark:text-white mt-1">{release.version_name || 'Not set'}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
                                     <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Build</p>
                                     <p className="text-lg font-semibold text-slate-900 dark:text-white mt-1">{release.build_number || 'Not set'}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
                                     <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">File</p>
                                     <p className="text-sm font-medium text-slate-900 dark:text-white mt-1 break-all">{release.original_file_name || 'android.apk'}</p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
+                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-4">
                                     <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Uploaded</p>
                                     <p className="text-sm font-medium text-slate-900 dark:text-white mt-1">
                                         {release.uploaded_at ? new Date(release.uploaded_at).toLocaleString() : 'Unknown'}
@@ -114,7 +114,7 @@ export default function MobileApp() {
                                 </div>
                             </div>
 
-                            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
                                 <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Release Notes</p>
                                 <p className="text-sm text-slate-700 dark:text-slate-300 mt-2 whitespace-pre-wrap">
                                     {release.release_notes || 'No release notes added.'}
@@ -122,14 +122,14 @@ export default function MobileApp() {
                             </div>
                         </div>
                     ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
+                        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-10 text-center">
                             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No APK has been published yet.</p>
                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Upload the first Android build from the form on the right.</p>
                         </div>
                     )}
                 </section>
 
-                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+                <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                     <div className="mb-5">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Publish New APK</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Uploading a new file deletes the previously published APK from registry storage.</p>
