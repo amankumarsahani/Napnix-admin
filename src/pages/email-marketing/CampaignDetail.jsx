@@ -44,9 +44,9 @@ export default function CampaignDetail() {
         }
     };
 
-    const statusColors = { draft: 'bg-slate-100 text-slate-600', queued: 'bg-amber-100 text-amber-700', sending: 'bg-indigo-100 text-indigo-700', sent: 'bg-emerald-100 text-emerald-700', paused: 'bg-orange-100 text-orange-700', failed: 'bg-red-100 text-red-700', cancelled: 'bg-slate-100 text-slate-500', scheduled: 'bg-blue-100 text-blue-700', opened: 'bg-indigo-100 text-indigo-700', clicked: 'bg-purple-100 text-purple-700', bounced: 'bg-red-100 text-red-700' };
+    const statusColors = { draft: 'bg-slate-100 text-slate-600', queued: 'bg-amber-100 text-amber-700', sending: 'bg-brand-100 text-brand-700', sent: 'bg-emerald-100 text-emerald-700', paused: 'bg-orange-100 text-orange-700', failed: 'bg-red-100 text-red-700', cancelled: 'bg-slate-100 text-slate-500', scheduled: 'bg-blue-100 text-blue-700', opened: 'bg-brand-100 text-brand-700', clicked: 'bg-purple-100 text-purple-700', bounced: 'bg-red-100 text-red-700' };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
     if (!campaign) return <div className="text-center py-20 text-slate-500">Campaign not found</div>;
 
     const funnelData = analytics ? [
@@ -121,7 +121,7 @@ export default function CampaignDetail() {
                 <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                     <h2 className="text-sm font-semibold text-slate-900 dark:text-white mr-4">Recipients</h2>
                     {['all', 'sent', 'opened', 'clicked', 'bounced', 'failed'].map(s => (
-                        <button key={s} onClick={() => setStatusFilter(s)} className={`px-2.5 py-1 text-xs rounded-full ${statusFilter === s ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{s === 'all' ? 'All' : s}</button>
+                        <button key={s} onClick={() => setStatusFilter(s)} className={`px-2.5 py-1 text-xs rounded-full ${statusFilter === s ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{s === 'all' ? 'All' : s}</button>
                     ))}
                 </div>
                 {recipients.length === 0 ? (

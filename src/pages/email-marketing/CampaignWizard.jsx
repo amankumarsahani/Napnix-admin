@@ -119,7 +119,7 @@ export default function CampaignWizard() {
                 {STEPS.map((s, i) => (
                     <div key={s} className="flex items-center gap-2 flex-shrink-0">
                         <button onClick={() => i <= step && setStep(i)} disabled={i > step}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${i === step ? 'bg-indigo-600 text-white' : i < step ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 cursor-pointer' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${i === step ? 'bg-brand-600 text-white' : i < step ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 cursor-pointer' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
                             <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current">{i + 1}</span>{s}
                         </button>
                         {i < STEPS.length - 1 && <FiChevronRight className="text-slate-300 w-4 h-4 flex-shrink-0" />}
@@ -131,18 +131,18 @@ export default function CampaignWizard() {
                 {step === 0 && (
                     <div className="space-y-4 max-w-lg">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Campaign Setup</h2>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Campaign Name *</label><input type="text" value={campaign.name} onChange={e => update('name', e.target.value)} placeholder="May Newsletter" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject Line *</label><input type="text" value={campaign.subject_a} onChange={e => update('subject_a', e.target.value)} placeholder="{{first_name}}, check out what's new!" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /><p className="text-xs text-slate-400 mt-1">Use {'{{first_name}}'} for personalization</p></div>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Campaign Name *</label><input type="text" value={campaign.name} onChange={e => update('name', e.target.value)} placeholder="May Newsletter" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject Line *</label><input type="text" value={campaign.subject_a} onChange={e => update('subject_a', e.target.value)} placeholder="{{first_name}}, check out what's new!" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /><p className="text-xs text-slate-400 mt-1">Use {'{{first_name}}'} for personalization</p></div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Name</label><input type="text" value={campaign.from_name} onChange={e => update('from_name', e.target.value)} placeholder="Your Company" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
-                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Email</label><input type="email" value={campaign.from_email} onChange={e => update('from_email', e.target.value)} placeholder="hello@yourdomain.com" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
+                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Name</label><input type="text" value={campaign.from_name} onChange={e => update('from_name', e.target.value)} placeholder="Your Company" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
+                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Email</label><input type="email" value={campaign.from_email} onChange={e => update('from_email', e.target.value)} placeholder="hello@yourdomain.com" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
                         </div>
                         <div><label className="block text-sm font-medium text-slate-600 mb-1">Type</label>
                             <div className="flex gap-3">{[{ v: 'regular', l: 'Regular' }, { v: 'ab_test', l: 'A/B Test' }].map(t => (
-                                <button key={t.v} onClick={() => update('type', t.v)} className={`flex-1 p-3 rounded-lg border-2 ${campaign.type === t.v ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600'}`}><p className="text-sm font-medium text-slate-900 dark:text-white">{t.l}</p></button>
+                                <button key={t.v} onClick={() => update('type', t.v)} className={`flex-1 p-3 rounded-lg border-2 ${campaign.type === t.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}><p className="text-sm font-medium text-slate-900 dark:text-white">{t.l}</p></button>
                             ))}</div>
                         </div>
-                        {campaign.type === 'ab_test' && <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject B</label><input type="text" value={campaign.subject_b} onChange={e => update('subject_b', e.target.value)} placeholder="Alternative subject" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>}
+                        {campaign.type === 'ab_test' && <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject B</label><input type="text" value={campaign.subject_b} onChange={e => update('subject_b', e.target.value)} placeholder="Alternative subject" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>}
                     </div>
                 )}
 
@@ -150,16 +150,16 @@ export default function CampaignWizard() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Audience</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <button onClick={() => { update('list_id', null); }} className={`p-4 rounded-lg border-2 text-left ${!campaign.list_id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
-                                <FiUsers className="w-6 h-6 text-indigo-600 mb-2" /><p className="text-sm font-medium text-slate-900 dark:text-white">All Contacts</p><p className="text-xs text-slate-500 mt-1">Send to everyone subscribed</p>
+                            <button onClick={() => { update('list_id', null); }} className={`p-4 rounded-lg border-2 text-left ${!campaign.list_id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
+                                <FiUsers className="w-6 h-6 text-brand-600 mb-2" /><p className="text-sm font-medium text-slate-900 dark:text-white">All Contacts</p><p className="text-xs text-slate-500 mt-1">Send to everyone subscribed</p>
                             </button>
                             {lists.map(l => (
-                                <button key={l.id} onClick={() => update('list_id', l.id)} className={`p-4 rounded-lg border-2 text-left ${campaign.list_id === l.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
-                                    <FiLayout className="w-5 h-5 text-indigo-600 mb-1" /><p className="text-sm font-medium text-slate-900 dark:text-white">{l.name}</p><p className="text-xs text-slate-500">{l.contact_count || 0} contacts</p>
+                                <button key={l.id} onClick={() => update('list_id', l.id)} className={`p-4 rounded-lg border-2 text-left ${campaign.list_id === l.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
+                                    <FiLayout className="w-5 h-5 text-brand-600 mb-1" /><p className="text-sm font-medium text-slate-900 dark:text-white">{l.name}</p><p className="text-xs text-slate-500">{l.contact_count || 0} contacts</p>
                                 </button>
                             ))}
                         </div>
-                        {estimatedCount !== null && <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4"><p className="text-sm font-medium text-indigo-700">Estimated recipients: <span className="text-lg font-bold">{estimatedCount.toLocaleString()}</span></p></div>}
+                        {estimatedCount !== null && <div className="bg-brand-50 dark:bg-brand-900/20 rounded-lg p-4"><p className="text-sm font-medium text-brand-700">Estimated recipients: <span className="text-lg font-bold">{estimatedCount.toLocaleString()}</span></p></div>}
                     </div>
                 )}
 
@@ -167,13 +167,13 @@ export default function CampaignWizard() {
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Content</h2>
                         {templates.length > 0 && <div><p className="text-sm font-medium text-slate-600 mb-2">Choose a template:</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3">{templates.map(t => (
-                            <button key={t.id} onClick={() => update('template_id_a', t.id)} className={`p-3 rounded-lg border-2 text-left ${campaign.template_id_a === t.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 dark:border-slate-600'}`}>
+                            <button key={t.id} onClick={() => update('template_id_a', t.id)} className={`p-3 rounded-lg border-2 text-left ${campaign.template_id_a === t.id ? 'border-brand-500 bg-brand-50' : 'border-slate-200 dark:border-slate-600'}`}>
                                 <p className="text-xs font-medium text-slate-900 dark:text-white truncate">{t.name}</p><p className="text-[10px] text-slate-400">{t.category}</p>
                             </button>
                         ))}</div></div>}
                         <div className="flex items-center gap-4"><hr className="flex-1" /><span className="text-xs text-slate-400">or</span><hr className="flex-1" /></div>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Custom HTML</label><textarea value={campaign.html_content_a} onChange={e => update('html_content_a', e.target.value)} rows={10} placeholder="<h1>Hello {{first_name}}!</h1>" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 font-mono text-xs resize-y focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>
-                        <button onClick={() => navigate('/email-marketing/templates/new')} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Open Template Builder →</button>
+                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Custom HTML</label><textarea value={campaign.html_content_a} onChange={e => update('html_content_a', e.target.value)} rows={10} placeholder="<h1>Hello {{first_name}}!</h1>" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 font-mono text-xs resize-y focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
+                        <button onClick={() => navigate('/email-marketing/templates/new')} className="text-sm text-brand-600 hover:text-brand-700 font-medium">Open Template Builder →</button>
                     </div>
                 )}
 
@@ -181,7 +181,7 @@ export default function CampaignWizard() {
                     <div className="space-y-6">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Spam & Deliverability Check</h2>
                         {checkingSpam ? (
-                            <div className="flex items-center justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span className="ml-3 text-sm text-slate-500">Analyzing email content...</span></div>
+                            <div className="flex items-center justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div><span className="ml-3 text-sm text-slate-500">Analyzing email content...</span></div>
                         ) : spamResult ? (
                             <>
                                 <div className="flex items-center gap-6">
@@ -228,11 +228,11 @@ export default function CampaignWizard() {
                                     </div>
                                 )}
 
-                                <button onClick={runSpamCheck} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">Re-check Score →</button>
+                                <button onClick={runSpamCheck} className="text-sm text-brand-600 hover:text-brand-700 font-medium">Re-check Score →</button>
 
                                 <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                                     <label className="text-sm font-medium text-slate-600">Send test email:</label>
-                                    <input type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="your@email.com" className="flex-1 max-w-xs px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                                    <input type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="your@email.com" className="flex-1 max-w-xs px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
                                     <button onClick={async () => { if (!testEmail) return; try { toast.success('Test email functionality ready (create campaign first)'); } catch (e) { toast.error('Failed'); } }} className="btn btn-secondary text-sm">Send Test</button>
                                 </div>
                             </>
@@ -250,12 +250,12 @@ export default function CampaignWizard() {
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Schedule</h2>
                         <div className="space-y-3">
                             {[{ v: true, l: 'Send Now', d: 'Start sending immediately' }, { v: false, l: 'Schedule', d: 'Pick a date and time' }].map(o => (
-                                <button key={String(o.v)} onClick={() => update('send_now', o.v)} className={`w-full p-4 rounded-lg border-2 text-left ${campaign.send_now === o.v ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
+                                <button key={String(o.v)} onClick={() => update('send_now', o.v)} className={`w-full p-4 rounded-lg border-2 text-left ${campaign.send_now === o.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
                                     <p className="text-sm font-medium text-slate-900 dark:text-white">{o.l}</p><p className="text-xs text-slate-500">{o.d}</p>
                                 </button>
                             ))}
                         </div>
-                        {!campaign.send_now && <div><label className="block text-sm font-medium text-slate-600 mb-1">Send Date & Time</label><input type="datetime-local" value={campaign.scheduled_at || ''} onChange={e => update('scheduled_at', e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" /></div>}
+                        {!campaign.send_now && <div><label className="block text-sm font-medium text-slate-600 mb-1">Send Date & Time</label><input type="datetime-local" value={campaign.scheduled_at || ''} onChange={e => update('scheduled_at', e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>}
                         <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mt-4">
                             <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">Summary</h3>
                             <div className="space-y-1 text-sm text-slate-600">

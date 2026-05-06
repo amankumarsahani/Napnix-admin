@@ -37,7 +37,7 @@ export default function EmailMarketingDashboard() {
     ];
 
     const colorMap = {
-        indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600',
+        indigo: 'bg-brand-50 dark:bg-brand-900/20 text-brand-600',
         emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600',
         blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600',
         amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600',
@@ -45,7 +45,7 @@ export default function EmailMarketingDashboard() {
         rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600',
     };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
     return (
         <div className="space-y-6">
@@ -99,7 +99,7 @@ export default function EmailMarketingDashboard() {
                         { label: 'New Automation', path: '/email-marketing/automations/new', icon: '⚡' },
                         { label: 'SMTP Setup', path: '/email-marketing/smtp', icon: '⚙️' },
                     ].map(a => (
-                        <button key={a.label} onClick={() => navigate(a.path)} className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors text-left">
+                        <button key={a.label} onClick={() => navigate(a.path)} className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors text-left">
                             <span className="text-2xl">{a.icon}</span>
                             <span className="text-sm font-medium text-slate-900 dark:text-white">{a.label}</span>
                         </button>

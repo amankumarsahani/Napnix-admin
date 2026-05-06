@@ -21,7 +21,7 @@ export default function Domains() {
 
             {domains.length === 0 ? (
                 <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
+                    <div className="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
                     <h3 className="text-lg font-medium text-slate-900 dark:text-white">No domains configured</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4 max-w-md mx-auto">Add your sending domain to set up SPF, DKIM, and DMARC records for improved email deliverability and sender reputation.</p>
                     <button onClick={() => setShowAdd(true)} className="btn btn-primary">Add Domain</button>
@@ -51,13 +51,13 @@ export default function Domains() {
             )}
 
             {showAdd && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
                     <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add Sending Domain</h2>
                         <div>
                             <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Domain</label>
                             <input type="text" value={newDomain} onChange={e => setNewDomain(e.target.value)} placeholder="yourdomain.com"
-                                className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                                className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" />
                         </div>
                         <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                             <p className="text-xs text-amber-800 dark:text-amber-300 font-medium mb-2">After adding, you'll need to create DNS records:</p>
