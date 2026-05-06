@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
@@ -44,10 +45,7 @@ const getRelativeTime = (dateString) => {
 export default function ClientDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [client, setClient] = useState(null);
-    const [activities, setActivities] = useState([]);
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [activeTab, setActiveTab] = useState('timeline');
 
     // Activity form
@@ -56,43 +54,30 @@ export default function ClientDetail() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showEmailComposer, setShowEmailComposer] = useState(false);
 
-    useEffect(() => {
-        fetchClient();
-        fetchActivities();
-        fetchProjects();
-    }, [id]);
-
-    const fetchClient = async () => {
-        try {
+    const { data: client = null, isLoading: loading } = useQuery({
+        queryKey: ['client', id],
+        queryFn: async () => {
             const res = await apiClient.get(`/clients/${id}`);
-            setClient(res.data.client || res.data);
-        } catch (error) {
-            toast.error('Failed to load client details');
-            navigate('/clients');
-        } finally {
-            setLoading(false);
-        }
-    };
+            return res.data.client || res.data;
+        },
+    });
 
-    const fetchActivities = async () => {
-        try {
+    const { data: activities = [] } = useQuery({
+        queryKey: ['clientActivities', id],
+        queryFn: async () => {
             const res = await apiClient.get(`/activities/client/${id}`);
-            if (res.data.success) {
-                setActivities(res.data.data || []);
-            }
-        } catch (error) {
-            // silently ignore
-        }
-    };
+            if (res.data.success) return res.data.data || [];
+            return [];
+        },
+    });
 
-    const fetchProjects = async () => {
-        try {
+    const { data: projects = [] } = useQuery({
+        queryKey: ['clientProjects', id],
+        queryFn: async () => {
             const res = await apiClient.get('/projects', { params: { clientId: id } });
-            setProjects(res.data.projects || res.data || []);
-        } catch (error) {
-            // silently ignore
-        }
-    };
+            return res.data.projects || res.data || [];
+        },
+    });
 
     const handleAddActivity = async (e) => {
         e.preventDefault();
@@ -110,7 +95,7 @@ export default function ClientDetail() {
 
             toast.success('Activity added');
             setNewNote('');
-            fetchActivities();
+            queryClient.invalidateQueries({ queryKey: ['clientActivities', id] });
         } catch (error) {
             toast.error('Failed to add activity');
         } finally {
@@ -357,7 +342,7 @@ export default function ClientDetail() {
                 recipient={{ name: client.contactName, email: client.email, company: client.companyName }}
                 entityType="client"
                 entityId={id}
-                onEmailSent={() => fetchActivities()}
+                onEmailSent={() => queryClient.invalidateQueries({ queryKey: ['clientActivities', id] })}
             />
         </div>
     );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { tenantsAPI } from '../../api';
 import { plansAPI } from '../../api';
 import { toolsAPI } from '../../api';
@@ -14,45 +15,32 @@ const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in'
 
 const Tenants = () => {
     const navigate = useNavigate();
-    const [tenants, setTenants] = useState([]);
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [actionLoading, setActionLoading] = useState({});
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    useEffect(() => {
-        fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, searchTerm]);
+    const { data: tenantsRes, isLoading: tenantsLoading } = useQuery({
+        queryKey: ['tenants', { page: currentPage, search: searchTerm }],
+        queryFn: () => tenantsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
+        retry: 3,
+        retryDelay: 2000,
+    });
 
-    const fetchData = async (retryCount = 0) => {
-        const maxRetries = 3;
-        const retryDelay = 2000;
+    const { data: statsRes } = useQuery({
+        queryKey: ['tenants', 'stats'],
+        queryFn: () => tenantsAPI.getStats(),
+    });
 
-        try {
-            setLoading(true);
-            const [tenantsRes, statsRes] = await Promise.all([
-                tenantsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
-                tenantsAPI.getStats()
-            ]);
-            setTenants(tenantsRes.data || []);
-            setPagination(tenantsRes.pagination);
-            setStats(statsRes.data);
-        } catch (error) {
-            if (retryCount < maxRetries) {
-                setTimeout(() => fetchData(retryCount + 1), retryDelay);
-                return;
-            }
-            toast.error('Failed to fetch tenants');
-        } finally {
-            if (retryCount >= maxRetries || retryCount === 0) {
-                setLoading(false);
-            }
-        }
-    };
+    const tenants = tenantsRes?.data || [];
+    const stats = statsRes?.data || null;
+    const loading = tenantsLoading;
+
+    if (tenantsRes?.pagination && tenantsRes.pagination.totalPages !== totalPages) {
+        setPagination(tenantsRes.pagination);
+    }
 
     const handleAction = async (tenantId, action) => {
         setActionLoading(prev => ({ ...prev, [tenantId]: action }));
@@ -77,7 +65,7 @@ const Tenants = () => {
                 default:
                     break;
             }
-            fetchData();
+            queryClient.invalidateQueries({ queryKey: ['tenants'] });
         } catch (_error) {
             toast.error(`Failed to ${action} tenant`);
         } finally {
@@ -233,7 +221,7 @@ const Tenants = () => {
                                                                     try {
                                                                         await tenantsAPI.update(tenant.id, { status: 'active' });
                                                                         toast.success('Tenant activated successfully');
-                                                                        fetchData();
+                                                                        queryClient.invalidateQueries({ queryKey: ['tenants'] });
                                                                     } catch (error) {
                                                                         toast.error('Failed to activate tenant');
                                                                     }
@@ -372,7 +360,7 @@ const Tenants = () => {
                         onClose={() => setShowCreateModal(false)}
                         onCreated={() => {
                             setShowCreateModal(false);
-                            fetchData();
+                            queryClient.invalidateQueries({ queryKey: ['tenants'] });
                         }}
                     />
                 )

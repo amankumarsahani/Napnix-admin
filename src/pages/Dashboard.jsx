@@ -24,8 +24,6 @@ const colorClasses = {
     },
 };
 
-// Mock data removed - fetching from API
-
 export default function Dashboard() {
     const { user } = useAuth();
 
