@@ -59,9 +59,9 @@ export default function Login() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-3 text-center">Nexspire</h1>
+                    <h1 className="text-3xl font-bold text-white mb-3 text-center">Nexspire <br></br> Admin Portal</h1>
                     <p className="text-slate-400 text-base leading-relaxed text-center">
-                        Multi-tenant business management platform for modern teams.
+                        Multi-tenant business management platform.
                     </p>
 
                     <div className="w-96 h-64 relative">
