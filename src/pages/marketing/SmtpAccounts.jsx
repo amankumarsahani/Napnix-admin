@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { smtpAccountsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -22,24 +21,29 @@ const PROVIDER_PRESETS = [
 ];
 
 const SmtpAccounts = () => {
-    const queryClient = useQueryClient();
+    const [accounts, setAccounts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState(null);
     const [testingId, setTestingId] = useState(null);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
 
-    const { data: accountsData, isLoading: loading } = useQuery({
-        queryKey: ['smtpAccounts', { search: searchTerm }],
-        queryFn: async () => {
+    useEffect(() => { fetchAccounts(); }, [searchTerm]);
+
+    const fetchAccounts = async () => {
+        try {
+            setLoading(true);
             const params = {};
             if (searchTerm) params.search = searchTerm;
             const res = await smtpAccountsAPI.getAll(params);
-            return res.data || [];
-        },
-    });
-
-    const accounts = accountsData || [];
+            setAccounts(res.data || []);
+        } catch (error) {
+            toast.error('Failed to fetch SMTP accounts');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleDelete = (id) => {
         setConfirmState({
@@ -53,7 +57,7 @@ const SmtpAccounts = () => {
                 try {
                     await smtpAccountsAPI.delete(id);
                     toast.success('Account deleted');
-                    queryClient.invalidateQueries({ queryKey: ['smtpAccounts'] });
+                    fetchAccounts();
                 } catch (error) {
                     toast.error('Failed to delete account');
                 }
@@ -77,7 +81,7 @@ const SmtpAccounts = () => {
         try {
             await smtpAccountsAPI.update(account.id, { is_active: !account.is_active });
             toast.success(account.is_active ? 'Account disabled' : 'Account enabled');
-            queryClient.invalidateQueries({ queryKey: ['smtpAccounts'] });
+            fetchAccounts();
         } catch (error) {
             toast.error('Failed to update account');
         }
@@ -187,7 +191,7 @@ const SmtpAccounts = () => {
                 )}
             </div>
 
-            {showModal && <SmtpModal account={selectedAccount} onClose={() => setShowModal(false)} onSaved={() => { setShowModal(false); queryClient.invalidateQueries({ queryKey: ['smtpAccounts'] }); }} />}
+            {showModal && <SmtpModal account={selectedAccount} onClose={() => setShowModal(false)} onSaved={() => { setShowModal(false); fetchAccounts(); }} />}
 
             <ConfirmModal
                 isOpen={confirmState.isOpen}

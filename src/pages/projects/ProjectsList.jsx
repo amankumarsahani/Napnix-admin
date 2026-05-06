@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { projectsAPI, clientsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import usePagination from '../../hooks/usePagination';
@@ -7,7 +6,9 @@ import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function ProjectsList() {
-    const queryClient = useQueryClient();
+    const [projects, setProjects] = useState([]);
+    const [clients, setClients] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
@@ -26,22 +27,25 @@ export default function ProjectsList() {
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    const { data: projectsData, isLoading: loading } = useQuery({
-        queryKey: ['projects', { page: currentPage, search: searchTerm }],
-        queryFn: () => projectsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
-    });
+    useEffect(() => {
+        fetchData();
+    }, [currentPage, searchTerm]);
 
-    const { data: clientsData } = useQuery({
-        queryKey: ['clients', 'all'],
-        queryFn: () => clientsAPI.getAll({ limit: 1000 }),
-    });
-
-    const projects = projectsData ? (Array.isArray(projectsData) ? projectsData : projectsData.projects || []) : [];
-    const clients = clientsData ? (Array.isArray(clientsData) ? clientsData : clientsData.clients || []) : [];
-
-    if (projectsData?.pagination && projectsData.pagination.totalPages !== totalPages) {
-        setPagination(projectsData.pagination);
-    }
+    const fetchData = async () => {
+        try {
+            const [projectsData, clientsData] = await Promise.all([
+                projectsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
+                clientsAPI.getAll({ limit: 1000 }),
+            ]);
+            setProjects(Array.isArray(projectsData) ? projectsData : projectsData.projects || []);
+            if (projectsData.pagination) setPagination(projectsData.pagination);
+            setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
+        } catch (error) {
+            toast.error('Failed to load data');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,7 +59,7 @@ export default function ProjectsList() {
             }
             setShowModal(false);
             resetForm();
-            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            fetchData();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Operation failed');
         }
@@ -73,7 +77,7 @@ export default function ProjectsList() {
                 try {
                     await projectsAPI.delete(id);
                     toast.success('Project deleted successfully');
-                    queryClient.invalidateQueries({ queryKey: ['projects'] });
+                    fetchData();
                 } catch (error) {
                     toast.error('Failed to delete project');
                 }
@@ -117,7 +121,7 @@ export default function ProjectsList() {
             planning: 'bg-blue-100 text-blue-800',
             'in-progress': 'bg-yellow-100 text-yellow-800',
             completed: 'bg-green-100 text-green-800',
-            'on-hold': 'bg-slate-100 text-slate-800',
+            'on-hold': 'bg-gray-100 text-gray-800',
         };
         return colors[status] || colors.planning;
     };
@@ -143,8 +147,8 @@ export default function ProjectsList() {
         <div>
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Projects</h1>
-                    <p className="text-slate-600 dark:text-slate-400 mt-1">{projects.length} total projects</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
+                    <p className="text-gray-600 dark:text-slate-400 mt-1">{projects.length} total projects</p>
                 </div>
                 <button
                     onClick={() => {
@@ -172,11 +176,11 @@ export default function ProjectsList() {
 
             <div className="grid grid-cols-1 gap-6">
                 {projects.map((project) => (
-                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-slate-100 dark:border-slate-700">
+                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-slate-700">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex-1">
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{project.name}</h3>
-                                <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{project.description}</p>
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{project.name}</h3>
+                                <p className="text-gray-600 dark:text-slate-400 text-sm mb-3">{project.description}</p>
                                 <div className="flex flex-wrap gap-2">
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)}`}>
                                         {project.status}
@@ -184,7 +188,7 @@ export default function ProjectsList() {
                                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(project.priority)}`}>
                                         {project.priority} priority
                                     </span>
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300">
+                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-300">
                                         {project.clientName || 'No client'}
                                     </span>
                                 </div>
@@ -207,18 +211,18 @@ export default function ProjectsList() {
 
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Budget</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">Rs.{Number(project.budget || 0).toLocaleString()}</p>
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Budget</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">Rs.{Number(project.budget || 0).toLocaleString()}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Start Date</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Start Date</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">
                                     {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">End Date</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">
+                                <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">End Date</p>
+                                <p className="font-semibold text-gray-900 dark:text-white">
                                     {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}
                                 </p>
                             </div>
@@ -226,10 +230,10 @@ export default function ProjectsList() {
 
                         <div>
                             <div className="flex justify-between text-sm mb-2">
-                                <span className="text-slate-600 dark:text-slate-400">Progress</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">{project.progress}%</span>
+                                <span className="text-gray-600 dark:text-slate-400">Progress</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">{project.progress}%</span>
                             </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                            <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                                 <div
                                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all"
                                     style={{ width: `${project.progress}%` }}
@@ -240,7 +244,7 @@ export default function ProjectsList() {
                 ))}
 
                 {projects.length === 0 && (
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 text-center text-slate-500 dark:text-slate-400 border border-transparent dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-12 text-center text-gray-500 dark:text-slate-400 border border-transparent dark:border-slate-700">
                         <p className="text-lg mb-2">No projects yet</p>
                         <p className="text-sm">Click "Add Project" to create your first project</p>
                     </div>
@@ -253,34 +257,34 @@ export default function ProjectsList() {
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
-                        <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">{editingProject ? 'Edit Project' : 'Add New Project'}</h2>
+                        <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{editingProject ? 'Edit Project' : 'Add New Project'}</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Project Name *</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Project Name *</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Description</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     rows="3"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Client</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Client</label>
                                     <select
                                         value={formData.clientId}
                                         onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="">Select client</option>
                                         {clients.map((client) => (
@@ -291,11 +295,11 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Status</label>
                                     <select
                                         value={formData.status}
                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="planning">Planning</option>
                                         <option value="in-progress">In Progress</option>
@@ -304,11 +308,11 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Priority</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Priority</label>
                                     <select
                                         value={formData.priority}
                                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
@@ -316,35 +320,35 @@ export default function ProjectsList() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Budget</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Budget</label>
                                     <input
                                         type="number"
                                         value={formData.budget}
                                         onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Start Date</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Start Date</label>
                                     <input
                                         type="date"
                                         value={formData.startDate}
                                         onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">End Date</label>
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">End Date</label>
                                     <input
                                         type="date"
                                         value={formData.endDate}
                                         onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
+                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Progress: {formData.progress}%</label>
+                                <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Progress: {formData.progress}%</label>
                                 <input
                                     type="range"
                                     min="0"
@@ -367,7 +371,7 @@ export default function ProjectsList() {
                                         setShowModal(false);
                                         resetForm();
                                     }}
-                                    className="px-6 py-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-500 transition-all"
+                                    className="px-6 py-3 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-slate-500 transition-all"
                                 >
                                     Cancel
                                 </button>

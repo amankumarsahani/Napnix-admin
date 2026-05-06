@@ -37,7 +37,7 @@ const UserDropdown = ({ user }) => {
                     <p className="text-sm font-semibold text-slate-800 dark:text-white">{user?.firstName || 'Admin'}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{user?.role ? user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Admin'}</p>
                 </div>
-                <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 font-bold flex items-center justify-center border border-brand-200 dark:border-brand-700">
+                <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 font-medium flex items-center justify-center border border-brand-200 dark:border-brand-700 text-sm">
                     {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || 'A'}
                 </div>
             </button>
@@ -111,7 +111,7 @@ export default function DashboardLayout() {
 
             <div className="flex-1 flex flex-col overflow-hidden relative">
                 {/* Top Header */}
-                <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4 z-10 sticky top-0 shadow-sm">
+                <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4 z-10 sticky top-0">
                     <div className="flex items-center justify-between">
                         {/* Left: Hamburger + Title */}
                         <div className="flex items-center gap-4">

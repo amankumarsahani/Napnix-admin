@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
@@ -50,49 +49,40 @@ const getRelativeTime = (dateString) => {
 export default function LeadDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
     const { user } = useAuth();
+    const [lead, setLead] = useState(null);
+    const [activities, setActivities] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('timeline');
 
+    // Activity form
     const [newNote, setNewNote] = useState('');
     const [activityType, setActivityType] = useState('note');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showEmailComposer, setShowEmailComposer] = useState(false);
 
+    // Assignment
+    const [assignableUsers, setAssignableUsers] = useState([]);
     const [isAssigning, setIsAssigning] = useState(false);
 
     const isAdmin = user?.role === 'admin';
 
-    const { data: leadRes, isLoading: loading } = useQuery({
-        queryKey: ['lead', id],
-        queryFn: async () => {
-            const res = await apiClient.get(`/leads/${id}`);
-            return res.data.lead;
-        },
-        enabled: !!id,
-    });
+    useEffect(() => {
+        fetchLead();
+        fetchActivities();
+        if (isAdmin) {
+            fetchAssignableUsers();
+        }
+    }, [id, isAdmin]);
 
-    const lead = leadRes || null;
-
-    const { data: activitiesData = [] } = useQuery({
-        queryKey: ['lead', id, 'activities'],
-        queryFn: async () => {
-            const res = await apiClient.get(`/activities/lead/${id}`);
-            return res.data.success ? (res.data.data || []) : [];
-        },
-        enabled: !!id,
-    });
-
-    const activities = activitiesData;
-
-    const { data: assignableUsers = [] } = useQuery({
-        queryKey: ['assignableUsers'],
-        queryFn: async () => {
+    const fetchAssignableUsers = async () => {
+        try {
             const response = await leadsAPI.getAssignableUsers();
-            return response.data || [];
-        },
-        enabled: isAdmin,
-    });
+            setAssignableUsers(response.data || []);
+        } catch (error) {
+            // silently ignore
+        }
+    };
 
     const handleAssign = async (assignedTo) => {
         if (!assignedTo) return;
@@ -100,11 +90,34 @@ export default function LeadDetail() {
         try {
             await leadsAPI.assign(id, assignedTo);
             toast.success('Lead reassigned successfully');
-            queryClient.invalidateQueries({ queryKey: ['lead', id] });
+            fetchLead();
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to reassign lead');
         } finally {
             setIsAssigning(false);
+        }
+    };
+
+    const fetchLead = async () => {
+        try {
+            const res = await apiClient.get(`/leads/${id}`);
+            setLead(res.data.lead);
+        } catch (error) {
+            toast.error('Failed to load lead details');
+            navigate('/leads');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchActivities = async () => {
+        try {
+            const res = await apiClient.get(`/activities/lead/${id}`);
+            if (res.data.success) {
+                setActivities(res.data.data || []);
+            }
+        } catch (error) {
+            // silently ignore
         }
     };
 

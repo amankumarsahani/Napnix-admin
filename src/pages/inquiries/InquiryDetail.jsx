@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../api/axios';
 import toast from 'react-hot-toast';
 import EmailComposer from '../../components/common/EmailComposer';
@@ -47,7 +46,9 @@ const getRelativeTime = (dateString) => {
 export default function InquiryDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const queryClient = useQueryClient();
+    const [inquiry, setInquiry] = useState(null);
+    const [activities, setActivities] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('timeline');
     const [confirmState, setConfirmState] = useState({ isOpen: false });
 
@@ -57,22 +58,33 @@ export default function InquiryDetail() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showEmailComposer, setShowEmailComposer] = useState(false);
 
-    const { data: inquiry = null, isLoading: loading } = useQuery({
-        queryKey: ['inquiry', id],
-        queryFn: async () => {
-            const res = await apiClient.get(`/inquiries/${id}`);
-            return res.data.data || res.data;
-        },
-    });
+    useEffect(() => {
+        fetchInquiry();
+        fetchActivities();
+    }, [id]);
 
-    const { data: activities = [] } = useQuery({
-        queryKey: ['inquiryActivities', id],
-        queryFn: async () => {
+    const fetchInquiry = async () => {
+        try {
+            const res = await apiClient.get(`/inquiries/${id}`);
+            setInquiry(res.data.data || res.data);
+        } catch (error) {
+            toast.error('Failed to load inquiry details');
+            navigate('/inquiries');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchActivities = async () => {
+        try {
             const res = await apiClient.get(`/activities/inquiry/${id}`);
-            if (res.data.success) return res.data.data || [];
-            return [];
-        },
-    });
+            if (res.data.success) {
+                setActivities(res.data.data || []);
+            }
+        } catch (error) {
+            // silently ignore
+        }
+    };
 
     const handleAddActivity = async (e) => {
         e.preventDefault();
@@ -90,7 +102,7 @@ export default function InquiryDetail() {
 
             toast.success('Activity added');
             setNewNote('');
-            queryClient.invalidateQueries({ queryKey: ['inquiryActivities', id] });
+            fetchActivities();
         } catch (error) {
             toast.error('Failed to add activity');
         } finally {
@@ -102,8 +114,8 @@ export default function InquiryDetail() {
         try {
             await apiClient.patch(`/inquiries/${id}/status`, { status: newStatus });
             toast.success('Status updated');
-            queryClient.invalidateQueries({ queryKey: ['inquiry', id] });
-            queryClient.invalidateQueries({ queryKey: ['inquiryActivities', id] });
+            fetchInquiry();
+            fetchActivities();
         } catch (error) {
             toast.error('Failed to update status');
         }
@@ -382,7 +394,7 @@ export default function InquiryDetail() {
                 recipient={{ name: inquiry.name, email: inquiry.email, company: inquiry.company }}
                 entityType="inquiry"
                 entityId={id}
-                onEmailSent={() => queryClient.invalidateQueries({ queryKey: ['inquiryActivities', id] })}
+                onEmailSent={() => fetchActivities()}
             />
 
             <ConfirmModal

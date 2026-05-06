@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { inquiriesAPI } from '../api';
 import toast from 'react-hot-toast';
 import usePagination from '../hooks/usePagination';
@@ -8,7 +7,8 @@ import Pagination from '../components/common/Pagination';
 import ConfirmModal from '../components/common/ConfirmModal';
 
 export default function Inquiries() {
-    const queryClient = useQueryClient();
+    const [inquiries, setInquiries] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedInquiry, setSelectedInquiry] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
@@ -17,22 +17,29 @@ export default function Inquiries() {
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
-    const { data: response, isLoading: loading } = useQuery({
-        queryKey: ['inquiries', { page: currentPage, search: searchTerm }],
-        queryFn: () => inquiriesAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
-    });
+    useEffect(() => {
+        fetchInquiries();
+    }, [currentPage, searchTerm]);
 
-    const inquiries = response?.data || [];
-
-    if (response?.pagination && response.pagination.totalPages !== totalPages) {
-        setPagination(response.pagination);
-    }
+    const fetchInquiries = async () => {
+        try {
+            const response = await inquiriesAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) });
+            // Backend returns { success: true, data: [...], pagination: {...} }
+            const list = response?.data || [];
+            setInquiries(Array.isArray(list) ? list : []);
+            if (response?.pagination) setPagination(response.pagination);
+        } catch (error) {
+            toast.error('Failed to load inquiries');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleStatusChange = async (id, newStatus) => {
         try {
             await inquiriesAPI.updateStatus(id, newStatus);
             toast.success('Status updated successfully');
-            queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+            fetchInquiries();
         } catch (error) {
             toast.error('Failed to update status');
         }
@@ -50,7 +57,7 @@ export default function Inquiries() {
                 try {
                     await inquiriesAPI.delete(id);
                     toast.success('Inquiry deleted successfully');
-                    queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+                    fetchInquiries();
                     setShowModal(false);
                 } catch (error) {
                     toast.error('Failed to delete inquiry');
@@ -68,7 +75,7 @@ export default function Inquiries() {
             });
 
             toast.success('Inquiry converted to lead!', { id: 'convert' });
-            queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+            fetchInquiries();
             setShowModal(false);
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to convert', { id: 'convert' });

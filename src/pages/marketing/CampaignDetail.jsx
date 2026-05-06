@@ -1,54 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 const CampaignDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [campaign, setCampaign] = useState(null);
+    const [recipients, setRecipients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [recipientsLoading, setRecipientsLoading] = useState(false);
     const [filter, setFilter] = useState('all');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    const { data: campaign, isLoading: loading, refetch: refetchCampaign } = useQuery({
-        queryKey: ['campaign', id],
-        queryFn: async () => {
+    const fetchCampaign = useCallback(async () => {
+        try {
             const res = await campaignsAPI.getById(id);
-            return res.data;
-        },
-        meta: {
-            onError: () => {
-                toast.error('Failed to load campaign');
-                navigate('/campaigns');
-            }
+            setCampaign(res.data);
+        } catch (error) {
+            toast.error('Failed to load campaign');
+            navigate('/campaigns');
+        } finally {
+            setLoading(false);
         }
-    });
+    }, [id, navigate]);
 
-    const { data: recipients = [], isLoading: recipientsLoading, refetch: refetchRecipients } = useQuery({
-        queryKey: ['campaign-recipients', id, { page, filter }],
-        queryFn: async () => {
+    const fetchRecipients = useCallback(async () => {
+        try {
+            setRecipientsLoading(true);
             const res = await campaignsAPI.getRecipients(id, {
                 page,
                 limit: 20,
                 status: filter !== 'all' ? filter : undefined
             });
+            setRecipients(res.data || []);
             setTotalPages(res.pagination?.pages || 1);
-            return res.data || [];
-        },
-        enabled: !!campaign,
-    });
+        } catch (error) {
+            // silently ignore
+        } finally {
+            setRecipientsLoading(false);
+        }
+    }, [id, page, filter]);
+
+    useEffect(() => {
+        fetchCampaign();
+    }, [fetchCampaign]);
+
+    useEffect(() => {
+        if (campaign) {
+            fetchRecipients();
+        }
+    }, [campaign, fetchRecipients]);
 
     // Auto-refresh when campaign is sending
     useEffect(() => {
         if (campaign?.status === 'sending') {
             const interval = setInterval(() => {
-                refetchCampaign();
-                refetchRecipients();
+                fetchCampaign();
+                fetchRecipients();
             }, 10000);
             return () => clearInterval(interval);
         }
-    }, [campaign?.status, refetchCampaign, refetchRecipients]);
+    }, [campaign?.status, fetchCampaign, fetchRecipients]);
 
     const getStatusBadge = (status) => {
         const styles = {
@@ -57,7 +71,7 @@ const CampaignDetail = () => {
             sent: 'bg-emerald-100 text-emerald-700',
             failed: 'bg-rose-100 text-rose-700',
             bounced: 'bg-red-100 text-red-700',
-            skipped: 'bg-slate-100 text-slate-600'
+            skipped: 'bg-gray-100 text-gray-600'
         };
         return styles[status] || 'bg-slate-100 text-slate-700';
     };
@@ -173,7 +187,7 @@ const CampaignDetail = () => {
                             <option value="bounced">Bounced</option>
                         </select>
                         <button
-                            onClick={refetchRecipients}
+                            onClick={fetchRecipients}
                             className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
                             title="Refresh"
                         >
