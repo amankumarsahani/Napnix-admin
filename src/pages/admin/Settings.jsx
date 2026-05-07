@@ -66,6 +66,21 @@ export default function Settings() {
     });
     const [savingPreferences, setSavingPreferences] = useState(false);
 
+    // SMTP State
+    const SMTP_PRESETS = [
+        { name: 'Zoho India', host: 'smtp.zoho.in', port: '465', secure: true },
+        { name: 'Zoho Global', host: 'smtp.zoho.com', port: '465', secure: true },
+        { name: 'Gmail', host: 'smtp.gmail.com', port: '587', secure: false },
+        { name: 'Outlook', host: 'smtp.office365.com', port: '587', secure: false },
+        { name: 'SendGrid', host: 'smtp.sendgrid.net', port: '587', secure: false },
+    ];
+    const [smtpSettings, setSmtpSettings] = useState({
+        smtp_host: '', smtp_port: '465', smtp_secure: true,
+        smtp_user: '', smtp_password: '', smtp_from_email: '', smtp_from_name: ''
+    });
+    const [savingSmtp, setSavingSmtp] = useState(false);
+    const [testingSmtp, setTestingSmtp] = useState(false);
+
     // Common timezones list
     const COMMON_TIMEZONES = [
         { value: 'UTC', label: 'UTC (Coordinated Universal Time)' },
@@ -122,6 +137,16 @@ export default function Settings() {
                         default_timezone: response.data.default_timezone
                     });
                 }
+
+                setSmtpSettings({
+                    smtp_host: response.data.smtp_host || '',
+                    smtp_port: response.data.smtp_port || '465',
+                    smtp_secure: response.data.smtp_secure === 'true' || response.data.smtp_secure === true,
+                    smtp_user: response.data.smtp_user || '',
+                    smtp_password: response.data.smtp_password || '',
+                    smtp_from_email: response.data.smtp_from_email || '',
+                    smtp_from_name: response.data.smtp_from_name || '',
+                });
             }
         } catch (error) {
             // silently ignore
@@ -195,6 +220,45 @@ export default function Settings() {
         }
     };
 
+    const handleSmtpSave = async () => {
+        setSavingSmtp(true);
+        try {
+            const payload = {
+                ...smtpSettings,
+                smtp_secure: String(smtpSettings.smtp_secure),
+            };
+            const res = await settingsAPI.updateSettings(payload);
+            if (res.success) toast.success('SMTP settings saved');
+            else toast.error('Failed to save SMTP settings');
+        } catch (err) {
+            toast.error('Failed to save SMTP settings');
+        } finally {
+            setSavingSmtp(false);
+        }
+    };
+
+    const handleSmtpTest = async () => {
+        if (!smtpSettings.smtp_host || !smtpSettings.smtp_user || !smtpSettings.smtp_password) {
+            return toast.error('Host, username, and password are required');
+        }
+        setTestingSmtp(true);
+        try {
+            const res = await settingsAPI.testSmtp({
+                host: smtpSettings.smtp_host,
+                port: parseInt(smtpSettings.smtp_port) || 587,
+                secure: smtpSettings.smtp_secure,
+                username: smtpSettings.smtp_user,
+                password: smtpSettings.smtp_password,
+            });
+            if (res.success) toast.success(res.message || 'Connection successful!');
+            else toast.error(res.error || 'Connection failed');
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Test failed');
+        } finally {
+            setTestingSmtp(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -213,7 +277,7 @@ export default function Settings() {
                             { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
                             { id: 'payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
                             { id: 'ai', label: 'AI Integration', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-
+                            { id: 'smtp', label: 'Email / SMTP', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -792,6 +856,144 @@ export default function Settings() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    )}
+                    {activeTab === 'smtp' && (
+                        <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Email / SMTP Settings</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mb-6">Configure the outgoing email server for system notifications, tenant welcome emails, and password resets.</p>
+
+                            {/* Zoho Setup Guide */}
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+                                <div className="flex gap-3">
+                                    <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div className="text-sm text-amber-800 dark:text-amber-300">
+                                        <p className="font-semibold mb-1">Setting up Zoho Mail</p>
+                                        <ol className="text-amber-700 dark:text-amber-400 space-y-1 list-decimal list-inside">
+                                            <li>Select <strong>Zoho India</strong> preset below (for <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-xs">@zoho.in</code> or Indian custom domains)</li>
+                                            <li>Username = your full Zoho email (e.g. <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-xs">hello@yourdomain.com</code>)</li>
+                                            <li>If 2FA is on → generate an <strong>App Password</strong> in Zoho → Security → App Passwords</li>
+                                            <li>Set <strong>From Email</strong> to the exact address recipients will see</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-5">
+                                {/* Presets */}
+                                <div>
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Quick Presets</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {SMTP_PRESETS.map(p => (
+                                            <button
+                                                key={p.name}
+                                                type="button"
+                                                onClick={() => setSmtpSettings(prev => ({ ...prev, smtp_host: p.host, smtp_port: p.port, smtp_secure: p.secure }))}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/30 dark:hover:text-brand-300 transition-colors"
+                                            >
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                                {p.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">SMTP Host</label>
+                                        <input
+                                            type="text"
+                                            value={smtpSettings.smtp_host}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_host: e.target.value })}
+                                            placeholder="smtp.zoho.in"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Port</label>
+                                        <input
+                                            type="number"
+                                            value={smtpSettings.smtp_port}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_port: e.target.value })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="flex items-end pb-2">
+                                        <label className="flex items-center gap-2.5 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={!!smtpSettings.smtp_secure}
+                                                onChange={e => setSmtpSettings({ ...smtpSettings, smtp_secure: e.target.checked })}
+                                                className="w-4 h-4 accent-brand-600 rounded"
+                                            />
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Use SSL/TLS (port 465)</span>
+                                        </label>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Username / Login Email</label>
+                                        <input
+                                            type="text"
+                                            value={smtpSettings.smtp_user}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_user: e.target.value })}
+                                            placeholder="admin@yourdomain.com"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Password / App Password</label>
+                                        <input
+                                            type="password"
+                                            value={smtpSettings.smtp_password}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_password: e.target.value })}
+                                            placeholder="Zoho app password or SMTP password"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">From Email</label>
+                                        <input
+                                            type="email"
+                                            value={smtpSettings.smtp_from_email}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_email: e.target.value })}
+                                            placeholder="hello@yourdomain.com"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">From Name</label>
+                                        <input
+                                            type="text"
+                                            value={smtpSettings.smtp_from_name}
+                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_name: e.target.value })}
+                                            placeholder="NexSpire Solutions"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSmtpTest}
+                                        disabled={testingSmtp}
+                                        className="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                    >
+                                        {testingSmtp ? 'Testing...' : 'Test Connection'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleSmtpSave}
+                                        disabled={savingSmtp}
+                                        className="px-8 py-2.5 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/25 disabled:opacity-70"
+                                    >
+                                        {savingSmtp ? 'Saving...' : 'Save SMTP Settings'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
