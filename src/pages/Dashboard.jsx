@@ -4,26 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import AdminStatsSection from '../components/charts/AdminStatsSection';
 import { dashboardAPI } from '../api';
 
-// Static Tailwind class map — dynamic interpolation breaks JIT purging
-const colorClasses = {
-    brand: {
-        icon: 'bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400',
-        hover: 'group-hover:text-brand-700 dark:group-hover:text-brand-400',
-    },
-    purple: {
-        icon: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400',
-        hover: 'group-hover:text-purple-700 dark:group-hover:text-purple-400',
-    },
-    blue: {
-        icon: 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400',
-        hover: 'group-hover:text-blue-700 dark:group-hover:text-blue-400',
-    },
-    emerald: {
-        icon: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400',
-        hover: 'group-hover:text-emerald-700 dark:group-hover:text-emerald-400',
-    },
-};
-
 // Mock data removed - fetching from API
 
 export default function Dashboard() {
@@ -106,85 +86,52 @@ export default function Dashboard() {
         }
     };
 
-    // Filter quick actions based on role
-    const getQuickActions = () => {
-        const role = user?.role || 'employee';
-        const actions = [
-            { id: 1, label: 'Add Lead', icon: 'M12 4v16m8-8H4', color: 'brand', roles: ['admin', 'manager', 'employee'] },
-            { id: 2, label: 'Create Invoice', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'purple', roles: ['admin', 'manager'] },
-            { id: 3, label: 'Send Email', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', color: 'blue', roles: ['admin', 'manager', 'employee'] },
-            { id: 4, label: 'New Task', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', color: 'emerald', roles: ['admin', 'manager'] }
-        ];
-        return actions.filter(action => action.roles.includes(role));
-    };
-
     if (isLoading) {
         return (
             <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
-                <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded-2xl w-1/3"></div>
+                <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded-xl w-1/3"></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>)}
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>)}
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="col-span-2 h-96 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
-                    <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+                    <div className="col-span-2 h-96 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                    <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
                 </div>
             </div>
         );
     }
 
     const currentStats = getStats();
-    const currentActions = getQuickActions();
-    const canViewRevenue = ['admin', 'manager'].includes(user?.role || 'employee');
-    const canViewLeads = true; // Everyone can see leads they have access to (backend handles filtering normally, frontend mocks here)
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-                        Welcome back, <span className="bg-gradient-to-r from-brand-600 to-accent-600 bg-clip-text text-transparent">{user?.firstName || 'User'}</span>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                        Welcome back, <span className="text-brand-600 dark:text-brand-400">{user?.firstName || 'User'}</span>
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 capitalize">Role: {user?.role || 'employee'} • Here's what's happening today.</p>
                 </div>
-                {['admin', 'manager'].includes(user?.role) && (
-                    <div className="flex gap-3">
-                        <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
-                            Download Report
-                        </button>
-                        <button className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30">
-                            + New Project
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {currentStats.map((stat, index) => (
-                    <div key={index} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 group hover:-translate-y-1 relative overflow-hidden">
-                        <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${stat.isPositive ? 'from-emerald-500 to-teal-400' : 'from-rose-500 to-pink-500'}`} />
-                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-10 transition-opacity transform translate-x-2 -translate-y-2">
-                            <svg className={`w-28 h-28 ${stat.isPositive ? 'text-emerald-500' : 'text-rose-500'} transform -rotate-12`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div key={index} className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${stat.isPositive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
+                            }`}>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {getIcon(stat.icon)}
                             </svg>
                         </div>
-                        <div className="relative z-10">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-transform group-hover:scale-110 ${stat.isPositive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{stat.label}</p>
+                        <div className="flex items-baseline gap-2 mt-2">
+                            <h3 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stat.value}</h3>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${stat.isPositive ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400'
                                 }`}>
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {getIcon(stat.icon)}
-                                </svg>
-                            </div>
-                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{stat.label}</p>
-                            <div className="flex items-baseline gap-2 mt-2">
-                                <h3 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stat.value}</h3>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${stat.isPositive ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400'
-                                    }`}>
-                                    {stat.isPositive ? '↑' : '↓'} {stat.change}
-                                </span>
-                            </div>
+                                {stat.isPositive ? '↑' : '↓'} {stat.change}
+                            </span>
                         </div>
                     </div>
                 ))}
@@ -200,144 +147,62 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* Main Dashboard Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Revenue & Leads */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* Revenue - Admin/Manager Only */}
-                    {canViewRevenue && (
-                        <div className="glass-panel p-6 rounded-3xl">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">Revenue Overview</h2>
-                                <select className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg px-3 py-1 outline-none">
-                                    <option>This Year</option>
-                                    <option>Last Year</option>
-                                </select>
-                            </div>
-                            <div className="h-64 flex items-end justify-between gap-2 px-4">
-                                {/* Mock Bar Chart */}
-                                {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 50, 95].map((h, i) => (
-                                    <div key={i} className="w-full bg-brand-100 dark:bg-brand-900/30 rounded-t-lg relative group h-full flex flex-col justify-end">
-                                        <div
-                                            style={{ height: `${h}%` }}
-                                            className="w-full bg-gradient-to-t from-brand-500 to-brand-400 rounded-t-lg opacity-80 group-hover:opacity-100 transition-all duration-300 relative"
-                                        >
-                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-800 dark:bg-slate-600 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                ${h}k
+            {/* Recent Leads Table */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leads</h2>
+                    <Link to="/leads" className="text-sm text-brand-600 font-semibold hover:text-brand-700">View All</Link>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
+                                <th className="pb-3 pl-2">Contact</th>
+                                <th className="pb-3">Value</th>
+                                <th className="pb-3">Status</th>
+                                <th className="pb-3 text-right pr-2">Heat Score</th>
+                            </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                            {recentLeads.map((lead) => (
+                                <tr key={lead.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0">
+                                    <td className="py-4 pl-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                                                {lead.name[0]}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-slate-800 dark:text-white">{lead.name}</p>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">{lead.company}</p>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="flex justify-between mt-4 text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
-                                    <span key={m}>{m}</span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Recent Projects/Leads Table */}
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Recent Leads</h2>
-                            <Link to="/leads" className="text-sm text-brand-600 font-semibold hover:text-brand-700">View All</Link>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
-                                        <th className="pb-3 pl-2">Contact</th>
-                                        <th className="pb-3">Value</th>
-                                        <th className="pb-3">Status</th>
-                                        <th className="pb-3 text-right pr-2">Heat Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm">
-                                    {recentLeads.map((lead) => (
-                                        <tr key={lead.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700 last:border-0">
-                                            <td className="py-4 pl-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-300">
-                                                        {lead.name[0]}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-slate-800 dark:text-white">{lead.name}</p>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{lead.company}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 font-medium text-slate-600 dark:text-slate-300">
-                                                Rs.{Number(lead.value || lead.estimatedValue || 0).toLocaleString()}
-                                            </td>
-                                            <td className="py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status?.toLowerCase() === 'new' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
-                                                    lead.status?.toLowerCase() === 'negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
-                                                        'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                                                    } capitalize`}>
-                                                    {lead.status}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 text-right pr-2">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full ${lead.score > 80 ? 'bg-emerald-500' : lead.score > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                                            style={{ width: `${lead.score}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300">{lead.score}</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right: Notifications & Quick Actions */}
-                <div className="space-y-8">
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h2>
-                        <div className="grid grid-cols-2 gap-3">
-                            {currentActions.map(action => (
-                                <button key={action.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-brand-200 dark:hover:border-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-all group flex flex-col items-center justify-center gap-2 text-center">
-                                    <div className={`w-10 h-10 rounded-full ${colorClasses[action.color].icon} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
-                                        </svg>
-                                    </div>
-                                    <span className={`text-xs font-semibold text-slate-600 dark:text-slate-300 ${colorClasses[action.color].hover}`}>{action.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="glass-panel p-6 rounded-3xl">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Pending Tasks</h2>
-                        <div className="space-y-4">
-                            {[
-                                { title: 'Review detailed project proposal', time: '2h ago', urgent: true },
-                                { title: 'Call with TechCorp regarding contract', time: '4h ago', urgent: false },
-                                { title: 'Update website content for Q1', time: 'Yesterday', urgent: false },
-                            ].map((task, i) => (
-                                <div key={i} className="flex gap-3 items-start group">
-                                    <div className="mt-1">
-                                        <input type="checkbox" className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 dark:bg-slate-700" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-brand-600 transition-colors cursor-pointer">{task.title}</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-xs text-slate-400 dark:text-slate-500">{task.time}</span>
-                                            {task.urgent && <span className="text-[10px] font-bold bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded">URGENT</span>}
+                                    </td>
+                                    <td className="py-4 font-medium text-slate-600 dark:text-slate-300">
+                                        Rs.{Number(lead.value || lead.estimatedValue || 0).toLocaleString()}
+                                    </td>
+                                    <td className="py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${lead.status?.toLowerCase() === 'new' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400' :
+                                            lead.status?.toLowerCase() === 'negotiation' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400' :
+                                                'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                            } capitalize`}>
+                                            {lead.status}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 text-right pr-2">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${lead.score > 80 ? 'bg-emerald-500' : lead.score > 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                                    style={{ width: `${lead.score}%` }}
+                                                ></div>
+                                            </div>
+                                            <span className="font-bold text-slate-700 dark:text-slate-300">{lead.score}</span>
                                         </div>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                             ))}
-                        </div>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

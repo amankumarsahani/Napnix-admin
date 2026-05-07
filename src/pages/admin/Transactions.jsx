@@ -89,7 +89,7 @@ export default function Transactions() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -104,7 +104,7 @@ export default function Transactions() {
                         <FiRefreshCw className="w-4 h-4" />
                         Sync
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20">
+                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors">
                         <FiFilter className="w-4 h-4" />
                         Filter
                     </button>
@@ -114,7 +114,7 @@ export default function Transactions() {
             {/* Sync Modal */}
             {syncModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Sync Missing Transaction</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                             Enter the Stripe Payment Intent ID (e.g., pi_3L...) to manually fetch and record it.
@@ -125,7 +125,7 @@ export default function Transactions() {
                                 value={syncPaymentId}
                                 onChange={(e) => setSyncPaymentId(e.target.value)}
                                 placeholder="pi_1234567890..."
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500 mb-4"
                                 required
                             />
                             <div className="flex justify-end gap-3">
@@ -139,7 +139,7 @@ export default function Transactions() {
                                 <button
                                     type="submit"
                                     disabled={syncing}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {syncing && <FiRefreshCw className="w-4 h-4 animate-spin" />}
                                     {syncing ? 'Syncing...' : 'Sync Transaction'}
@@ -177,7 +177,7 @@ export default function Transactions() {
                         <input
                             type="text"
                             placeholder="Search transactions..."
-                            className="pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/50 w-64"
+                            className="pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50 w-64"
                         />
                     </div>
                 </div>

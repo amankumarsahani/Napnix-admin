@@ -6,6 +6,7 @@ import {
 } from '../../components/icons/FeatherIcons';
 import { tenantsAPI, billingAPI } from '../../api';
 import toast from 'react-hot-toast';
+import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 const TenantDetail = () => {
@@ -251,16 +252,7 @@ const TenantDetail = () => {
         toast.success('Copied to clipboard');
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'active': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'trial': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'suspended': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'past_due': return 'bg-rose-100 text-rose-700 border-rose-200';
-            case 'cancelled': return 'bg-slate-100 text-slate-700 border-slate-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
-    };
+    const getStatusColor = createStatusColorFn('tenant');
 
     const getPaymentStatusIcon = (status) => {
         switch (status?.toLowerCase()) {
@@ -360,7 +352,7 @@ const TenantDetail = () => {
                         <button
                             onClick={handleEndTrial}
                             disabled={actionLoading === 'endTrial'}
-                            className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            className="px-4 py-2 bg-brand-600 dark:bg-brand-500 text-white rounded-lg hover:bg-brand-700 dark:hover:bg-brand-600 disabled:opacity-50 transition-colors flex items-center gap-2"
                         >
                             {actionLoading === 'endTrial' ? (
                                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -386,7 +378,7 @@ const TenantDetail = () => {
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
                         ) : (
-                            <FiCreditCard className="w-4 h-4 text-indigo-500" />
+                            <FiCreditCard className="w-4 h-4 text-brand-500" />
                         )}
                         Send Payment Link
                     </button>
@@ -394,7 +386,7 @@ const TenantDetail = () => {
                     <button
                         onClick={handleSendAgreement}
                         disabled={sendingAgreement}
-                        className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-700 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
                         title="Send service agreement PDF to tenant email"
                     >
                         {sendingAgreement ? (
@@ -419,7 +411,7 @@ const TenantDetail = () => {
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
-                        <FiServer className="text-indigo-500" /> Server
+                        <FiServer className="text-brand-500" /> Server
                     </div>
                     <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{tenant.server_name || 'Primary'}</div>
                 </div>
@@ -437,16 +429,16 @@ const TenantDetail = () => {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiGlobe className="w-5 h-5 text-slate-500" />
                     Domains
-                    <button onClick={openDomainModal} className="ml-auto text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                    <button onClick={openDomainModal} className="ml-auto text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Configure
                     </button>
                 </h3>
                 <div className="grid md:grid-cols-3 gap-4">
                     {/* CRM Dashboard */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
@@ -461,12 +453,12 @@ const TenantDetail = () => {
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* API (always uses default nexspiresolutions domain) */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-500">
                                 <FiGlobe />
@@ -477,14 +469,14 @@ const TenantDetail = () => {
                                 <span className="text-[10px] text-slate-400">Managed by NexSpire</span>
                             </div>
                         </div>
-                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* Storefront */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-indigo-200 dark:border-slate-600 dark:hover:border-indigo-500 transition">
+                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center text-indigo-600">
+                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
@@ -499,7 +491,7 @@ const TenantDetail = () => {
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-indigo-600 transition">
+                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
                             <FiExternalLink />
                         </a>
                     </div>
@@ -516,7 +508,7 @@ const TenantDetail = () => {
                         <p className="text-xs font-medium text-slate-500 uppercase mb-2">Database Name</p>
                         <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                             <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{tenant.db_name}</span>
-                            <button onClick={() => copyToClipboard(tenant.db_name)} className="text-slate-400 hover:text-indigo-600">
+                            <button onClick={() => copyToClipboard(tenant.db_name)} className="text-slate-400 hover:text-brand-600">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
@@ -527,7 +519,7 @@ const TenantDetail = () => {
                         <p className="text-xs font-medium text-slate-500 uppercase mb-2">Admin Email</p>
                         <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                             <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{tenant.email || 'admin@' + tenant.slug + '.local'}</span>
-                            <button onClick={() => copyToClipboard(tenant.email || 'admin@' + tenant.slug + '.local')} className="text-slate-400 hover:text-indigo-600">
+                            <button onClick={() => copyToClipboard(tenant.email || 'admin@' + tenant.slug + '.local')} className="text-slate-400 hover:text-brand-600">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
@@ -676,7 +668,7 @@ const TenantDetail = () => {
 
             {/* Custom Domain Modal */}
             {showDomainModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
@@ -725,21 +717,21 @@ const TenantDetail = () => {
                             {showDomainHelp && (
                                 <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 space-y-3 bg-white dark:bg-slate-800">
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">1</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">1</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Enter the tenant's custom domains above</p>
                                             <p className="text-xs mt-0.5">CRM and Storefront are both optional. You can set up one or both.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">2</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">2</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Click "Save Domains"</p>
                                             <p className="text-xs mt-0.5">This registers the custom domains with Cloudflare Pages automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">3</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">3</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Tenant adds CNAME records in their DNS provider</p>
                                             <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
@@ -751,7 +743,7 @@ const TenantDetail = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">4</span>
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">4</span>
                                         <div>
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Wait for DNS propagation</p>
                                             <p className="text-xs mt-0.5">Usually takes a few minutes. Cloudflare Pages handles SSL certificates automatically.</p>
@@ -773,7 +765,7 @@ const TenantDetail = () => {
                             <button
                                 onClick={handleSetupDomain}
                                 disabled={domainLoading}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                                className="px-4 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50"
                             >
                                 {domainLoading ? 'Configuring...' : 'Save Domains'}
                             </button>
@@ -783,7 +775,7 @@ const TenantDetail = () => {
             )}
 
             {showDeleteModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
                         <h2 className="text-xl font-semibold text-rose-600 mb-4">Confirm Permanent Deletion</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">

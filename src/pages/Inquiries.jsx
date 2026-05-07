@@ -105,7 +105,7 @@ export default function Inquiries() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
             </div>
         );
     }
@@ -215,7 +215,7 @@ export default function Inquiries() {
                                                         setSelectedInquiry(inquiry);
                                                         setShowModal(true);
                                                     }}
-                                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                                    className="text-brand-600 hover:text-brand-800 font-medium"
                                                 >
                                                     View
                                                 </button>
@@ -247,7 +247,7 @@ export default function Inquiries() {
 
             {/* Detail Modal */}
             {showModal && selectedInquiry && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">

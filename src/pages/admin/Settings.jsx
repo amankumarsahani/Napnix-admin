@@ -21,6 +21,15 @@ const passwordSchema = z.object({
     path: ['confirmPassword'],
 });
 
+const tabs = [
+    { id: 'profile', label: 'My Profile', desc: 'Personal info', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+    { id: 'security', label: 'Security', desc: 'Password & auth', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
+    { id: 'preferences', label: 'Preferences', desc: 'System defaults', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
+    { id: 'notifications', label: 'Notifications', desc: 'Alert preferences', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+    { id: 'payments', label: 'Payments', desc: 'Billing & pricing', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+    { id: 'ai', label: 'AI Integration', desc: 'Provider keys', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+];
+
 export default function Settings() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('profile');
@@ -65,21 +74,6 @@ export default function Settings() {
         default_timezone: 'UTC'
     });
     const [savingPreferences, setSavingPreferences] = useState(false);
-
-    // SMTP State
-    const SMTP_PRESETS = [
-        { name: 'Zoho India', host: 'smtp.zoho.in', port: '465', secure: true },
-        { name: 'Zoho Global', host: 'smtp.zoho.com', port: '465', secure: true },
-        { name: 'Gmail', host: 'smtp.gmail.com', port: '587', secure: false },
-        { name: 'Outlook', host: 'smtp.office365.com', port: '587', secure: false },
-        { name: 'SendGrid', host: 'smtp.sendgrid.net', port: '587', secure: false },
-    ];
-    const [smtpSettings, setSmtpSettings] = useState({
-        smtp_host: '', smtp_port: '465', smtp_secure: true,
-        smtp_user: '', smtp_password: '', smtp_from_email: '', smtp_from_name: ''
-    });
-    const [savingSmtp, setSavingSmtp] = useState(false);
-    const [testingSmtp, setTestingSmtp] = useState(false);
 
     // Common timezones list
     const COMMON_TIMEZONES = [
@@ -137,16 +131,6 @@ export default function Settings() {
                         default_timezone: response.data.default_timezone
                     });
                 }
-
-                setSmtpSettings({
-                    smtp_host: response.data.smtp_host || '',
-                    smtp_port: response.data.smtp_port || '465',
-                    smtp_secure: response.data.smtp_secure === 'true' || response.data.smtp_secure === true,
-                    smtp_user: response.data.smtp_user || '',
-                    smtp_password: response.data.smtp_password || '',
-                    smtp_from_email: response.data.smtp_from_email || '',
-                    smtp_from_name: response.data.smtp_from_name || '',
-                });
             }
         } catch (error) {
             // silently ignore
@@ -220,240 +204,287 @@ export default function Settings() {
         }
     };
 
-    const handleSmtpSave = async () => {
-        setSavingSmtp(true);
-        try {
-            const payload = {
-                ...smtpSettings,
-                smtp_secure: String(smtpSettings.smtp_secure),
-            };
-            const res = await settingsAPI.updateSettings(payload);
-            if (res.success) toast.success('SMTP settings saved');
-            else toast.error('Failed to save SMTP settings');
-        } catch (err) {
-            toast.error('Failed to save SMTP settings');
-        } finally {
-            setSavingSmtp(false);
-        }
-    };
+    const activeTabData = tabs.find(t => t.id === activeTab);
 
-    const handleSmtpTest = async () => {
-        if (!smtpSettings.smtp_host || !smtpSettings.smtp_user || !smtpSettings.smtp_password) {
-            return toast.error('Host, username, and password are required');
-        }
-        setTestingSmtp(true);
-        try {
-            const res = await settingsAPI.testSmtp({
-                host: smtpSettings.smtp_host,
-                port: parseInt(smtpSettings.smtp_port) || 587,
-                secure: smtpSettings.smtp_secure,
-                username: smtpSettings.smtp_user,
-                password: smtpSettings.smtp_password,
-            });
-            if (res.success) toast.success(res.message || 'Connection successful!');
-            else toast.error(res.error || 'Connection failed');
-        } catch (err) {
-            toast.error(err.response?.data?.error || 'Test failed');
-        } finally {
-            setTestingSmtp(false);
-        }
-    };
+    /* ---- shared style helpers ---- */
+    const inputBase = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all text-sm';
+    const inputError = 'border-rose-500 dark:border-rose-500 ring-2 ring-rose-500/20';
+    const labelBase = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5';
+    const sectionCard = 'rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60';
+    const btnPrimary = 'px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 focus:ring-4 focus:ring-brand-500/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm';
+    const btnSecondary = 'px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-all disabled:opacity-50 text-sm';
 
     return (
         <div className="space-y-6">
+            {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>
                 <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your account preferences and security.</p>
             </div>
 
-            <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row min-h-[500px]">
-                {/* Sidebar Tabs */}
-                <div className="w-full md:w-64 bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4">
-                    <nav className="space-y-1">
-                        {[
-                            { id: 'profile', label: 'My Profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-                            { id: 'security', label: 'Security', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
-                            { id: 'preferences', label: 'Preferences', icon: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
-                            { id: 'notifications', label: 'Notifications', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
-                            { id: 'payments', label: 'Payments', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
-                            { id: 'ai', label: 'AI Integration', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-                            { id: 'smtp', label: 'Email / SMTP', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
-                        ].map((tab) => (
+            {/* Main Settings Card */}
+            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col lg:flex-row min-h-[600px]">
+
+                {/* ---- Sidebar Navigation ---- */}
+                <div className="w-full lg:w-72 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800">
+                    {/* Sidebar header */}
+                    <div className="px-6 pt-6 pb-4 hidden lg:block">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Configuration</p>
+                    </div>
+
+                    {/* Mobile: horizontal scroll tabs */}
+                    <nav className="flex lg:hidden overflow-x-auto gap-1 p-3 scrollbar-hide">
+                        {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${activeTab === tab.id
-                                    ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-600'
-                                    : 'text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+                                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap transition-all ${activeTab === tab.id
+                                    ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 shadow-sm ring-1 ring-brand-200 dark:ring-brand-800'
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
                                     }`}
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
+                                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={tab.icon} />
                                 </svg>
                                 {tab.label}
                             </button>
                         ))}
                     </nav>
+
+                    {/* Desktop: vertical tabs */}
+                    <nav className="hidden lg:flex flex-col gap-0.5 px-3 pb-6">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`group w-full flex items-center gap-3.5 px-4 py-3 text-left rounded-xl transition-all duration-200 ${activeTab === tab.id
+                                    ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 ring-1 ring-brand-200 dark:ring-brand-800/60'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200 ${activeTab === tab.id
+                                    ? 'bg-brand-100 dark:bg-brand-800/40 text-brand-600 dark:text-brand-400'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                                    }`}>
+                                    <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={tab.icon} />
+                                    </svg>
+                                </div>
+                                <div className="min-w-0">
+                                    <div className={`text-sm font-semibold truncate ${activeTab === tab.id ? '' : ''}`}>{tab.label}</div>
+                                    <div className="text-xs text-slate-400 dark:text-slate-500 truncate">{tab.desc}</div>
+                                </div>
+                                {activeTab === tab.id && (
+                                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
+                                )}
+                            </button>
+                        ))}
+                    </nav>
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 p-8">
-                    {activeTab === 'profile' && (
-                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Profile Information</h2>
-                            <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
-                                <div className="flex items-center gap-6 mb-8">
-                                    <div className="w-24 h-24 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-3xl font-bold text-brand-600 dark:text-brand-400 border-4 border-white dark:border-slate-700 shadow-lg">
-                                        {profileForm.watch('firstName')?.[0] || ''}
-                                    </div>
-                                    <button type="button" className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                        Change Avatar
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">First Name</label>
-                                        <input
-                                            type="text"
-                                            {...profileForm.register('firstName')}
-                                            className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${profileForm.formState.errors.firstName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                                        />
-                                        {profileForm.formState.errors.firstName && (
-                                            <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{profileForm.formState.errors.firstName.message}</p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Last Name</label>
-                                        <input
-                                            type="text"
-                                            {...profileForm.register('lastName')}
-                                            className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${profileForm.formState.errors.lastName ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                                        />
-                                        {profileForm.formState.errors.lastName && (
-                                            <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{profileForm.formState.errors.lastName.message}</p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email Address</label>
-                                    <input
-                                        type="email"
-                                        disabled
-                                        value={user?.email || ''}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        {...profileForm.register('phone')}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                    />
-                                </div>
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
-                                    >
-                                        Save Changes
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {activeTab === 'security' && (
-                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Security Settings</h2>
-                            <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Current Password</label>
-                                    <input
-                                        type="password"
-                                        {...passwordForm.register('currentPassword')}
-                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.currentPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                                    />
-                                    {passwordForm.formState.errors.currentPassword && (
-                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.currentPassword.message}</p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">New Password</label>
-                                    <input
-                                        type="password"
-                                        {...passwordForm.register('newPassword')}
-                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.newPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                                    />
-                                    {passwordForm.formState.errors.newPassword && (
-                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.newPassword.message}</p>
-                                    )}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        {...passwordForm.register('confirmPassword')}
-                                        className={`w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all ${passwordForm.formState.errors.confirmPassword ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
-                                    />
-                                    {passwordForm.formState.errors.confirmPassword && (
-                                        <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5 ml-1">{passwordForm.formState.errors.confirmPassword.message}</p>
-                                    )}
-                                </div>
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="px-6 py-2.5 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/25 disabled:opacity-70"
-                                    >
-                                        Update Password
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {activeTab === 'notifications' && (
-                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Notification Preferences</h2>
-                            <div className="space-y-4">
-                                {['Email me about new leads', 'Email me about project updates', 'Email me about weekly reports'].map((label, i) => (
-                                    <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 transition-colors bg-white dark:bg-slate-800">
-                                        <span className="font-medium text-slate-700 dark:text-slate-300">{label}</span>
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" defaultChecked className="sr-only peer" />
-                                            <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
-                                        </label>
-                                    </div>
-                                ))}
+                {/* ---- Content Area ---- */}
+                <div className="flex-1 min-w-0 overflow-y-auto">
+                    {/* Content header bar */}
+                    <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-8 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={activeTabData?.icon} />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{activeTabData?.label}</h2>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">{activeTabData?.desc}</p>
                             </div>
                         </div>
-                    )}
+                    </div>
 
-                    {activeTab === 'preferences' && (
-                        <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">System Preferences</h2>
-                            <p className="text-slate-500 dark:text-slate-400 mb-8">Configure default system-wide settings.</p>
+                    <div className="p-8">
+                        {/* ======== PROFILE TAB ======== */}
+                        {activeTab === 'profile' && (
+                            <div className="max-w-2xl">
+                                <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-8">
+                                    {/* Avatar section */}
+                                    <div className={`${sectionCard} p-6`}>
+                                        <div className="flex items-center gap-6">
+                                            <div className="relative">
+                                                <div className="w-20 h-20 rounded-xl bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-2xl font-bold text-brand-600 dark:text-brand-400 ring-2 ring-white dark:ring-slate-800">
+                                                    {profileForm.watch('firstName')?.[0] || ''}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-base font-semibold text-slate-900 dark:text-white">Profile Photo</h3>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">PNG, JPG or GIF. Max 2MB.</p>
+                                                <button type="button" className={`mt-3 ${btnSecondary} text-xs`}>
+                                                    Change Avatar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-6">
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-slate-800 dark:text-white">Default Timezone</h3>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                                Used for scheduled tasks, reports, and as default for new tenants
-                                            </p>
-                                            {detectedTimezone !== preferencesSettings.default_timezone && (
-                                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    Browser detected: {detectedTimezone}
-                                                </p>
+                                    {/* Personal info */}
+                                    <div className={`${sectionCard} p-6 space-y-5`}>
+                                        <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Personal Information</h3>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Update your personal details here.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className={labelBase}>First Name</label>
+                                                <input
+                                                    type="text"
+                                                    {...profileForm.register('firstName')}
+                                                    className={`${inputBase} ${profileForm.formState.errors.firstName ? inputError : ''}`}
+                                                />
+                                                {profileForm.formState.errors.firstName && (
+                                                    <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5">{profileForm.formState.errors.firstName.message}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className={labelBase}>Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    {...profileForm.register('lastName')}
+                                                    className={`${inputBase} ${profileForm.formState.errors.lastName ? inputError : ''}`}
+                                                />
+                                                {profileForm.formState.errors.lastName && (
+                                                    <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5">{profileForm.formState.errors.lastName.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>Email Address</label>
+                                            <input
+                                                type="email"
+                                                disabled
+                                                value={user?.email || ''}
+                                                className={`${inputBase} !bg-slate-50 dark:!bg-slate-800/80 !text-slate-500 dark:!text-slate-400 cursor-not-allowed`}
+                                            />
+                                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Email cannot be changed. Contact support if needed.</p>
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>Phone Number</label>
+                                            <input
+                                                type="tel"
+                                                {...profileForm.register('phone')}
+                                                placeholder="+1 (555) 000-0000"
+                                                className={inputBase}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Save */}
+                                    <div className="flex items-center justify-end gap-3 pt-2">
+                                        <button type="submit" disabled={loading} className={`${btnPrimary} flex items-center gap-2`}>
+                                            {loading && (
+                                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                            )}
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* ======== SECURITY TAB ======== */}
+                        {activeTab === 'security' && (
+                            <div className="max-w-2xl">
+                                <form onSubmit={passwordForm.handleSubmit(handlePasswordUpdate)} className="space-y-8">
+                                    <div className={`${sectionCard} p-6 space-y-5`}>
+                                        <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Change Password</h3>
+                                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Ensure your account uses a strong, unique password.</p>
+                                        </div>
+                                        <div>
+                                            <label className={labelBase}>Current Password</label>
+                                            <input
+                                                type="password"
+                                                {...passwordForm.register('currentPassword')}
+                                                className={`${inputBase} ${passwordForm.formState.errors.currentPassword ? inputError : ''}`}
+                                            />
+                                            {passwordForm.formState.errors.currentPassword && (
+                                                <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5">{passwordForm.formState.errors.currentPassword.message}</p>
                                             )}
                                         </div>
-                                        <div className="flex flex-col gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                            <div>
+                                                <label className={labelBase}>New Password</label>
+                                                <input
+                                                    type="password"
+                                                    {...passwordForm.register('newPassword')}
+                                                    className={`${inputBase} ${passwordForm.formState.errors.newPassword ? inputError : ''}`}
+                                                />
+                                                {passwordForm.formState.errors.newPassword && (
+                                                    <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5">{passwordForm.formState.errors.newPassword.message}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className={labelBase}>Confirm New Password</label>
+                                                <input
+                                                    type="password"
+                                                    {...passwordForm.register('confirmPassword')}
+                                                    className={`${inputBase} ${passwordForm.formState.errors.confirmPassword ? inputError : ''}`}
+                                                />
+                                                {passwordForm.formState.errors.confirmPassword && (
+                                                    <p className="text-xs text-rose-500 dark:text-rose-400 mt-1.5">{passwordForm.formState.errors.confirmPassword.message}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-3 pt-2">
+                                        <button type="submit" disabled={loading} className={`${btnPrimary} flex items-center gap-2`}>
+                                            {loading && (
+                                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                            )}
+                                            Update Password
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        {/* ======== NOTIFICATIONS TAB ======== */}
+                        {activeTab === 'notifications' && (
+                            <div className="max-w-2xl">
+                                <div className={`${sectionCard} divide-y divide-slate-100 dark:divide-slate-700/60`}>
+                                    <div className="px-6 py-5">
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Email Notifications</h3>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Choose which emails you want to receive.</p>
+                                    </div>
+                                    {['Email me about new leads', 'Email me about project updates', 'Email me about weekly reports'].map((label, i) => (
+                                        <div key={i} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                                            <div>
+                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" defaultChecked className="sr-only peer" />
+                                                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 dark:peer-focus:ring-brand-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ======== PREFERENCES TAB ======== */}
+                        {activeTab === 'preferences' && (
+                            <div className="max-w-2xl">
+                                <div className={`${sectionCard} p-6 space-y-5`}>
+                                    <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Default Timezone</h3>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Used for scheduled tasks, reports, and as default for new tenants.</p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className={labelBase}>Timezone</label>
                                             <select
                                                 value={preferencesSettings.default_timezone}
                                                 onChange={async (e) => {
@@ -470,7 +501,7 @@ export default function Settings() {
                                                     }
                                                 }}
                                                 disabled={savingPreferences}
-                                                className="min-w-[250px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                                className={inputBase}
                                             >
                                                 {COMMON_TIMEZONES.map((tz) => (
                                                     <option key={tz.value} value={tz.value}>
@@ -478,7 +509,18 @@ export default function Settings() {
                                                     </option>
                                                 ))}
                                             </select>
-                                            {detectedTimezone !== preferencesSettings.default_timezone && (
+                                        </div>
+
+                                        {detectedTimezone !== preferencesSettings.default_timezone && (
+                                            <div className="flex items-center justify-between rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <svg className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-sm text-amber-800 dark:text-amber-300">
+                                                        Browser detected: <span className="font-medium">{detectedTimezone}</span>
+                                                    </span>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={async () => {
@@ -494,174 +536,200 @@ export default function Settings() {
                                                         }
                                                     }}
                                                     disabled={savingPreferences}
-                                                    className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                                    className="text-sm font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 transition-colors disabled:opacity-50 whitespace-nowrap"
                                                 >
                                                     Use Detected
                                                 </button>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-
-                    {activeTab === 'payments' && (
-                        <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Payment & Billing Settings</h2>
-                                <p className="text-slate-500 dark:text-slate-400 mb-8">Manage how customers interact with your pricing and payments.</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Mode Selection */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50">
-                                    <h3 className="font-bold text-slate-800 dark:text-white mb-4">Pricing Page Mode</h3>
-                                    <div className="space-y-4">
+                        {/* ======== PAYMENTS TAB ======== */}
+                        {activeTab === 'payments' && (
+                            <div className="max-w-4xl space-y-8">
+                                {/* Pricing Page Mode */}
+                                <div className={`${sectionCard} p-6 space-y-5`}>
+                                    <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Pricing Page Mode</h3>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Choose how customers interact with your pricing page.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <button
                                             onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'payment_link' })}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'payment_link'
-                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                                                : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
+                                            className={`p-5 rounded-xl border-2 transition-all text-left group ${paymentSettings.pricing_page_mode === 'payment_link'
+                                                ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-900/20 ring-1 ring-brand-200 dark:ring-brand-800/50'
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                                 }`}
                                         >
-                                            <div className="font-bold text-slate-800 dark:text-white mb-1">Stripe Checkout</div>
-                                            <div className="text-xs text-slate-500">Direct "Buy Now" buttons with Stripe magic links.</div>
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${paymentSettings.pricing_page_mode === 'payment_link'
+                                                    ? 'bg-brand-100 dark:bg-brand-800/40 text-brand-600 dark:text-brand-400'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold text-sm text-slate-800 dark:text-white mb-1">Stripe Checkout</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Direct "Buy Now" buttons with Stripe magic links.</div>
+                                                </div>
+                                            </div>
                                         </button>
                                         <button
                                             onClick={() => setPaymentSettings({ ...paymentSettings, pricing_page_mode: 'contact_us' })}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentSettings.pricing_page_mode === 'contact_us'
-                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                                                : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600'
+                                            className={`p-5 rounded-xl border-2 transition-all text-left group ${paymentSettings.pricing_page_mode === 'contact_us'
+                                                ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-900/20 ring-1 ring-brand-200 dark:ring-brand-800/50'
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                                 }`}
                                         >
-                                            <div className="font-bold text-slate-800 dark:text-white mb-1">Contact Us</div>
-                                            <div className="text-xs text-slate-500">Lead generation focus with "Contact Us" buttons.</div>
+                                            <div className="flex items-start gap-3">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${paymentSettings.pricing_page_mode === 'contact_us'
+                                                    ? 'bg-brand-100 dark:bg-brand-800/40 text-brand-600 dark:text-brand-400'
+                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold text-sm text-slate-800 dark:text-white mb-1">Contact Us</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Lead generation focus with "Contact Us" buttons.</div>
+                                                </div>
+                                            </div>
                                         </button>
                                     </div>
 
-                                    <div className="mt-6">
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Inquiry Email (for Contact Us mode)</label>
+                                    <div>
+                                        <label className={labelBase}>Inquiry Email (for Contact Us mode)</label>
                                         <input
                                             type="email"
                                             value={paymentSettings.contact_sales_email || ''}
                                             onChange={e => setPaymentSettings({ ...paymentSettings, contact_sales_email: e.target.value })}
                                             placeholder="sales@nexspire.com"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none"
+                                            className={inputBase}
                                         />
                                     </div>
                                 </div>
 
-                                {/* Stripe Credentials */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.915 0-1.17 1.107-1.72 2.965-1.72 1.903 0 3.004.59 3.486.978l.843-2.92c-.63-.267-1.954-.622-3.485-.622-4.14 0-6.726 1.933-6.726 5.22 0 3.867 3.518 4.604 6.136 5.488 2.37.892 2.872 1.83 2.872 3.167 0 1.258-1.257 2.15-3.627 2.15-2.26 0-3.655-.66-4.526-1.144l-.873 3.01c.715.357 2.508.85 4.685.85 4.544 0 7.373-1.97 7.373-5.32 0-4.47-4.9-5.35-5.766-5.89z" />
-                                            </svg>
+                                {/* Payment Provider Cards */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Stripe Credentials */}
+                                    <div className={`${sectionCard} p-6 space-y-5`}>
+                                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                            <div className="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.915 0-1.17 1.107-1.72 2.965-1.72 1.903 0 3.004.59 3.486.978l.843-2.92c-.63-.267-1.954-.622-3.485-.622-4.14 0-6.726 1.933-6.726 5.22 0 3.867 3.518 4.604 6.136 5.488 2.37.892 2.872 1.83 2.872 3.167 0 1.258-1.257 2.15-3.627 2.15-2.26 0-3.655-.66-4.526-1.144l-.873 3.01c.715.357 2.508.85 4.685.85 4.544 0 7.373-1.97 7.373-5.32 0-4.47-4.9-5.35-5.766-5.89z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Stripe</h3>
+                                                <p className="text-xs text-slate-400 dark:text-slate-500">API keys & webhooks</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className={labelBase}>Secret Key</label>
+                                            <input
+                                                type="password"
+                                                value={paymentSettings.stripe_api_key || ''}
+                                                onChange={e => setPaymentSettings({ ...paymentSettings, stripe_api_key: e.target.value })}
+                                                placeholder="sk_test_..."
+                                                className={inputBase}
+                                            />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">Stripe Credentials</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Manage API keys securely.</p>
+                                            <label className={labelBase}>Webhook Secret</label>
+                                            <input
+                                                type="password"
+                                                value={paymentSettings.stripe_webhook_secret || ''}
+                                                onChange={e => setPaymentSettings({ ...paymentSettings, stripe_webhook_secret: e.target.value })}
+                                                placeholder="whsec_..."
+                                                className={inputBase}
+                                            />
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Secret Key</label>
-                                        <input
-                                            type="password"
-                                            value={paymentSettings.stripe_api_key || ''}
-                                            onChange={e => setPaymentSettings({ ...paymentSettings, stripe_api_key: e.target.value })}
-                                            placeholder="sk_test_..."
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Webhook Secret</label>
-                                        <input
-                                            type="password"
-                                            value={paymentSettings.stripe_webhook_secret || ''}
-                                            onChange={e => setPaymentSettings({ ...paymentSettings, stripe_webhook_secret: e.target.value })}
-                                            placeholder="whsec_..."
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
-                                        />
-                                    </div>
-                                </div>
+                                    {/* Razorpay Credentials */}
+                                    <div className={`${sectionCard} p-6 space-y-5`}>
+                                        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M7.712 9.074L2.85 17.5h5.17l2.872-5.185L13.9 17.5h5.795l-7.23-10.925L9.67 2h7.336l5.12 7.765H16.89l-2.92-4.475-4.258 3.784z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Razorpay</h3>
+                                                <p className="text-xs text-slate-400 dark:text-slate-500">API keys & webhooks</p>
+                                            </div>
+                                        </div>
 
-                                {/* Razorpay Credentials */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M7.712 9.074L2.85 17.5h5.17l2.872-5.185L13.9 17.5h5.795l-7.23-10.925L9.67 2h7.336l5.12 7.765H16.89l-2.92-4.475-4.258 3.784z" />
-                                            </svg>
+                                        <div>
+                                            <label className={labelBase}>Key ID</label>
+                                            <input
+                                                type="text"
+                                                value={paymentSettings.razorpay_api_key || ''}
+                                                onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_api_key: e.target.value })}
+                                                placeholder="rzp_test_..."
+                                                className={inputBase}
+                                            />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">Razorpay Credentials</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Manage API keys securely.</p>
+                                            <label className={labelBase}>Key Secret</label>
+                                            <input
+                                                type="password"
+                                                value={paymentSettings.razorpay_secret_key || ''}
+                                                onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_secret_key: e.target.value })}
+                                                placeholder="Enter Key Secret"
+                                                className={inputBase}
+                                            />
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Key ID</label>
-                                        <input
-                                            type="text"
-                                            value={paymentSettings.razorpay_api_key || ''}
-                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_api_key: e.target.value })}
-                                            placeholder="rzp_test_..."
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Key Secret</label>
-                                        <input
-                                            type="password"
-                                            value={paymentSettings.razorpay_secret_key || ''}
-                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_secret_key: e.target.value })}
-                                            placeholder="Enter Key Secret"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Webhook Secret</label>
-                                        <input
-                                            type="password"
-                                            value={paymentSettings.razorpay_webhook_secret || ''}
-                                            onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_webhook_secret: e.target.value })}
-                                            placeholder="Enter Webhook Secret"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500/50"
-                                        />
+                                        <div>
+                                            <label className={labelBase}>Webhook Secret</label>
+                                            <input
+                                                type="password"
+                                                value={paymentSettings.razorpay_webhook_secret || ''}
+                                                onChange={e => setPaymentSettings({ ...paymentSettings, razorpay_webhook_secret: e.target.value })}
+                                                placeholder="Enter Webhook Secret"
+                                                className={inputBase}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Stripe Price IDs */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-6">
-                                    <h3 className="font-bold text-slate-800 dark:text-white">Stripe Price IDs</h3>
+                                <div className={`${sectionCard} p-6 space-y-5`}>
+                                    <div className="pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Stripe Price IDs</h3>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Map your Stripe price IDs to each plan and billing cycle.</p>
+                                    </div>
 
                                     <div className="space-y-4">
                                         {['starter', 'growth', 'business'].map(plan => (
-                                            <div key={plan} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 space-y-3">
-                                                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 capitalize">{plan} Plan</h4>
-                                                <div className="grid grid-cols-2 gap-3">
+                                            <div key={plan} className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 p-4 space-y-3">
+                                                <h4 className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">{plan} Plan</h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     <div>
-                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Monthly</label>
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-1 tracking-wide">Monthly</label>
                                                         <input
                                                             type="text"
                                                             value={paymentSettings[`stripe_price_id_${plan}`] || ''}
                                                             onChange={e => setPaymentSettings({ ...paymentSettings, [`stripe_price_id_${plan}`]: e.target.value })}
                                                             placeholder="price_..."
-                                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none transition-all"
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Yearly</label>
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 mb-1 tracking-wide">Yearly</label>
                                                         <input
                                                             type="text"
                                                             value={paymentSettings[`stripe_price_id_${plan}_yearly`] || ''}
                                                             onChange={e => setPaymentSettings({ ...paymentSettings, [`stripe_price_id_${plan}_yearly`]: e.target.value })}
                                                             placeholder="price_..."
-                                                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 outline-none transition-all"
                                                         />
                                                     </div>
                                                 </div>
@@ -669,333 +737,162 @@ export default function Settings() {
                                         ))}
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={async () => {
-                                        setLoading(true);
-                                        try {
-                                            const { pricing_page_mode, contact_sales_email, ...otherSettings } = paymentSettings;
-                                            const response = await settingsAPI.updateSettings({
-                                                pricing_page_mode,
-                                                contact_sales_email,
-                                                ...otherSettings
-                                            });
-                                            if (response.success) {
-                                                toast.success('Payment settings updated');
-                                                fetchSettings();
-                                            }
-                                        } catch (err) {
-                                            toast.error('Failed to update settings');
-                                        } finally {
-                                            setLoading(false);
-                                        }
-                                    }}
-                                    disabled={loading}
-                                    className="px-8 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/25 flex items-center gap-2"
-                                >
-                                    {loading ? 'Saving...' : 'Save Payment Configuration'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'ai' && (
-                        <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI Integration Settings</h2>
-                            <p className="text-slate-500 dark:text-slate-400 mb-8">Configure your AI providers for use in automation workflows and assistants.</p>
-                            <form onSubmit={handleAIUpdate} className="space-y-8">
-                                {/* OpenAI Section */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5153-4.9089 6.0462 6.0462 0 0 0-4.4439-3.2533 6.05 6.05 0 0 0-5.4541 1.3871 6.0573 6.0573 0 0 0-4.4439 1.3871 6.05 6.05 0 0 0-2.4275 4.3936 5.9847 5.9847 0 0 0-2.5122 4.3936 6.0462 6.0462 0 0 0 1.2586 4.9089 6.05 6.05 0 0 0 4.4439 3.2533 6.05 6.05 0 0 0 5.4541-1.3871 6.0573 6.0573 0 0 0 4.4439-1.3871 6.05 6.05 0 0 0 2.4275-4.3936 5.9847 5.9847 0 0 0 2.5122-4.3936zm-8.0838 10.2831a3.7825 3.7825 0 0 1-5.4-1.252l.142-.081 3.252-1.879a.4346.4346 0 0 0 .217-.377v-4.595l1.791.995v4.512a.4346.4346 0 0 0 .217.377l3.252 1.879-.142.112a3.7825 3.7825 0 0 1-3.31 1.282zm-5.4-12.7231l-.142.081L5.4041 9.3401a.4346.4346 0 0 0-.217.377v4.595L3.3961 13.3171v-4.512a.4346.4346 0 0 0-.217-.377L3.0371 8.3541l3.31-1.282a3.7825 3.7825 0 0 1 5.4 1.252z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">OpenAI</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">GPT-4o, GPT-3.5 Turbo</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                value={aiSettings.openai_api_key}
-                                                onChange={e => setAiSettings({ ...aiSettings, openai_api_key: e.target.value })}
-                                                placeholder="sk-..."
-                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => testConnection('openai')}
-                                                disabled={testingProvider === 'openai'}
-                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                                            >
-                                                {testingProvider === 'openai' ? 'Testing...' : 'Test Connection'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Google Gemini Section */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12 2L14.4 9.6H22L15.8 14.1L18.2 21.7L12 17.2L5.8 21.7L8.2 14.1L2 9.6H9.6L12 2Z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">Google Gemini</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Gemini 1.5 Pro/Flash</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                value={aiSettings.gemini_api_key}
-                                                onChange={e => setAiSettings({ ...aiSettings, gemini_api_key: e.target.value })}
-                                                placeholder="Enter Gemini API key"
-                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => testConnection('gemini')}
-                                                disabled={testingProvider === 'gemini'}
-                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                                            >
-                                                {testingProvider === 'gemini' ? 'Testing...' : 'Test Connection'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Groq Section */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">Groq (Ultra-Fast)</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Llama 3, Mixtral (Free Tier Available)</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                value={aiSettings.groq_api_key}
-                                                onChange={e => setAiSettings({ ...aiSettings, groq_api_key: e.target.value })}
-                                                placeholder="gsk_..."
-                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => testConnection('groq')}
-                                                disabled={testingProvider === 'groq'}
-                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                                            >
-                                                {testingProvider === 'groq' ? 'Testing...' : 'Test Connection'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* xAI Grok Section */}
-                                <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-slate-800 dark:text-slate-200" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M18.901 2.1c.495 0 .897.402.897.897v18.006a.897.897 0 0 1-.897.897H5.099a.897.897 0 0 1-.897-.897V2.997c0-.495.402-.897.897-.897h13.802zM15.4 17.5h-6.8v-1.2h6.8v1.2zm1.6-4h-8.4v-1.2h8.4v1.2zm0-4h-8.4v-1.2h8.4v1.2z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 dark:text-white">xAI Grok</h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">Grok 4, Grok 3, Grok-beta</p>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">API Key</label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="password"
-                                                value={aiSettings.grok_api_key}
-                                                onChange={e => setAiSettings({ ...aiSettings, grok_api_key: e.target.value })}
-                                                placeholder="xai-..."
-                                                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => testConnection('grok')}
-                                                disabled={testingProvider === 'grok'}
-                                                className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                                            >
-                                                {testingProvider === 'grok' ? 'Testing...' : 'Test Connection'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4">
+                                <div className="flex items-center justify-end pt-2">
                                     <button
-                                        type="submit"
+                                        onClick={async () => {
+                                            setLoading(true);
+                                            try {
+                                                const { pricing_page_mode, contact_sales_email, ...otherSettings } = paymentSettings;
+                                                const response = await settingsAPI.updateSettings({
+                                                    pricing_page_mode,
+                                                    contact_sales_email,
+                                                    ...otherSettings
+                                                });
+                                                if (response.success) {
+                                                    toast.success('Payment settings updated');
+                                                    fetchSettings();
+                                                }
+                                            } catch (err) {
+                                                toast.error('Failed to update settings');
+                                            } finally {
+                                                setLoading(false);
+                                            }
+                                        }}
                                         disabled={loading}
-                                        className="px-8 py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/25 disabled:opacity-70 flex items-center gap-2"
+                                        className={`${btnPrimary} flex items-center gap-2`}
                                     >
-                                        {loading ? 'Saving...' : 'Save AI Configuration'}
+                                        {loading && (
+                                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                        )}
+                                        Save Payment Configuration
                                     </button>
                                 </div>
-                            </form>
-                        </div>
-                    )}
-                    {activeTab === 'smtp' && (
-                        <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Email / SMTP Settings</h2>
-                            <p className="text-slate-500 dark:text-slate-400 mb-6">Configure the outgoing email server for system notifications, tenant welcome emails, and password resets.</p>
-
-                            {/* Zoho Setup Guide */}
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
-                                <div className="flex gap-3">
-                                    <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <div className="text-sm text-amber-800 dark:text-amber-300">
-                                        <p className="font-semibold mb-1">Setting up Zoho Mail</p>
-                                        <ol className="text-amber-700 dark:text-amber-400 space-y-1 list-decimal list-inside">
-                                            <li>Select <strong>Zoho India</strong> preset below (for <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-xs">@zoho.in</code> or Indian custom domains)</li>
-                                            <li>Username = your full Zoho email (e.g. <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-xs">hello@yourdomain.com</code>)</li>
-                                            <li>If 2FA is on → generate an <strong>App Password</strong> in Zoho → Security → App Passwords</li>
-                                            <li>Set <strong>From Email</strong> to the exact address recipients will see</li>
-                                        </ol>
-                                    </div>
-                                </div>
                             </div>
+                        )}
 
-                            <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-5">
-                                {/* Presets */}
-                                <div>
-                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Quick Presets</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {SMTP_PRESETS.map(p => (
-                                            <button
-                                                key={p.name}
-                                                type="button"
-                                                onClick={() => setSmtpSettings(prev => ({ ...prev, smtp_host: p.host, smtp_port: p.port, smtp_secure: p.secure }))}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-900/30 dark:hover:text-brand-300 transition-colors"
-                                            >
-                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {/* ======== AI INTEGRATION TAB ======== */}
+                        {activeTab === 'ai' && (
+                            <div className="max-w-3xl">
+                                <form onSubmit={handleAIUpdate} className="space-y-6">
+                                    {/* Provider Cards */}
+                                    {[
+                                        {
+                                            key: 'openai',
+                                            name: 'OpenAI',
+                                            desc: 'GPT-4o, GPT-3.5 Turbo',
+                                            placeholder: 'sk-...',
+                                            stateKey: 'openai_api_key',
+                                            colorBg: 'bg-emerald-50 dark:bg-emerald-900/30',
+                                            colorText: 'text-emerald-600 dark:text-emerald-400',
+                                            icon: (
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5153-4.9089 6.0462 6.0462 0 0 0-4.4439-3.2533 6.05 6.05 0 0 0-5.4541 1.3871 6.0573 6.0573 0 0 0-4.4439 1.3871 6.05 6.05 0 0 0-2.4275 4.3936 5.9847 5.9847 0 0 0-2.5122 4.3936 6.0462 6.0462 0 0 0 1.2586 4.9089 6.05 6.05 0 0 0 4.4439 3.2533 6.05 6.05 0 0 0 5.4541-1.3871 6.0573 6.0573 0 0 0 4.4439-1.3871 6.05 6.05 0 0 0 2.4275-4.3936 5.9847 5.9847 0 0 0 2.5122-4.3936zm-8.0838 10.2831a3.7825 3.7825 0 0 1-5.4-1.252l.142-.081 3.252-1.879a.4346.4346 0 0 0 .217-.377v-4.595l1.791.995v4.512a.4346.4346 0 0 0 .217.377l3.252 1.879-.142.112a3.7825 3.7825 0 0 1-3.31 1.282zm-5.4-12.7231l-.142.081L5.4041 9.3401a.4346.4346 0 0 0-.217.377v4.595L3.3961 13.3171v-4.512a.4346.4346 0 0 0-.217-.377L3.0371 8.3541l3.31-1.282a3.7825 3.7825 0 0 1 5.4 1.252z" />
+                                                </svg>
+                                            ),
+                                        },
+                                        {
+                                            key: 'gemini',
+                                            name: 'Google Gemini',
+                                            desc: 'Gemini 1.5 Pro/Flash',
+                                            placeholder: 'Enter Gemini API key',
+                                            stateKey: 'gemini_api_key',
+                                            colorBg: 'bg-blue-50 dark:bg-blue-900/30',
+                                            colorText: 'text-blue-600 dark:text-blue-400',
+                                            icon: (
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 2L14.4 9.6H22L15.8 14.1L18.2 21.7L12 17.2L5.8 21.7L8.2 14.1L2 9.6H9.6L12 2Z" />
+                                                </svg>
+                                            ),
+                                        },
+                                        {
+                                            key: 'groq',
+                                            name: 'Groq (Ultra-Fast)',
+                                            desc: 'Llama 3, Mixtral (Free Tier Available)',
+                                            placeholder: 'gsk_...',
+                                            stateKey: 'groq_api_key',
+                                            colorBg: 'bg-orange-50 dark:bg-orange-900/30',
+                                            colorText: 'text-orange-600 dark:text-orange-400',
+                                            icon: (
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                 </svg>
-                                                {p.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
+                                            ),
+                                        },
+                                        {
+                                            key: 'grok',
+                                            name: 'xAI Grok',
+                                            desc: 'Grok 4, Grok 3, Grok-beta',
+                                            placeholder: 'xai-...',
+                                            stateKey: 'grok_api_key',
+                                            colorBg: 'bg-slate-100 dark:bg-slate-700/50',
+                                            colorText: 'text-slate-700 dark:text-slate-300',
+                                            icon: (
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M18.901 2.1c.495 0 .897.402.897.897v18.006a.897.897 0 0 1-.897.897H5.099a.897.897 0 0 1-.897-.897V2.997c0-.495.402-.897.897-.897h13.802zM15.4 17.5h-6.8v-1.2h6.8v1.2zm1.6-4h-8.4v-1.2h8.4v1.2zm0-4h-8.4v-1.2h8.4v1.2z" />
+                                                </svg>
+                                            ),
+                                        },
+                                    ].map((provider) => (
+                                        <div key={provider.key} className={`${sectionCard} p-6 space-y-4`}>
+                                            <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/60">
+                                                <div className={`w-10 h-10 rounded-xl ${provider.colorBg} flex items-center justify-center ${provider.colorText}`}>
+                                                    {provider.icon}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{provider.name}</h3>
+                                                    <p className="text-xs text-slate-400 dark:text-slate-500">{provider.desc}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className={labelBase}>API Key</label>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="password"
+                                                        value={aiSettings[provider.stateKey]}
+                                                        onChange={e => setAiSettings({ ...aiSettings, [provider.stateKey]: e.target.value })}
+                                                        placeholder={provider.placeholder}
+                                                        className={`flex-1 ${inputBase}`}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => testConnection(provider.key)}
+                                                        disabled={testingProvider === provider.key}
+                                                        className={`${btnSecondary} whitespace-nowrap flex items-center gap-1.5`}
+                                                    >
+                                                        {testingProvider === provider.key ? (
+                                                            <>
+                                                                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                                </svg>
+                                                                Testing...
+                                                            </>
+                                                        ) : 'Test'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">SMTP Host</label>
-                                        <input
-                                            type="text"
-                                            value={smtpSettings.smtp_host}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_host: e.target.value })}
-                                            placeholder="smtp.zoho.in"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
+                                    <div className="flex items-center justify-end pt-2">
+                                        <button type="submit" disabled={loading} className={`${btnPrimary} flex items-center gap-2`}>
+                                            {loading && (
+                                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                                </svg>
+                                            )}
+                                            Save AI Configuration
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Port</label>
-                                        <input
-                                            type="number"
-                                            value={smtpSettings.smtp_port}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_port: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="flex items-end pb-2">
-                                        <label className="flex items-center gap-2.5 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={!!smtpSettings.smtp_secure}
-                                                onChange={e => setSmtpSettings({ ...smtpSettings, smtp_secure: e.target.checked })}
-                                                className="w-4 h-4 accent-brand-600 rounded"
-                                            />
-                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Use SSL/TLS (port 465)</span>
-                                        </label>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Username / Login Email</label>
-                                        <input
-                                            type="text"
-                                            value={smtpSettings.smtp_user}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_user: e.target.value })}
-                                            placeholder="admin@yourdomain.com"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Password / App Password</label>
-                                        <input
-                                            type="password"
-                                            value={smtpSettings.smtp_password}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_password: e.target.value })}
-                                            placeholder="Zoho app password or SMTP password"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">From Email</label>
-                                        <input
-                                            type="email"
-                                            value={smtpSettings.smtp_from_email}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_email: e.target.value })}
-                                            placeholder="hello@yourdomain.com"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">From Name</label>
-                                        <input
-                                            type="text"
-                                            value={smtpSettings.smtp_from_name}
-                                            onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_name: e.target.value })}
-                                            placeholder="NexSpire Solutions"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleSmtpTest}
-                                        disabled={testingSmtp}
-                                        className="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
-                                    >
-                                        {testingSmtp ? 'Testing...' : 'Test Connection'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleSmtpSave}
-                                        disabled={savingSmtp}
-                                        className="px-8 py-2.5 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/25 disabled:opacity-70"
-                                    >
-                                        {savingSmtp ? 'Saving...' : 'Save SMTP Settings'}
-                                    </button>
-                                </div>
+                                </form>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

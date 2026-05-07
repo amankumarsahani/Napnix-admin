@@ -161,7 +161,7 @@ export default function LeadDetail() {
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <div className="animate-pulse space-y-6">
                     <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
                 </div>
             </div>
         );
@@ -179,7 +179,7 @@ export default function LeadDetail() {
             </div>
 
             {/* Header */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{lead.contactName}</h1>
@@ -224,7 +224,7 @@ export default function LeadDetail() {
                 {/* Left: Info & Actions */}
                 <div className="space-y-6">
                     {/* Contact Info */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Contact Information</h3>
                         <div className="space-y-3">
                             {lead.email && (
@@ -249,7 +249,7 @@ export default function LeadDetail() {
                     </div>
 
                     {/* Status Update */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Update Status</h3>
                         <div className="grid grid-cols-2 gap-2">
                             {['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost'].map(status => (
@@ -268,7 +268,7 @@ export default function LeadDetail() {
                     </div>
 
                     {/* Assigned To */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Assigned To</h3>
 
                         {lead.assignedFirstName ? (
@@ -311,14 +311,14 @@ export default function LeadDetail() {
 
                     {/* Notes */}
                     {lead.notes && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                             <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Notes</h3>
                             <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-wrap">{lead.notes}</p>
                         </div>
                     )}
 
                     {/* Meta */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Details</h3>
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
@@ -335,7 +335,7 @@ export default function LeadDetail() {
 
                 {/* Right: Timeline */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
                         {/* Tabs */}
                         <div className="flex border-b border-slate-100 dark:border-slate-700">
                             <button

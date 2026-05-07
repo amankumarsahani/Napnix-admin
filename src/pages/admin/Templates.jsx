@@ -258,7 +258,7 @@ export default function Templates() {
                         resetForm();
                         setShowModal(true);
                     }}
-                    className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
+                    className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors flex items-center gap-2"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -307,7 +307,7 @@ export default function Templates() {
                     return (
                         <div
                             key={template.id}
-                            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+                            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
                         >
                             {/* Header */}
                             <div className="p-5 border-b border-slate-100 dark:border-slate-700">
@@ -406,7 +406,7 @@ export default function Templates() {
             {/* Create/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-transparent dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-transparent dark:border-slate-700">
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -569,7 +569,7 @@ export default function Templates() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-brand-500/25 hover:bg-brand-700 transition-all"
+                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
                                 >
                                     {editingTemplate ? 'Update Template' : 'Create Template'}
                                 </button>
@@ -582,7 +582,7 @@ export default function Templates() {
             {/* Preview Modal */}
             {previewHtml && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl border border-transparent dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl border border-transparent dark:border-slate-700">
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                             <h3 className="font-bold text-slate-900 dark:text-white">Template Preview</h3>
                             <button

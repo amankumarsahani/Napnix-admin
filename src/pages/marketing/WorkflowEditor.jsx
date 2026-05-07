@@ -172,7 +172,7 @@ const ActionNode = ({ data, selected }) => (
                     <div className="text-[10px] text-slate-500 line-clamp-2 italic">"{data.config.content}"</div>
                 )}
                 {data.actionType === 'ai_assistant' && (
-                    <div className="text-[10px] text-indigo-500 font-medium">{data.config.model}</div>
+                    <div className="text-[10px] text-brand-500 font-medium">{data.config.model}</div>
                 )}
                 {data.actionType === 'create_task' && (
                     <div className="text-[10px] text-slate-500 line-clamp-1">Task: {data.config.title}</div>
@@ -1710,8 +1710,8 @@ const WorkflowEditor = () => {
                         {/* Action: Assign User */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'assign_user' && (
                             <>
-                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                                    <p className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">
+                                <div className="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
+                                    <p className="text-sm text-brand-700 dark:text-brand-400 font-medium">
                                         Assigns an owner/user to the entity
                                     </p>
                                 </div>
@@ -1763,8 +1763,8 @@ const WorkflowEditor = () => {
                         {/* Action: Assign Inquiry */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'assign_inquiry' && (
                             <>
-                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                                    <p className="text-sm text-indigo-700 dark:text-indigo-400 font-medium">
+                                <div className="p-3 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
+                                    <p className="text-sm text-brand-700 dark:text-brand-400 font-medium">
                                         Assigns the inquiry to a specific user
                                     </p>
                                 </div>
@@ -1950,14 +1950,14 @@ const WorkflowEditor = () => {
                         {/* Action: AI Assistant */}
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_assistant' && (
                             <>
-                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 mb-1">
+                                <div className="p-3 bg-brand-50 dark:bg-brand-900/30 rounded-lg border border-brand-100 dark:border-brand-800">
+                                    <div className="flex items-center gap-2 text-brand-700 dark:text-brand-300 mb-1">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                         </svg>
                                         <span className="font-semibold text-sm">AI Assistant</span>
                                     </div>
-                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                                    <p className="text-xs text-brand-600 dark:text-brand-400">
                                         Use AI to analyze data, score leads, or generate content.
                                     </p>
                                 </div>
@@ -2357,8 +2357,6 @@ const WorkflowEditor = () => {
                                 </div>
                             </>
                         )}
-
-                        {selectedNode.type === 'delay' && (
                             <>
                                 <div className="p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
                                     <p className="text-sm text-cyan-700 dark:text-cyan-400 font-medium">

@@ -181,7 +181,7 @@ export default function Documents() {
                     <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+                            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
                         ))}
                     </div>
                 </div>
@@ -222,7 +222,7 @@ export default function Documents() {
             {/* Template Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {templates.map(template => (
-                    <div key={template.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    <div key={template.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                         <div className="p-6">
                             <div className="flex items-start justify-between mb-4">
                                 <div>
@@ -271,8 +271,8 @@ export default function Documents() {
 
             {/* Preview Modal */}
             {showPreviewModal && selectedTemplate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex">
                         {/* Variables Panel */}
                         <div className="w-80 border-r border-slate-200 dark:border-slate-700 p-6 overflow-y-auto bg-slate-50 dark:bg-slate-800">
                             <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Customize Variables</h3>
@@ -324,8 +324,8 @@ export default function Documents() {
 
             {/* Edit Modal */}
             {showEditModal && selectedTemplate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-transparent dark:border-slate-700">
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Edit Template: {selectedTemplate.name}</h2>
                         </div>
@@ -410,8 +410,8 @@ export default function Documents() {
 
             {/* Send Modal */}
             {showSendModal && selectedTemplate && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 border border-transparent dark:border-slate-700">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Send Document</h3>
                         <div className="space-y-4">
                             <div>
@@ -455,8 +455,8 @@ export default function Documents() {
 
             {/* Create Template Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-transparent dark:border-slate-700">
                         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Create New Template</h2>
                         </div>

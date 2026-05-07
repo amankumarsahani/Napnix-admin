@@ -32,7 +32,7 @@ export default function LeadsKanban({ leads = [], onUpdateStatus }) {
                         </div>
 
                         {/* Column Content */}
-                        <div className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl p-2 md:p-3 overflow-y-auto custom-scrollbar border border-slate-200/50 dark:border-slate-700/50 space-y-3">
+                        <div className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2 md:p-3 overflow-y-auto custom-scrollbar border border-slate-200/50 dark:border-slate-700/50 space-y-3">
                             {colLeads.map((lead) => (
                                 <div
                                     key={lead.id}

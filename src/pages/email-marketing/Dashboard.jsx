@@ -1,34 +1,31 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FiMail, FiUsers, FiSend, FiTrendingUp, FiMousePointer, FiBarChart2 } from '../../components/icons/FeatherIcons';
 import { nmAnalyticsAPI } from '../../api/nexmail';
 
 export default function EmailMarketingDashboard() {
     const navigate = useNavigate();
-    const [stats, setStats] = useState({ contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } });
-    const [sendVolume, setSendVolume] = useState([]);
-    const [growth, setGrowth] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { fetchData(); }, []);
-
-    const fetchData = async () => {
-        try {
+    const { data: dashData, isLoading: loading } = useQuery({
+        queryKey: ['nexmail-dashboard'],
+        queryFn: async () => {
             const [dashRes, volumeRes, growthRes] = await Promise.allSettled([
                 nmAnalyticsAPI.getDashboard(),
                 nmAnalyticsAPI.getSendVolume(30),
                 nmAnalyticsAPI.getGrowth(90)
             ]);
-            if (dashRes.status === 'fulfilled' && dashRes.value?.data) setStats(dashRes.value.data);
-            if (volumeRes.status === 'fulfilled' && volumeRes.value?.data) setSendVolume(volumeRes.value.data);
-            if (growthRes.status === 'fulfilled' && growthRes.value?.data) setGrowth(growthRes.value.data);
-        } catch (e) {
-            console.error('Dashboard fetch error:', e);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return {
+                stats: dashRes.status === 'fulfilled' && dashRes.value?.data ? dashRes.value.data : { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } },
+                sendVolume: volumeRes.status === 'fulfilled' && volumeRes.value?.data ? volumeRes.value.data : [],
+                growth: growthRes.status === 'fulfilled' && growthRes.value?.data ? growthRes.value.data : [],
+            };
+        },
+    });
+
+    const stats = dashData?.stats || { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } };
+    const sendVolume = dashData?.sendVolume || [];
+    const growth = dashData?.growth || [];
 
     const cards = [
         { title: 'Total Contacts', value: (stats.contacts?.total || 0).toLocaleString(), icon: <FiUsers />, color: 'indigo', path: '/email-marketing/contacts' },
@@ -40,7 +37,7 @@ export default function EmailMarketingDashboard() {
     ];
 
     const colorMap = {
-        indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600',
+        indigo: 'bg-brand-50 dark:bg-brand-900/20 text-brand-600',
         emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600',
         blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600',
         amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600',
@@ -48,7 +45,7 @@ export default function EmailMarketingDashboard() {
         rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600',
     };
 
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
+    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
 
     return (
         <div className="space-y-6">
@@ -102,7 +99,7 @@ export default function EmailMarketingDashboard() {
                         { label: 'New Automation', path: '/email-marketing/automations/new', icon: '⚡' },
                         { label: 'SMTP Setup', path: '/email-marketing/smtp', icon: '⚙️' },
                     ].map(a => (
-                        <button key={a.label} onClick={() => navigate(a.path)} className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors text-left">
+                        <button key={a.label} onClick={() => navigate(a.path)} className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors text-left">
                             <span className="text-2xl">{a.icon}</span>
                             <span className="text-sm font-medium text-slate-900 dark:text-white">{a.label}</span>
                         </button>

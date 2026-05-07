@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { leadsAPI, billingAPI } from '../../api';
+import { createStatusColorFn } from '../../utils/statusColors';
 
 import toast from 'react-hot-toast';
 import LeadsKanban from './LeadsKanban';
@@ -204,16 +205,7 @@ export default function LeadsList() {
         });
     };
 
-    const getStatusColor = (status) => {
-        const colors = {
-            new: 'bg-blue-100 text-blue-800 border-blue-200',
-            contacted: 'bg-amber-100 text-amber-800 border-amber-200',
-            qualified: 'bg-purple-100 text-purple-800 border-purple-200',
-            won: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-            lost: 'bg-rose-100 text-rose-800 border-rose-200',
-        };
-        return colors[status?.toLowerCase()] || colors.new;
-    };
+    const getStatusColor = createStatusColorFn('lead');
 
     if (loading) {
         return (
@@ -281,7 +273,7 @@ export default function LeadsList() {
                                 resetForm();
                                 setShowModal(true);
                             }}
-                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30 flex items-center gap-2"
+                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             <span className="hidden sm:inline">Add Lead</span>
@@ -307,7 +299,7 @@ export default function LeadsList() {
                     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
                 }} />
             ) : (
-                <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
@@ -396,7 +388,7 @@ export default function LeadsList() {
                                                         setShowLinkModal(true);
                                                         setGeneratedLink('');
                                                     }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
                                                     title="Generate Payment Link"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
@@ -435,8 +427,8 @@ export default function LeadsList() {
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-transparent dark:border-slate-700">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
                             <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -565,7 +557,7 @@ export default function LeadsList() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-brand-500/25 hover:bg-brand-700 transition-all transform active:scale-95"
+                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
                                 >
                                     {editingLead ? 'Update Lead' : 'Create Lead'}
                                 </button>
@@ -576,8 +568,8 @@ export default function LeadsList() {
             )}
             {/* Payment Link Modal */}
             {showLinkModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-md w-full shadow-2xl border border-transparent dark:border-slate-700">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
                             <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -629,7 +621,7 @@ export default function LeadsList() {
                                                 navigator.clipboard.writeText(generatedLink);
                                                 toast.success('Link copied to clipboard');
                                             }}
-                                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+                                            className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
                                         >
                                             Copy
                                         </button>
@@ -663,7 +655,7 @@ export default function LeadsList() {
                                         }
                                     }}
                                     disabled={generatingLink}
-                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:bg-brand-700 disabled:opacity-50 transition-all"
+                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 disabled:opacity-50 transition-all"
                                 >
                                     {generatingLink ? 'Generating...' : 'Generate Magic Link'}
                                 </button>

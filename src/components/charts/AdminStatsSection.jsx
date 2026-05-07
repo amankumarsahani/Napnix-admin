@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { dashboardAPI } from '../../api';
-import { LeadStatusChart, InquiryStatusChart, ConversionRateCard } from './DashboardCharts';
+import { LeadStatusChart, InquiryStatusChart, ConversionRateCard, RevenueTrendChart } from './DashboardCharts';
 import toast from 'react-hot-toast';
 
 export default function AdminStatsSection() {
@@ -46,8 +46,8 @@ export default function AdminStatsSection() {
         return (
             <div className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="glass-panel p-6 rounded-2xl h-80 animate-pulse bg-slate-100"></div>
-                    <div className="glass-panel p-6 rounded-2xl h-80 animate-pulse bg-slate-100"></div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl h-80 animate-pulse"></div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl h-80 animate-pulse"></div>
                 </div>
             </div>
         );
@@ -56,15 +56,24 @@ export default function AdminStatsSection() {
     return (
         <div className="space-y-6">
             {/* Conversion Rates */}
-            <div className="glass-panel p-6 rounded-2xl">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Conversion Overview</h3>
                 <ConversionRateCard inquiryStats={inquiryStats} leadStats={leadStats} />
+            </div>
+
+            {/* Revenue Trend */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Revenue Overview</h3>
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">Last 6 months</span>
+                </div>
+                <RevenueTrendChart />
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Lead Status Chart */}
-                <div className="glass-panel p-6 rounded-2xl">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white">Leads by Status</h3>
                         <span className="text-sm text-slate-500">
@@ -75,7 +84,7 @@ export default function AdminStatsSection() {
                 </div>
 
                 {/* Inquiry Status Chart */}
-                <div className="glass-panel p-6 rounded-2xl">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white">Inquiries by Status</h3>
                         <span className="text-sm text-slate-500">
@@ -86,27 +95,7 @@ export default function AdminStatsSection() {
                 </div>
             </div>
 
-            {/* Quick Stats Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">New Leads</p>
-                    <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">{leadStats?.newLeads || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Qualified</p>
-                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{leadStats?.qualified || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Won</p>
-                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{leadStats?.won || 0}</p>
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">Total Value</p>
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                        Rs.{(leadStats?.totalValue || 0).toLocaleString()}
-                    </p>
-                </div>
-            </div>
+
         </div>
     );
 }
