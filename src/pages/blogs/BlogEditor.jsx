@@ -105,7 +105,7 @@ export default function BlogEditor() {
     if (fetching) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
             </div>
         );
     }
@@ -116,7 +116,7 @@ export default function BlogEditor() {
             <div className="flex items-center justify-between">
                 <button
                     onClick={() => navigate('/blogs')}
-                    className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors"
+                    className="flex items-center gap-2 text-slate-500 hover:text-brand-600 transition-colors"
                 >
                     <FiArrowLeft />
                     <span>Back to Blogs</span>
@@ -132,7 +132,7 @@ export default function BlogEditor() {
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {loading ? (
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -163,7 +163,7 @@ export default function BlogEditor() {
                                 value={formData.title}
                                 onChange={handleChange}
                                 placeholder="Enter an engaging title..."
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -177,7 +177,7 @@ export default function BlogEditor() {
                                 value={formData.slug}
                                 onChange={handleChange} // Allow manual edit if needed
                                 placeholder="my-blog-post-url"
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -191,7 +191,7 @@ export default function BlogEditor() {
                                 onChange={handleChange}
                                 rows="3"
                                 placeholder="Short summary for preview cards..."
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -235,7 +235,7 @@ export default function BlogEditor() {
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             >
                                 <option value="published">Published</option>
                                 <option value="draft">Draft</option>
@@ -250,7 +250,7 @@ export default function BlogEditor() {
                                 name="featured"
                                 checked={formData.featured}
                                 onChange={handleChange}
-                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                                className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500"
                             />
                             <label htmlFor="featured" className="text-sm text-slate-700 dark:text-slate-300 select-none cursor-pointer">
                                 Mark as Featured Post
@@ -272,7 +272,7 @@ export default function BlogEditor() {
                                 value={formData.category}
                                 onChange={handleChange}
                                 placeholder="Technology, Guide..."
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -285,7 +285,7 @@ export default function BlogEditor() {
                                 name="author"
                                 value={formData.author}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -298,7 +298,7 @@ export default function BlogEditor() {
                                 name="read_time"
                                 value={formData.read_time}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 
@@ -320,7 +320,7 @@ export default function BlogEditor() {
                                     setFormData(prev => ({ ...prev, keywords: tags }));
                                 }}
                                 placeholder="seo, marketing, guide"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
                     </div>
@@ -342,7 +342,7 @@ export default function BlogEditor() {
                                 value={formData.image}
                                 onChange={handleChange}
                                 placeholder="https://..."
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
 

@@ -93,7 +93,7 @@ export default function DetailSidebar({ isOpen, onClose, entityType, entityId, t
             ></div>
 
             {/* Sidebar Panel */}
-            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
                     <div className="flex items-start justify-between">

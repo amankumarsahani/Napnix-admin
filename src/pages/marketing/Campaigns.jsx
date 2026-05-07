@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { campaignsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import { createStatusColorFn } from '../../utils/statusColors';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -110,17 +111,7 @@ const Campaigns = () => {
         }
     };
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'draft': return 'bg-slate-100 text-slate-700 border-slate-200';
-            case 'scheduled': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'sending': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'paused': return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'failed': return 'bg-rose-100 text-rose-700 border-rose-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
-    };
+    const getStatusColor = createStatusColorFn('campaign');
 
     if (loading) {
         return (
@@ -446,7 +437,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-slate-900 dark:text-white">

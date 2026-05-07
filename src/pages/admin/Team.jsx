@@ -138,7 +138,7 @@ export default function Team() {
             </div>
 
             {/* List */}
-            <div className="glass-panel overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
@@ -204,8 +204,8 @@ export default function Team() {
 
             {/* Invite/Add Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-200 border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border border-transparent dark:border-slate-700">
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Add New Employee</h2>
                         <form onSubmit={handleInvite} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -290,8 +290,8 @@ export default function Team() {
 
             {/* Success Modal - Email Sent */}
             {showSuccessModal && createdUser && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200 text-center border border-transparent dark:border-slate-700">
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-sm w-full shadow-2xl text-center border border-transparent dark:border-slate-700">
                         <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
                             {createdUser.emailSent ? (
                                 <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

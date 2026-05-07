@@ -103,7 +103,7 @@ export default function DocumentEdit() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Editor Panel */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4">
+                    <div className="bg-white rounded-xl border border-slate-100 p-6 space-y-4">
                         <h3 className="font-semibold text-slate-900">Template Details</h3>
 
                         <div>
@@ -141,7 +141,7 @@ export default function DocumentEdit() {
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+                    <div className="bg-white rounded-xl border border-slate-100 p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-semibold text-slate-900">HTML Content</h3>
                             <span className="text-xs text-slate-400">Use {"{{variable_name}}"} for dynamic fields</span>
@@ -158,7 +158,7 @@ export default function DocumentEdit() {
 
                 {/* Preview Panel */}
                 <div className="lg:sticky lg:top-6">
-                    <div className="bg-white rounded-2xl border border-slate-100 p-6">
+                    <div className="bg-white rounded-xl border border-slate-100 p-6">
                         <h3 className="font-semibold text-slate-900 mb-4">Live Preview</h3>
                         <div
                             className="border border-slate-200 rounded-xl p-6 bg-slate-50 min-h-[600px] overflow-y-auto"

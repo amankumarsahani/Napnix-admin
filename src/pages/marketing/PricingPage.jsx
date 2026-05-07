@@ -108,7 +108,7 @@ export default function PricingPage() {
                     </p>
 
                     <div className="mt-8 flex flex-col items-center gap-6">
-                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
                             <button
                                 onClick={() => setBillingCycle('monthly')}
                                 className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-lg' : 'text-slate-500'}`}
@@ -143,7 +143,7 @@ export default function PricingPage() {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative flex flex-col bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border-2 transition-all hover:scale-[1.02] ${plan.id === 'growth' ? 'border-brand-500 shadow-brand-500/10' : 'border-transparent'
+                            className={`relative flex flex-col bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border-2 transition-colors ${plan.id === 'growth' ? 'border-brand-500' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}
                         >
                             {plan.id === 'growth' && (
@@ -173,8 +173,8 @@ export default function PricingPage() {
                             </ul>
                             <button
                                 onClick={() => handleBuy(plan.id)}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
-                                    ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-brand-600/30'
+                                className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
+                                    ? 'bg-brand-600 text-white hover:bg-brand-700'
                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                             >
