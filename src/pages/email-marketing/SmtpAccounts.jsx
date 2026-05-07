@@ -106,7 +106,7 @@ export default function SmtpAccounts() {
             toast.success('Account deleted');
             setDeleteTarget(null);
             queryClient.invalidateQueries({ queryKey: ['nexmail-smtp'] });
-        } catch (e) {
+        } catch {
             toast.error('Failed to delete');
         }
     };
