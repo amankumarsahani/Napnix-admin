@@ -554,6 +554,10 @@ export const settingsAPI = {
     testAI: async (provider, apiKey) => {
         const response = await apiClient.post('/settings/test-ai', { provider, apiKey });
         return response.data;
+    },
+    testSmtp: async (data) => {
+        const response = await apiClient.post('/settings/test-smtp', data);
+        return response.data;
     }
 };
 
