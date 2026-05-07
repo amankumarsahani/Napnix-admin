@@ -334,7 +334,7 @@ const NUM_TO_A2 = {
     '634':'QA','642':'RO','643':'RU','646':'RW','682':'SA','686':'SN',
     '694':'SL','703':'SK','705':'SI','706':'SO','710':'ZA','716':'ZW',
     '724':'ES','729':'SD','740':'SR','752':'SE','756':'CH','760':'SY',
-    '762':'TJ','764':'TH','768':'TG','780':'TT','788':'TN','792':'TR',
+    '762':'TJ','764':'TH','768':'TG','788':'TN','792':'TR',
     '800':'UG','804':'UA','784':'AE','826':'GB','834':'TZ','840':'US',
     '858':'UY','860':'UZ','862':'VE','704':'VN','887':'YE','894':'ZM',
     '275':'PS','882':'WS','780':'TT','050':'BD','076':'BR',
@@ -514,13 +514,13 @@ export default function SiteAnalytics() {
     });
 
     const { data: overview,  isLoading: ovLoading,  refetch: refetchOv }  = useQuery({ ...qOpts('getOverview'), queryFn: () => siteAnalyticsAPI.getOverview(range) });
-    const { data: timeSeries, isLoading: tsLoading }                        = useQuery({ queryKey: ['getTimeSeries', range],  queryFn: () => siteAnalyticsAPI.getTimeSeries(range) });
-    const { data: pages,      isLoading: pgLoading }                        = useQuery({ queryKey: ['getPages', range],       queryFn: () => siteAnalyticsAPI.getPages(range) });
-    const { data: sources,    isLoading: srcLoading }                       = useQuery({ queryKey: ['getTrafficSources', range], queryFn: () => siteAnalyticsAPI.getTrafficSources(range) });
-    const { data: devices,    isLoading: devLoading }                       = useQuery({ queryKey: ['getDevices', range],     queryFn: () => siteAnalyticsAPI.getDevices(range) });
-    const { data: geography,  isLoading: geoLoading }                       = useQuery({ queryKey: ['getGeography', range],  queryFn: () => siteAnalyticsAPI.getGeography(range) });
-    const { data: journey,    isLoading: jrLoading }                        = useQuery({ queryKey: ['getJourney', range],    queryFn: () => siteAnalyticsAPI.getJourney(range) });
-    const { data: events,     isLoading: evLoading }                        = useQuery({ queryKey: ['getEvents', range],     queryFn: () => siteAnalyticsAPI.getEvents(range) });
+    const { data: timeSeries, isLoading: tsLoading, refetch: refetchTs }   = useQuery({ queryKey: ['getTimeSeries', range],  queryFn: () => siteAnalyticsAPI.getTimeSeries(range) });
+    const { data: pages,      isLoading: pgLoading, refetch: refetchPg }   = useQuery({ queryKey: ['getPages', range],       queryFn: () => siteAnalyticsAPI.getPages(range) });
+    const { data: sources,    isLoading: srcLoading, refetch: refetchSrc } = useQuery({ queryKey: ['getTrafficSources', range], queryFn: () => siteAnalyticsAPI.getTrafficSources(range) });
+    const { data: devices,    isLoading: devLoading, refetch: refetchDev } = useQuery({ queryKey: ['getDevices', range],     queryFn: () => siteAnalyticsAPI.getDevices(range) });
+    const { data: geography,  isLoading: geoLoading, refetch: refetchGeo } = useQuery({ queryKey: ['getGeography', range],  queryFn: () => siteAnalyticsAPI.getGeography(range) });
+    const { data: journey,    isLoading: jrLoading, refetch: refetchJr }   = useQuery({ queryKey: ['getJourney', range],    queryFn: () => siteAnalyticsAPI.getJourney(range) });
+    const { data: events,     isLoading: evLoading, refetch: refetchEv }   = useQuery({ queryKey: ['getEvents', range],     queryFn: () => siteAnalyticsAPI.getEvents(range) });
     const { data: heatmapData, isLoading: hmLoading, refetch: refetchHm }  = useQuery({
         queryKey: ['getHeatmap', heatmapPage, range],
         queryFn:  () => siteAnalyticsAPI.getHeatmap(heatmapPage || undefined, range),
@@ -533,7 +533,22 @@ export default function SiteAnalytics() {
         }
     }, [heatmapData, heatmapPage]);
 
-    const handleRefresh = useCallback(() => refetchOv(), [refetchOv]);
+    useEffect(() => {
+        setAiInsight(null);
+        setAiError(null);
+    }, [range]);
+
+    const handleRefresh = useCallback(() => Promise.all([
+        refetchOv(),
+        refetchTs(),
+        refetchPg(),
+        refetchSrc(),
+        refetchDev(),
+        refetchGeo(),
+        refetchJr(),
+        refetchEv(),
+        refetchHm(),
+    ]), [refetchDev, refetchEv, refetchGeo, refetchHm, refetchJr, refetchOv, refetchPg, refetchSrc, refetchTs]);
 
     const handleAIAnalysis = async () => {
         setAiLoading(true);
@@ -560,6 +575,13 @@ export default function SiteAnalytics() {
 
     const maxPageViews = Math.max(...(pages || []).map(p => Number(p.views)), 1);
     const maxCountry   = Math.max(...(geography?.countries || []).map(c => Number(c.events)), 1);
+    const nexmailPage  = (pages || []).find((p) => p.path === '/nexmail' || p.path?.startsWith('/nexmail?'));
+    const nexmailEntry = (journey?.entryPages || []).find((p) => p.path?.startsWith('/nexmail'));
+    const nexmailExit  = (journey?.exitPages || []).find((p) => p.path?.startsWith('/nexmail'));
+    const nexmailClicks = (events?.topElements || [])
+        .filter((item) => item.path?.startsWith('/nexmail'))
+        .sort((a, b) => b.count - a.count);
+    const anyLoading = ovLoading || tsLoading || pgLoading || srcLoading || devLoading || geoLoading || jrLoading || evLoading || hmLoading;
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 lg:p-6 space-y-6">
@@ -598,7 +620,7 @@ export default function SiteAnalytics() {
                         className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 hover:text-brand-600 transition-colors"
                         title="Refresh"
                     >
-                        <FiRefreshCw size={16} className={ovLoading ? 'animate-spin' : ''} />
+                        <FiRefreshCw size={16} className={anyLoading ? 'animate-spin' : ''} />
                     </button>
                 </div>
             </div>
@@ -614,6 +636,65 @@ export default function SiteAnalytics() {
             </div>
 
             {/* ── Traffic Timeline ── */}
+            <Card className="p-5">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+                    <div>
+                        <SectionTitle icon={<FiZap size={16} />} title="NexMail Landing Snapshot" subtitle="Focused analysis for the public /nexmail route" />
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
+                            This block follows the selected date range and gives a quick read on how the NexMail landing page is performing inside the current analytics window.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Views</p>
+                            <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{fmt(nexmailPage?.views)}</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Sessions</p>
+                            <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{fmt(nexmailPage?.unique_sessions)}</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Entries</p>
+                            <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{fmt(nexmailEntry?.count)}</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Exits</p>
+                            <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{fmt(nexmailExit?.count)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Top CTA interaction</p>
+                        {nexmailClicks[0] ? (
+                            <>
+                                <p className="text-sm font-bold text-slate-800 dark:text-white">{nexmailClicks[0].text || nexmailClicks[0].element}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{fmt(nexmailClicks[0].count)} clicks in the selected range</p>
+                            </>
+                        ) : (
+                            <p className="text-sm text-slate-500 dark:text-slate-400">No recorded click interactions yet for /nexmail in this range.</p>
+                        )}
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Entry signal</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                            {nexmailEntry?.count
+                                ? `/nexmail started ${fmt(nexmailEntry.count)} visitor journeys in this window.`
+                                : 'No direct entry sessions to /nexmail are recorded in this window yet.'}
+                        </p>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Exit signal</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                            {nexmailExit?.count
+                                ? `/nexmail was the final viewed page in ${fmt(nexmailExit.count)} sessions.`
+                                : 'No exit-session concentration on /nexmail is visible in this window yet.'}
+                        </p>
+                    </div>
+                </div>
+            </Card>
+
             <Card className="p-5">
                 <SectionTitle icon={<FiTrendingUp size={16} />} title="Traffic Over Time" subtitle="Daily page views and click events" />
                 {tsLoading ? (
