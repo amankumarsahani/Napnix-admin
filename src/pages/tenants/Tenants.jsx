@@ -375,6 +375,7 @@ const Tenants = () => {
 };
 
 const CreateTenantModal = ({ onClose, onCreated }) => {
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
     const [formData, setFormData] = useState({
