@@ -168,6 +168,7 @@ export const tenantsAPI = {
     },
     endTrial: async (id) => { const r = await apiClient.post(`/tenants/${id}/end-trial`); return r.data; },
     sendPaymentLink: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/send-payment-link`, data); return r.data; },
+    sendBillingInvoice: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/send-billing-invoice`, data); return r.data; },
     markPaid: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/mark-paid`, data); return r.data; },
     sendAgreement: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-agreement`); return r.data; },
 };
