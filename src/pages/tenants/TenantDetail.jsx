@@ -34,6 +34,7 @@ const TenantDetail = () => {
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
     const [sendingAgreement, setSendingAgreement] = useState(false);
+    const [sendingBillingInvoice, setSendingBillingInvoice] = useState(false);
     const [savingBilling, setSavingBilling] = useState(false);
     const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(null);
     const [toolActionLoading, setToolActionLoading] = useState(null);
@@ -46,6 +47,10 @@ const TenantDetail = () => {
         follow_up_action: 'none'
     });
     const [toolForms, setToolForms] = useState({});
+    const [billingRequestForm, setBillingRequestForm] = useState({
+        billing_month: new Date().toISOString().slice(0, 7),
+        due_date: ''
+    });
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
@@ -354,6 +359,10 @@ const TenantDetail = () => {
         }));
     };
 
+    const handleBillingRequestFormChange = (field, value) => {
+        setBillingRequestForm((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleSaveBilling = async () => {
         if (!tenant) return;
 
@@ -403,6 +412,26 @@ const TenantDetail = () => {
             toast.error(error.response?.data?.error || 'Failed to pause subscription');
         } finally {
             setSubscriptionActionLoading(null);
+        }
+    };
+
+    const handleSendBillingInvoice = async () => {
+        if (!tenant) return;
+
+        setSendingBillingInvoice(true);
+        try {
+            const response = await tenantsAPI.sendBillingInvoice(tenant.id, {
+                billing_cycle: billingForm.billing_cycle,
+                billing_month: billingRequestForm.billing_month,
+                due_date: billingRequestForm.due_date || undefined,
+                amount: effectiveAmount ? Number(effectiveAmount) : undefined
+            });
+            toast.success(response.message || 'Invoice and payment link sent.');
+            await fetchPayments();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to send billing invoice');
+        } finally {
+            setSendingBillingInvoice(false);
         }
     };
 
@@ -531,6 +560,10 @@ const TenantDetail = () => {
     const trialDaysRemaining = tenant?.trial_ends_at
         ? Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / 86400000)
         : null;
+    const currentMonthValue = new Date().toISOString().slice(0, 7);
+    const previousMonthDate = new Date();
+    previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
+    const previousMonthValue = `${previousMonthDate.getFullYear()}-${String(previousMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
     if (loading) {
         return (
@@ -1001,6 +1034,82 @@ const TenantDetail = () => {
                                     <FiCheckCircle className="w-4 h-4" />
                                 )}
                                 Save Billing Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                        <div>
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Send Billing Invoice</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Send a PDF invoice plus Razorpay payment link for a specific billing month. Use this for previous month dues or the current cycle.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => handleBillingRequestFormChange('billing_month', previousMonthValue)}
+                                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm"
+                            >
+                                Previous Month
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleBillingRequestFormChange('billing_month', currentMonthValue)}
+                                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm"
+                            >
+                                Current Month
+                            </button>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Billing Month</label>
+                                <input
+                                    type="month"
+                                    value={billingRequestForm.billing_month}
+                                    onChange={(e) => handleBillingRequestFormChange('billing_month', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Due Date</label>
+                                <input
+                                    type="date"
+                                    value={billingRequestForm.due_date}
+                                    onChange={(e) => handleBillingRequestFormChange('due_date', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                            <div className="flex items-end">
+                                <div className="w-full rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-3">
+                                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Invoice Amount</div>
+                                    <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                        ₹{Number(effectiveAmount || 0).toFixed(2)}
+                                    </div>
+                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        Uses the manual amount above when entered, otherwise the selected plan amount.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleSendBillingInvoice}
+                                disabled={sendingBillingInvoice || !billingRequestForm.billing_month}
+                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            >
+                                {sendingBillingInvoice ? (
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                ) : (
+                                    <FiCreditCard className="w-4 h-4" />
+                                )}
+                                Send Invoice + Payment Link
                             </button>
                         </div>
                     </div>
