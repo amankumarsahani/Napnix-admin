@@ -40,7 +40,7 @@ const Tenants = () => {
             setTenants(tenantsRes.data || []);
             setPagination(tenantsRes.pagination);
             setStats(statsRes.data);
-        } catch (error) {
+        } catch {
             if (retryCount < maxRetries) {
                 setTimeout(() => fetchData(retryCount + 1), retryDelay);
                 return;
@@ -77,7 +77,7 @@ const Tenants = () => {
                     break;
             }
             fetchData();
-        } catch (_error) {
+        } catch {
             toast.error(`Failed to ${action} tenant`);
         } finally {
             setActionLoading(prev => ({ ...prev, [tenantId]: null }));
@@ -217,7 +217,7 @@ const Tenants = () => {
                                                                         await tenantsAPI.update(tenant.id, { status: 'active' });
                                                                         toast.success('Tenant activated successfully');
                                                                         fetchData();
-                                                                    } catch (error) {
+                                                                    } catch {
                                                                         toast.error('Failed to activate tenant');
                                                                     }
                                                                 },
@@ -407,7 +407,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                         setFormData(prev => ({ ...prev, server_id: bestServer.id }));
                     }
                 }
-            } catch (_error) {
+            } catch {
                 toast.error('Failed to load form data');
             }
         };
@@ -450,6 +450,10 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-4 py-3 text-sm text-brand-700 dark:text-brand-300">
+                        New tenants are created automatically as a 14-day trial with the selected plan. You can adjust the trial, activate access, send a payment link, or mark them paid from the tenant detail page after creation.
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Company Name *
