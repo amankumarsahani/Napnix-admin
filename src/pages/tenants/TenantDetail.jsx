@@ -4,7 +4,7 @@ import {
     FiGlobe, FiDatabase, FiActivity, FiTerminal, FiTrash2,
     FiRefreshCw, FiExternalLink, FiServer, FiCreditCard, FiCheckCircle, FiXCircle, FiClock
 } from '../../components/icons/FeatherIcons';
-import { tenantsAPI, billingAPI } from '../../api';
+import { tenantsAPI, billingAPI, plansAPI, toolsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -13,6 +13,11 @@ const TenantDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [tenant, setTenant] = useState(null);
+    const [subscription, setSubscription] = useState(null);
+    const [plans, setPlans] = useState([]);
+    const [tools, setTools] = useState([]);
+    const [tenantTools, setTenantTools] = useState([]);
+    const [toolPlans, setToolPlans] = useState({});
     const [payments, setPayments] = useState([]);
     const [paymentsLoading, setPaymentsLoading] = useState(false);
     const [logs, setLogs] = useState('');
@@ -29,6 +34,18 @@ const TenantDetail = () => {
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
     const [sendingAgreement, setSendingAgreement] = useState(false);
+    const [savingBilling, setSavingBilling] = useState(false);
+    const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(null);
+    const [toolActionLoading, setToolActionLoading] = useState(null);
+    const [billingForm, setBillingForm] = useState({
+        plan_id: '',
+        status: 'trial',
+        trial_ends_at: '',
+        billing_cycle: 'monthly',
+        amount: '',
+        follow_up_action: 'none'
+    });
+    const [toolForms, setToolForms] = useState({});
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
@@ -44,9 +61,23 @@ const TenantDetail = () => {
         if (tenant) {
             fetchLogs();
             fetchPayments();
+            fetchSubscription();
+            fetchTenantTools();
+            setBillingForm(prev => ({
+                ...prev,
+                plan_id: tenant.plan_id ? String(tenant.plan_id) : '',
+                status: tenant.status || 'trial',
+                trial_ends_at: tenant.trial_ends_at ? new Date(tenant.trial_ends_at).toISOString().split('T')[0] : '',
+                amount: ''
+            }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tenant?.id]);
+
+    useEffect(() => {
+        fetchPlans();
+        fetchTools();
+    }, []);
 
     useEffect(() => {
         if (autoRefresh && tenant) {
@@ -63,7 +94,7 @@ const TenantDetail = () => {
             setLoading(true);
             const response = await tenantsAPI.getById(id);
             setTenant(response.data);
-        } catch (error) {
+        } catch {
             toast.error('Failed to fetch tenant');
         } finally {
             setLoading(false);
@@ -78,10 +109,83 @@ const TenantDetail = () => {
             if (response.success) {
                 setPayments(response.data);
             }
-        } catch (error) {
+        } catch {
             // silently ignore
         } finally {
             setPaymentsLoading(false);
+        }
+    };
+
+    const fetchSubscription = async () => {
+        if (!id) return;
+        try {
+            const response = await billingAPI.getSubscription(id);
+            if (response.success) {
+                setSubscription(response.data);
+                setBillingForm(prev => ({
+                    ...prev,
+                    billing_cycle: response.data?.billing_cycle || prev.billing_cycle || 'monthly'
+                }));
+            }
+        } catch {
+            setSubscription(null);
+        }
+    };
+
+    const fetchPlans = async () => {
+        try {
+            const response = await plansAPI.getAll();
+            if (response.success) {
+                setPlans(response.data || []);
+            }
+        } catch {
+            // silently ignore
+        }
+    };
+
+    const fetchTools = async () => {
+        try {
+            const response = await toolsAPI.getAll();
+            if (response.success) {
+                const toolList = response.data || [];
+                setTools(toolList);
+
+                const planResults = await Promise.all(
+                    toolList.map(async (tool) => {
+                        const plansResponse = await toolsAPI.getPlans(tool.id);
+                        return [tool.id, plansResponse.success ? (plansResponse.data || []) : []];
+                    })
+                );
+
+                setToolPlans(Object.fromEntries(planResults));
+            }
+        } catch {
+            // silently ignore
+        }
+    };
+
+    const fetchTenantTools = async () => {
+        if (!id) return;
+        try {
+            const response = await toolsAPI.getTenantTools(id);
+            if (response.success) {
+                const assignments = response.data || [];
+                setTenantTools(assignments);
+                setToolForms((prev) => {
+                    const next = { ...prev };
+                    assignments.forEach((assignment) => {
+                        next[assignment.tool_id] = {
+                            tool_plan_id: assignment.tool_plan_id ? String(assignment.tool_plan_id) : '',
+                            trial_days: assignment.status === 'trial' && assignment.trial_ends_at
+                                ? Math.max(1, Math.ceil((new Date(assignment.trial_ends_at).getTime() - Date.now()) / 86400000))
+                                : ''
+                        };
+                    });
+                    return next;
+                });
+            }
+        } catch {
+            setTenantTools([]);
         }
     };
 
@@ -94,7 +198,7 @@ const TenantDetail = () => {
             if (logsRef.current) {
                 logsRef.current.scrollTop = logsRef.current.scrollHeight;
             }
-        } catch (error) {
+        } catch {
             setLogs('Error fetching logs');
         } finally {
             setLogsLoading(false);
@@ -124,7 +228,7 @@ const TenantDetail = () => {
             }
             await fetchTenant();
             await fetchLogs();
-        } catch (_error) {
+        } catch {
             toast.error(`Failed to ${action} tenant`);
         } finally {
             setActionLoading(null);
@@ -142,7 +246,7 @@ const TenantDetail = () => {
             await tenantsAPI.fullDelete(tenant.id, deleteOptions);
             toast.success('Tenant fully deleted');
             navigate('/tenants');
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete tenant');
         } finally {
             setDeleteLoading(false);
@@ -175,19 +279,6 @@ const TenantDetail = () => {
             api: ''
         });
         setShowDomainModal(true);
-    };
-
-    const handleRestartProcess = async () => {
-        setActionLoading('restart');
-        try {
-            await tenantsAPI.restartProcess(tenant.id);
-            toast.success('Process restarting');
-            setTimeout(fetchTenant, 2000);
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to restart process');
-        } finally {
-            setActionLoading(null);
-        }
     };
 
     const handleEndTrial = () => {
@@ -224,7 +315,9 @@ const TenantDetail = () => {
                 setConfirmState({ isOpen: false });
                 setActionLoading('sendPayment');
                 try {
-                    const res = await tenantsAPI.sendPaymentLink(tenant.id);
+                    const res = await tenantsAPI.sendPaymentLink(tenant.id, {
+                        billing_cycle: billingForm.billing_cycle || 'monthly'
+                    });
                     toast.success(res.message || 'Payment link sent successfully.');
                 } catch (error) {
                     toast.error(error.response?.data?.error || 'Failed to send payment link');
@@ -244,6 +337,156 @@ const TenantDetail = () => {
             toast.error(error.response?.data?.error || 'Failed to send agreement');
         } finally {
             setSendingAgreement(false);
+        }
+    };
+
+    const handleBillingFormChange = (field, value) => {
+        setBillingForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleToolFormChange = (toolId, field, value) => {
+        setToolForms((prev) => ({
+            ...prev,
+            [toolId]: {
+                ...(prev[toolId] || {}),
+                [field]: value
+            }
+        }));
+    };
+
+    const handleSaveBilling = async () => {
+        if (!tenant) return;
+
+        setSavingBilling(true);
+        try {
+            await tenantsAPI.update(tenant.id, {
+                plan_id: billingForm.plan_id ? Number(billingForm.plan_id) : null,
+                status: billingForm.status,
+                trial_ends_at: billingForm.trial_ends_at || null
+            });
+
+            if (billingForm.follow_up_action === 'send_payment_link') {
+                const response = await tenantsAPI.sendPaymentLink(tenant.id, {
+                    billing_cycle: billingForm.billing_cycle
+                });
+                toast.success(response.message || 'Billing updated and payment link sent.');
+            } else if (billingForm.follow_up_action === 'mark_paid') {
+                const response = await tenantsAPI.markPaid(tenant.id, {
+                    billing_cycle: billingForm.billing_cycle,
+                    amount: billingForm.amount ? Number(billingForm.amount) : undefined
+                });
+                toast.success(response.message || 'Billing updated and tenant marked as paid.');
+            } else {
+                toast.success('Billing settings updated.');
+            }
+
+            await fetchTenant();
+            await fetchSubscription();
+            await fetchPayments();
+            setBillingForm(prev => ({ ...prev, amount: '', follow_up_action: 'none' }));
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to update billing settings');
+        } finally {
+            setSavingBilling(false);
+        }
+    };
+
+    const handlePauseSubscription = async () => {
+        if (!tenant) return;
+        setSubscriptionActionLoading('pause');
+        try {
+            const response = await billingAPI.pauseSubscription(tenant.id);
+            toast.success(response.message || 'Subscription paused.');
+            await fetchTenant();
+            await fetchSubscription();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to pause subscription');
+        } finally {
+            setSubscriptionActionLoading(null);
+        }
+    };
+
+    const handleResumeSubscription = async () => {
+        if (!tenant) return;
+        setSubscriptionActionLoading('resume');
+        try {
+            const response = await billingAPI.resumeSubscription(tenant.id);
+            toast.success(response.message || 'Subscription resumed.');
+            await fetchTenant();
+            await fetchSubscription();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Failed to resume subscription');
+        } finally {
+            setSubscriptionActionLoading(null);
+        }
+    };
+
+    const handleCancelSubscription = (immediate) => {
+        if (!tenant) return;
+        setConfirmState({
+            isOpen: true,
+            title: immediate ? 'Cancel Subscription Now' : 'Cancel At Period End',
+            message: immediate
+                ? 'This will cancel the current subscription immediately and stop active tenant access.'
+                : 'This will ask Razorpay to cancel the subscription at the end of the current billing period.',
+            variant: 'warning',
+            confirmText: immediate ? 'Cancel Now' : 'Schedule Cancel',
+            onConfirm: async () => {
+                setConfirmState({ isOpen: false });
+                setSubscriptionActionLoading(immediate ? 'cancel-now' : 'cancel-later');
+                try {
+                    const response = await billingAPI.cancelSubscription(tenant.id, { immediate });
+                    toast.success(response.message || 'Subscription updated.');
+                    await fetchTenant();
+                    await fetchSubscription();
+                } catch (error) {
+                    toast.error(error.response?.data?.error || 'Failed to cancel subscription');
+                } finally {
+                    setSubscriptionActionLoading(null);
+                }
+            }
+        });
+    };
+
+    const handleEnableTool = async (tool) => {
+        if (!tenant) return;
+        const formState = toolForms[tool.id] || {};
+        setToolActionLoading(`enable-${tool.id}`);
+        try {
+            if (tool.slug === 'nexcrm') {
+                const response = await toolsAPI.enableCRM(tenant.id, {
+                    plan_id: billingForm.plan_id ? Number(billingForm.plan_id) : tenant.plan_id,
+                    server_id: tenant.server_id || undefined
+                });
+                toast.success(response.message || 'CRM provisioning started.');
+            } else {
+                const response = await toolsAPI.enableTool(tenant.id, {
+                    tool_id: tool.id,
+                    tool_plan_id: formState.tool_plan_id ? Number(formState.tool_plan_id) : null,
+                    trial_days: formState.trial_days ? Number(formState.trial_days) : null
+                });
+                toast.success(response.message || `${tool.name} enabled.`);
+            }
+            await fetchTenant();
+            await fetchTenantTools();
+        } catch (error) {
+            toast.error(error.response?.data?.error || `Failed to enable ${tool.name}`);
+        } finally {
+            setToolActionLoading(null);
+        }
+    };
+
+    const handleDisableTool = async (tool) => {
+        if (!tenant) return;
+        setToolActionLoading(`disable-${tool.id}`);
+        try {
+            const response = await toolsAPI.disableTool(tenant.id, { tool_id: tool.id });
+            toast.success(response.message || `${tool.name} disabled.`);
+            await fetchTenantTools();
+        } catch (error) {
+            toast.error(error.response?.data?.error || `Failed to disable ${tool.name}`);
+        } finally {
+            setToolActionLoading(null);
         }
     };
 
@@ -275,6 +518,19 @@ const TenantDetail = () => {
             default: return 'bg-slate-400';
         }
     };
+
+    const selectedPlan = plans.find((plan) => String(plan.id) === String(billingForm.plan_id));
+    const suggestedAmount = selectedPlan
+        ? Number(billingForm.billing_cycle === 'yearly' ? selectedPlan.price_yearly : selectedPlan.price_monthly)
+        : 0;
+    const effectiveAmount = billingForm.amount || (suggestedAmount ? String(suggestedAmount) : '');
+    const tenantToolMap = tenantTools.reduce((acc, assignment) => {
+        acc[assignment.tool_id] = assignment;
+        return acc;
+    }, {});
+    const trialDaysRemaining = tenant?.trial_ends_at
+        ? Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / 86400000)
+        : null;
 
     if (loading) {
         return (
@@ -555,6 +811,299 @@ const TenantDetail = () => {
                             </svg>
                         )}
                     </h3>
+                </div>
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 space-y-6">
+                    <div className="grid md:grid-cols-5 gap-4">
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Current Plan</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">{subscription?.plan_name || tenant.plan_name || 'Unassigned'}</div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Subscription</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white capitalize">{subscription?.status || 'Not created yet'}</div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Billing Cycle</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white capitalize">{subscription?.billing_cycle || billingForm.billing_cycle}</div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Current Period Ends</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                {subscription?.current_period_end
+                                    ? new Date(subscription.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                    : 'Not set'}
+                            </div>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Trial Ends</div>
+                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                                {tenant.trial_ends_at
+                                    ? new Date(tenant.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                    : 'No trial'}
+                            </div>
+                            {tenant.status === 'trial' && trialDaysRemaining !== null && (
+                                <div className={`mt-1 text-xs ${trialDaysRemaining >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                    {trialDaysRemaining >= 0 ? `${trialDaysRemaining} day(s) remaining` : 'Trial expired'}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            onClick={handlePauseSubscription}
+                            disabled={!subscription || subscription.status !== 'active' || subscriptionActionLoading}
+                            className="px-4 py-2.5 rounded-lg border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50 transition-colors"
+                        >
+                            {subscriptionActionLoading === 'pause' ? 'Pausing...' : 'Pause Subscription'}
+                        </button>
+                        <button
+                            onClick={handleResumeSubscription}
+                            disabled={!subscription || subscription.status !== 'paused' || subscriptionActionLoading}
+                            className="px-4 py-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-50 transition-colors"
+                        >
+                            {subscriptionActionLoading === 'resume' ? 'Resuming...' : 'Resume Subscription'}
+                        </button>
+                        <button
+                            onClick={() => handleCancelSubscription(false)}
+                            disabled={!subscription || ['cancelled', 'expired'].includes(subscription.status) || subscriptionActionLoading}
+                            className="px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                        >
+                            {subscriptionActionLoading === 'cancel-later' ? 'Scheduling...' : 'Cancel At Period End'}
+                        </button>
+                        <button
+                            onClick={() => handleCancelSubscription(true)}
+                            disabled={!subscription || ['cancelled', 'expired'].includes(subscription.status) || subscriptionActionLoading}
+                            className="px-4 py-2.5 rounded-lg border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 transition-colors"
+                        >
+                            {subscriptionActionLoading === 'cancel-now' ? 'Cancelling...' : 'Cancel Immediately'}
+                        </button>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Edit Trial & Billing</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    New tenants already start automatically as a 14-day trial. Use this form to change the plan, edit the trial end date, activate access, send a payment link, or mark the tenant as paid.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Plan</label>
+                                <select
+                                    value={billingForm.plan_id}
+                                    onChange={(e) => handleBillingFormChange('plan_id', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                >
+                                    <option value="">Select Plan</option>
+                                    {plans.map((plan) => (
+                                        <option key={plan.id} value={plan.id}>
+                                            {plan.name} - ₹{plan.price_monthly}/mo
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Tenant Status</label>
+                                <select
+                                    value={billingForm.status}
+                                    onChange={(e) => handleBillingFormChange('status', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                >
+                                    <option value="trial">Trial</option>
+                                    <option value="active">Active</option>
+                                    <option value="suspended">Suspended</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Trial Ends On</label>
+                                <input
+                                    type="date"
+                                    value={billingForm.trial_ends_at}
+                                    onChange={(e) => handleBillingFormChange('trial_ends_at', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Billing Cycle</label>
+                                <select
+                                    value={billingForm.billing_cycle}
+                                    onChange={(e) => handleBillingFormChange('billing_cycle', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                >
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Manual Amount</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={billingForm.amount}
+                                    onChange={(e) => handleBillingFormChange('amount', e.target.value)}
+                                    placeholder={suggestedAmount ? `${suggestedAmount}` : 'Auto from plan'}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                />
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    {selectedPlan
+                                        ? `Suggested ${billingForm.billing_cycle} amount: ₹${suggestedAmount.toFixed(2)}`
+                                        : 'Pick a plan to auto-suggest the amount.'}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">After Save</label>
+                                <select
+                                    value={billingForm.follow_up_action}
+                                    onChange={(e) => handleBillingFormChange('follow_up_action', e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                >
+                                    <option value="none">Do nothing</option>
+                                    <option value="send_payment_link">Send payment link</option>
+                                    <option value="mark_paid">Mark paid & activate</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {billingForm.follow_up_action === 'mark_paid' && (
+                            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+                                Saving will record a successful manual payment of ₹{Number(effectiveAmount || 0).toFixed(2)} and activate the tenant.
+                            </div>
+                        )}
+
+                        {billingForm.follow_up_action === 'send_payment_link' && (
+                            <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-4 py-3 text-sm text-brand-700 dark:text-brand-300">
+                                Saving will keep the edited plan/trial values and email a payment link to the tenant.
+                            </div>
+                        )}
+
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleSaveBilling}
+                                disabled={savingBilling}
+                                className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                            >
+                                {savingBilling ? (
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                ) : (
+                                    <FiCheckCircle className="w-4 h-4" />
+                                )}
+                                Save Billing Changes
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                        <div>
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Tenant Tools</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Enable or suspend add-on products per tenant. CRM provisioning is special-cased and uses the tenant infrastructure already assigned.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-4">
+                            {tools.map((tool) => {
+                                const assignment = tenantToolMap[tool.id];
+                                const formState = toolForms[tool.id] || {};
+                                const plansForTool = toolPlans[tool.id] || [];
+                                const isEnabled = Boolean(assignment) && !['suspended', 'cancelled'].includes(assignment.status);
+                                const loadingKey = isEnabled ? `disable-${tool.id}` : `enable-${tool.id}`;
+
+                                return (
+                                    <div key={tool.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-4">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h5 className="font-semibold text-slate-900 dark:text-white">{tool.name}</h5>
+                                                    <span className={`px-2 py-0.5 text-xs rounded-full ${isEnabled ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                                                        {assignment?.status || 'not enabled'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tool.description}</p>
+                                                {assignment?.plan_name && (
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                                        Current plan: <span className="font-medium text-slate-700 dark:text-slate-200">{assignment.plan_name}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {tool.slug !== 'nexcrm' && isEnabled && (
+                                                    <button
+                                                        onClick={() => handleDisableTool(tool)}
+                                                        disabled={toolActionLoading === loadingKey}
+                                                        className="px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 transition-colors"
+                                                    >
+                                                        {toolActionLoading === loadingKey ? 'Disabling...' : 'Disable'}
+                                                    </button>
+                                                )}
+                                                {!isEnabled && (
+                                                    <button
+                                                        onClick={() => handleEnableTool(tool)}
+                                                        disabled={toolActionLoading === loadingKey}
+                                                        className="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
+                                                    >
+                                                        {toolActionLoading === loadingKey ? 'Enabling...' : tool.slug === 'nexcrm' ? 'Provision CRM' : 'Enable'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Tool Plan</label>
+                                                <select
+                                                    value={formState.tool_plan_id || ''}
+                                                    onChange={(e) => handleToolFormChange(tool.id, 'tool_plan_id', e.target.value)}
+                                                    disabled={tool.slug === 'nexcrm' || plansForTool.length === 0}
+                                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
+                                                >
+                                                    <option value="">No plan</option>
+                                                    {plansForTool.map((plan) => (
+                                                        <option key={plan.id} value={plan.id}>
+                                                            {plan.name} - ₹{plan.price_monthly}/mo
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Trial Days</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={formState.trial_days || ''}
+                                                    onChange={(e) => handleToolFormChange(tool.id, 'trial_days', e.target.value)}
+                                                    disabled={tool.slug === 'nexcrm'}
+                                                    placeholder="Leave empty for active"
+                                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
+                                                />
+                                            </div>
+                                            <div className="flex items-end">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                    {tool.slug === 'nexcrm'
+                                                        ? 'CRM uses tenant process/server provisioning and is managed separately from add-on tools.'
+                                                        : assignment?.trial_ends_at
+                                                            ? `Trial ends ${new Date(assignment.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                                            : 'Enable with a trial or direct active status.'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm border-collapse">

@@ -167,7 +167,8 @@ export const tenantsAPI = {
         return response.data;
     },
     endTrial: async (id) => { const r = await apiClient.post(`/tenants/${id}/end-trial`); return r.data; },
-    sendPaymentLink: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-payment-link`); return r.data; },
+    sendPaymentLink: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/send-payment-link`, data); return r.data; },
+    markPaid: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/mark-paid`, data); return r.data; },
     sendAgreement: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-agreement`); return r.data; },
 };
 
@@ -262,6 +263,22 @@ export const billingAPI = {
         const response = await apiClient.post('/billing/payment-link', data);
         return response.data;
     },
+    getSubscription: async (tenantId) => {
+        const response = await apiClient.get(`/billing/subscriptions/${tenantId}`);
+        return response.data;
+    },
+    pauseSubscription: async (tenantId) => {
+        const response = await apiClient.post(`/billing/subscriptions/${tenantId}/pause`);
+        return response.data;
+    },
+    resumeSubscription: async (tenantId) => {
+        const response = await apiClient.post(`/billing/subscriptions/${tenantId}/resume`);
+        return response.data;
+    },
+    cancelSubscription: async (tenantId, data = {}) => {
+        const response = await apiClient.post(`/billing/subscriptions/${tenantId}/cancel`, data);
+        return response.data;
+    },
     getTenantPayments: async (tenantId) => {
         const response = await apiClient.get(`/billing/payments/${tenantId}`);
         return response.data;
@@ -281,6 +298,10 @@ export const toolsAPI = {
     getAll: async () => { const r = await apiClient.get('/tools'); return r.data; },
     getPlans: async (toolId) => { const r = await apiClient.get(`/tools/${toolId}/plans`); return r.data; },
     getTenantTools: async (tenantId) => { const r = await apiClient.get(`/tools/tenant/${tenantId}`); return r.data; },
+    enableCRM: async (tenantId, data) => {
+        const response = await apiClient.post(`/tools/tenant/${tenantId}/enable-crm`, data);
+        return response.data;
+    },
     enableTool: async (tenantId, data) => {
         const response = await apiClient.post(`/tools/tenant/${tenantId}/enable`, data);
         return response.data;
