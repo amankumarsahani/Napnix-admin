@@ -1,6 +1,6 @@
 # Deploy Nexs-Admin to GitHub Pages
 
-This guide explains how to deploy the Nexs-Admin dashboard to GitHub Pages at `admin.nexspiresolutions.co.in`.
+This guide explains how to deploy the Nexs-Admin dashboard to GitHub Pages at `admin.napnix.in`.
 
 ## Quick Deploy
 
@@ -16,7 +16,7 @@ This command will:
 
 ### 1. Enable GitHub Pages
 
-1. Go to your GitHub repository: `https://github.com/amankumarsahani/NexSpireSolutions`
+1. Go to your GitHub repository: `https://github.com/amankumarsahani/Napnix`
 2. Click **Settings** → **Pages**
 3. Under **Source**, select:
    - **Source**: Deploy from a branch
@@ -28,7 +28,7 @@ This command will:
 
 In the same **Pages** settings:
 
-1. Under **Custom domain**, enter: `admin.nexspiresolutions.co.in`
+1. Under **Custom domain**, enter: `admin.napnix.in`
 2. Click **Save**
 3. Wait for DNS check to complete
 4. Enable **Enforce HTTPS** (after DNS propagates)
@@ -84,7 +84,7 @@ This creates a `gh-pages` branch and pushes the built files.
 
 2. **Visit the Site**:
    - Temporary URL: `https://amankumarsahani.github.io/nexs-admin/`
-   - Custom domain: `https://admin.nexspiresolutions.co.in` (after DNS setup)
+   - Custom domain: `https://admin.napnix.in` (after DNS setup)
 
 3. **Test Functionality**:
    - Login page loads
@@ -101,14 +101,14 @@ The app is configured with base path `/nexs-admin/` in `vite.config.js`. This is
 
 Production API URL is set in the GitHub Actions workflow:
 ```yaml
-VITE_API_URL: https://api.nexspiresolutions.co.in/api
+VITE_API_URL: https://api.napnix.in/api
 ```
 
 ### CORS Configuration
 
 Backend already includes admin subdomain in CORS:
 ```javascript
-'https://admin.nexspiresolutions.co.in'
+'https://admin.napnix.in'
 ```
 
 ## Troubleshooting

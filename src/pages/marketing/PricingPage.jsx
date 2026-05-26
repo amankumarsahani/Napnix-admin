@@ -33,7 +33,7 @@ const plans = [
 export default function PricingPage() {
     const [usePaymentLink, setUsePaymentLink] = useState(true);
     const [billingCycle, setBillingCycle] = useState('monthly');
-    const [contactEmail, setContactEmail] = useState('sales@nexspire.com');
+    const [contactEmail, setContactEmail] = useState('sales@napnix.com');
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -60,7 +60,7 @@ export default function PricingPage() {
 
     const handleBuy = async (planId) => {
         if (!usePaymentLink) {
-            window.location.href = `mailto:${contactEmail}?subject=Nexspire%20Subscription%20Inquiry:%20${planId}%20Plan%20(${billingCycle})`;
+            window.location.href = `mailto:${contactEmail}?subject=Napnix%20Subscription%20Inquiry:%20${planId}%20Plan%20(${billingCycle})`;
             return;
         }
 
@@ -101,7 +101,7 @@ export default function PricingPage() {
                 <div className="text-center mb-16">
                     <h2 className="text-base font-semibold text-brand-600 dark:text-brand-400 tracking-wide uppercase">Pricing Plans</h2>
                     <p className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-white sm:text-5xl lg:text-6xl tracking-tight">
-                        Scale your business with <span className="text-brand-600">Nexspire</span>
+                        Scale your business with <span className="text-brand-600">Napnix</span>
                     </p>
                     <p className="mt-4 max-w-2xl text-xl text-slate-500 dark:text-slate-400 mx-auto">
                         Choose the perfect plan for your business needs. No hidden fees.

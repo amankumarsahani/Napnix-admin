@@ -32,7 +32,7 @@ export default function ToolRegistry() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tool Registry</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage Nexspire platform tools and services</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage Napnix platform tools and services</p>
                 </div>
             </div>
 

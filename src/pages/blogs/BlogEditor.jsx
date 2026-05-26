@@ -21,7 +21,7 @@ export default function BlogEditor() {
         excerpt: '',
         content: '',
         category: '',
-        author: 'Nexspire Admin',
+        author: 'Napnix Admin',
         image: '',
         featured: false,
         status: 'published',

@@ -11,7 +11,7 @@ import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 const Tenants = () => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
     const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
     const [stats, setStats] = useState(null);
@@ -375,7 +375,7 @@ const Tenants = () => {
 };
 
 const CreateTenantModal = ({ onClose, onCreated }) => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
     const [formData, setFormData] = useState({

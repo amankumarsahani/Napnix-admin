@@ -48,7 +48,7 @@ const TenantDomains = ({
                             <FiExternalLink />
                         </a>
                     </div>
-                    {/* API (always uses default nexspiresolutions domain) */}
+                    {/* API (always uses default napnixsolutions domain) */}
                     <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-500">
@@ -57,7 +57,7 @@ const TenantDomains = ({
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
                                 <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-slate-400">Managed by NexSpire</span>
+                                <span className="text-[10px] text-slate-400">Managed by Napnix</span>
                             </div>
                         </div>
                         <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">

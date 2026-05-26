@@ -1,4 +1,4 @@
-# Nexspire Solutions Admin Dashboard
+# Napnix Admin Dashboard
 
 Admin dashboard for managing clients, projects, and leads.
 
@@ -61,7 +61,7 @@ nexs-admin/
 Backend API: `http://localhost:5000/api`
 
 ### Production
-Backend API: `https://api.nexspiresolutions.co.in/api`
+Backend API: `https://api.napnix.in/api`
 
 ## 📝 Next Steps
 
@@ -91,4 +91,4 @@ The dashboard uses a modern, professional design with:
 
 ## 📄 License
 
-Nexspire Solutions © 2024
+Napnix © 2024
