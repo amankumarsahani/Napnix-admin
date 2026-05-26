@@ -57,7 +57,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             ]
         },
         {
-            title: 'NexMail',
+            title: 'NapMail',
             id: 'nexmail-menu',
             items: [
                 { name: 'EM Dashboard', path: '/email-marketing', icon: <FiBarChart2 />, roles: ['admin'], end: true },

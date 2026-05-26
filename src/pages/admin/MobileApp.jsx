@@ -85,7 +85,7 @@ export default function MobileApp() {
                     <div className="flex items-center justify-between gap-4 mb-5">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Current Release</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">The APK currently visible across all NexCRM tenants.</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">The APK currently visible across all NapCRM tenants.</p>
                         </div>
                     </div>
 
