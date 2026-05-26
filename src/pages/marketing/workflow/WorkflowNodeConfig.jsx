@@ -577,7 +577,7 @@ const WorkflowNodeConfig = ({
                                         setLocalConfig({
                                             ...localConfig,
                                             document_slug: val,
-                                            attachment_filename: `NexSpire-${(doc.name || val).replace(/\s+/g, '-')}-{{slug}}.pdf`
+                                            attachment_filename: `Napnix-${(doc.name || val).replace(/\s+/g, '-')}-{{slug}}.pdf`
                                         });
                                     } else {
                                         setLocalConfig({ ...localConfig, document_slug: '', attachment_filename: '' });
@@ -1369,7 +1369,7 @@ const WorkflowNodeConfig = ({
                                 <span className="font-semibold text-sm">Post Blog</span>
                             </div>
                             <p className="text-xs text-red-600 dark:text-red-400">
-                                Publishes the generated blog to NexSpire Solutions website.
+                                Publishes the generated blog to Napnix website.
                             </p>
                         </div>
                         <div>

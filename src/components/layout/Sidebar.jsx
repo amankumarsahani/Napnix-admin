@@ -111,7 +111,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 <FiZap size={24} />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Nexspire</h1>
+                                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Napnix</h1>
                                 <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest">Enterprise</p>
                             </div>
                         </div>

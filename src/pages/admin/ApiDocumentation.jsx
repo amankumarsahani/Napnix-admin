@@ -123,7 +123,7 @@ const Icons = {
 };
 
 const ApiDocumentation = () => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'nexspiresolutions.co.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
     const { isDark } = useTheme();
     const [expandedCategories, setExpandedCategories] = useState(['Core']);
     const [expandedEndpoints, setExpandedEndpoints] = useState({});
@@ -504,7 +504,7 @@ const ApiDocumentation = () => {
                 {/* Footer */}
                 <div className={`mt-8 p-6 text-center text-sm rounded-xl ${isDark ? 'bg-slate-800/50 text-slate-500 border-slate-700' : 'bg-white text-gray-400 border-gray-200'} border`}>
                     <p>Need help? Contact <a href={`mailto:support@${domain}`} className="text-brand-400 hover:underline">support@{domain}</a></p>
-                    <p className="mt-1 text-xs">© 2024 NexSpire Solutions</p>
+                    <p className="mt-1 text-xs">© 2024 Napnix</p>
                 </div>
             </div>
         </div>

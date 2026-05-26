@@ -151,7 +151,7 @@ export default function Documents() {
 
     const openSendModal = (template) => {
         setSelectedTemplate(template);
-        setSendData({ to: '', subject: `${template.name} from Nexspire Solutions` });
+        setSendData({ to: '', subject: `${template.name} from Napnix` });
         setShowSendModal(true);
     };
 

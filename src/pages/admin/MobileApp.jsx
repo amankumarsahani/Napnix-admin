@@ -64,7 +64,7 @@ export default function MobileApp() {
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Android Distribution</p>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-2">Mobile App APK</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-                            Upload a new APK from Nexspire Admin. The previous published APK is replaced immediately, and every tenant CRM gets the updated Android download link.
+                            Upload a new APK from Napnix Admin. The previous published APK is replaced immediately, and every tenant CRM gets the updated Android download link.
                         </p>
                     </div>
                     {release?.download_url && (

@@ -679,7 +679,7 @@ export default function Settings() {
                                             type="email"
                                             value={paymentSettings.contact_sales_email || ''}
                                             onChange={e => setPaymentSettings({ ...paymentSettings, contact_sales_email: e.target.value })}
-                                            placeholder="sales@nexspire.com"
+                                            placeholder="sales@napnix.com"
                                             className={inputBase}
                                         />
                                     </div>
@@ -951,7 +951,7 @@ export default function Settings() {
                                                 type="text"
                                                 value={smtpSettings.smtp_from_name}
                                                 onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_name: e.target.value })}
-                                                placeholder="NexSpire Solutions"
+                                                placeholder="Napnix"
                                                 className={inputBase}
                                             />
                                         </div>

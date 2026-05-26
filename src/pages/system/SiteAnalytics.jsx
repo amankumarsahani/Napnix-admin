@@ -594,7 +594,7 @@ export default function SiteAnalytics() {
                         Site Analytics
                     </h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                        Visitor intelligence · nexspiresolutions.co.in
+                        Visitor intelligence · napnix.in
                     </p>
                 </div>
 
@@ -1003,7 +1003,7 @@ export default function SiteAnalytics() {
                                         <td className="py-2 pr-2 hidden lg:table-cell">
                                             {e.href ? (
                                                 <span className="text-brand-500 truncate max-w-[140px] block">
-                                                    {e.href.replace('https://nexspiresolutions.co.in', '')}
+                                                    {e.href.replace('https://napnix.in', '')}
                                                 </span>
                                             ) : '—'}
                                         </td>
@@ -1213,7 +1213,7 @@ export default function SiteAnalytics() {
                                     </div>
                                     <p className="text-slate-600 dark:text-slate-300 truncate">{pt.text || pt.element}</p>
                                     {pt.href && (
-                                        <p className="text-brand-400 truncate text-[10px]">{pt.href.replace('https://nexspiresolutions.co.in', '')}</p>
+                                        <p className="text-brand-400 truncate text-[10px]">{pt.href.replace('https://napnix.in', '')}</p>
                                     )}
                                 </div>
                             ))}
