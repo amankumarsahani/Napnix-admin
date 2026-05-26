@@ -575,11 +575,11 @@ export default function SiteAnalytics() {
 
     const maxPageViews = Math.max(...(pages || []).map(p => Number(p.views)), 1);
     const maxCountry   = Math.max(...(geography?.countries || []).map(c => Number(c.events)), 1);
-    const nexmailPage  = (pages || []).find((p) => p.path === '/nexmail' || p.path?.startsWith('/nexmail?'));
-    const nexmailEntry = (journey?.entryPages || []).find((p) => p.path?.startsWith('/nexmail'));
-    const nexmailExit  = (journey?.exitPages || []).find((p) => p.path?.startsWith('/nexmail'));
+    const nexmailPage  = (pages || []).find((p) => p.path === '/napmail' || p.path?.startsWith('/napmail?'));
+    const nexmailEntry = (journey?.entryPages || []).find((p) => p.path?.startsWith('/napmail'));
+    const nexmailExit  = (journey?.exitPages || []).find((p) => p.path?.startsWith('/napmail'));
     const nexmailClicks = (events?.topElements || [])
-        .filter((item) => item.path?.startsWith('/nexmail'))
+        .filter((item) => item.path?.startsWith('/napmail'))
         .sort((a, b) => b.count - a.count);
     const anyLoading = ovLoading || tsLoading || pgLoading || srcLoading || devLoading || geoLoading || jrLoading || evLoading || hmLoading;
 
@@ -639,9 +639,9 @@ export default function SiteAnalytics() {
             <Card className="p-5">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
                     <div>
-                        <SectionTitle icon={<FiZap size={16} />} title="NexMail Landing Snapshot" subtitle="Focused analysis for the public /nexmail route" />
+                        <SectionTitle icon={<FiZap size={16} />} title="NapMail Landing Snapshot" subtitle="Focused analysis for the public /napmail route" />
                         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
-                            This block follows the selected date range and gives a quick read on how the NexMail landing page is performing inside the current analytics window.
+                            This block follows the selected date range and gives a quick read on how the NapMail landing page is performing inside the current analytics window.
                         </p>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -673,23 +673,23 @@ export default function SiteAnalytics() {
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{fmt(nexmailClicks[0].count)} clicks in the selected range</p>
                             </>
                         ) : (
-                            <p className="text-sm text-slate-500 dark:text-slate-400">No recorded click interactions yet for /nexmail in this range.</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">No recorded click interactions yet for /napmail in this range.</p>
                         )}
                     </div>
                     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Entry signal</p>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
                             {nexmailEntry?.count
-                                ? `/nexmail started ${fmt(nexmailEntry.count)} visitor journeys in this window.`
-                                : 'No direct entry sessions to /nexmail are recorded in this window yet.'}
+                                ? `/napmail started ${fmt(nexmailEntry.count)} visitor journeys in this window.`
+                                : 'No direct entry sessions to /napmail are recorded in this window yet.'}
                         </p>
                     </div>
                     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Exit signal</p>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
                             {nexmailExit?.count
-                                ? `/nexmail was the final viewed page in ${fmt(nexmailExit.count)} sessions.`
-                                : 'No exit-session concentration on /nexmail is visible in this window yet.'}
+                                ? `/napmail was the final viewed page in ${fmt(nexmailExit.count)} sessions.`
+                                : 'No exit-session concentration on /napmail is visible in this window yet.'}
                         </p>
                     </div>
                 </div>

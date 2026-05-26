@@ -368,7 +368,7 @@ const ApiDocumentation = () => {
                         </div>
                         <div>
                             <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>API Documentation</h1>
-                            <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'} text-sm`}>NexCRM v1.0 • 13 Industries • REST API</p>
+                            <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'} text-sm`}>NapCRM v1.0 • 13 Industries • REST API</p>
                         </div>
                     </div>
                     <div className="relative">

@@ -317,7 +317,7 @@ export const toolsAPI = {
     },
 };
 
-// ─── NexMail API ────────────────────────────────────────────────────────────
+// ─── NapMail API ────────────────────────────────────────────────────────────
 
 export const nexmailAPI = {
     baseUrl: import.meta.env.VITE_NEXMAIL_API_URL || '',
