@@ -317,6 +317,18 @@ export const toolsAPI = {
     },
 };
 
+// ─── Expenses API ───────────────────────────────────────────────────────────
+
+export const expensesAPI = {
+    getAll: async (params = {}) => { const r = await apiClient.get('/expenses', { params }); return r.data; },
+    getStats: async () => { const r = await apiClient.get('/expenses/stats'); return r.data; },
+    getById: async (id) => { const r = await apiClient.get(`/expenses/${id}`); return r.data; },
+    create: async (data) => { const r = await apiClient.post('/expenses', data); return r.data; },
+    update: async (id, data) => { const r = await apiClient.patch(`/expenses/${id}`, data); return r.data; },
+    delete: async (id) => { const r = await apiClient.delete(`/expenses/${id}`); return r.data; },
+    bulkDelete: async (ids) => { const r = await apiClient.post('/expenses/bulk-delete', { ids }); return r.data; },
+};
+
 // ─── NapMail API ────────────────────────────────────────────────────────────
 
 export const nexmailAPI = {

@@ -5,7 +5,8 @@ import { useState } from 'react';
 import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText,
     FiMail, FiMessageCircle, FiLayout, FiCreditCard, FiActivity, FiSearch, FiLayers,
-    FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle
+    FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle,
+    FiDollarSign
 } from '../icons/FeatherIcons';
 import { LuSun, LuMoon } from 'react-icons/lu';
 
@@ -57,18 +58,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             ]
         },
         {
-            title: 'NapMail',
-            id: 'nexmail-menu',
-            items: [
-                { name: 'EM Dashboard', path: '/email-marketing', icon: <FiBarChart2 />, roles: ['admin'], end: true },
-                { name: 'Contacts', path: '/email-marketing/contacts', icon: <FiUsers />, roles: ['admin'] },
-                { name: 'Templates', path: '/email-marketing/templates', icon: <FiLayout />, roles: ['admin'] },
-                { name: 'Campaigns', path: '/email-marketing/campaigns', icon: <FiMail />, roles: ['admin'] },
-                { name: 'Automations', path: '/email-marketing/automations', icon: <FiActivity />, roles: ['admin'] },
-                { name: 'SMTP', path: '/email-marketing/smtp', icon: <FiServer />, roles: ['admin'] },
-            ]
-        },
-        {
             title: 'System',
             id: 'system-menu',
             items: [
@@ -78,6 +67,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Telemetry', path: '/telemetry', icon: <FiActivity />, roles: ['admin'] },
                 { name: 'Site Analytics', path: '/site-analytics', icon: <FiBarChart2 />, roles: ['admin'], badge: 'NEW' },
                 { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] },
+                { name: 'Expenses', path: '/expenses', icon: <FiDollarSign />, roles: ['admin'] },
                 { name: 'Settings', path: '/settings', icon: <FiSettings />, roles: ['admin'] },
                 { name: 'Team', path: '/team', icon: <FiUsers />, roles: ['admin'] },
             ]

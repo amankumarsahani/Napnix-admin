@@ -54,6 +54,7 @@ const AutomationEditor = React.lazy(() => import('./pages/email-marketing/Automa
 const EmailSmtp = React.lazy(() => import('./pages/email-marketing/SmtpAccounts'));
 const EmailDomains = React.lazy(() => import('./pages/email-marketing/Domains'));
 const ToolRegistry = React.lazy(() => import('./pages/tools/ToolRegistry'));
+const Expenses = React.lazy(() => import('./pages/expenses/Expenses'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -109,6 +110,7 @@ function AppRoutes() {
             <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
             <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
             <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
+            <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
             <Route path="email-marketing" element={<LazyRoute element={<EmailMarketingDashboard />} />} />
             <Route path="email-marketing/contacts" element={<LazyRoute element={<EmailContacts />} />} />
             <Route path="email-marketing/contacts/:id" element={<LazyRoute element={<EmailContactDetail />} />} />
