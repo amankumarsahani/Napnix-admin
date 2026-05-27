@@ -5,7 +5,7 @@ import { plansAPI } from '../../api';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
 import { getStatusColor as getStatusColorUtil, getProcessStatusColor } from '../../utils/statusColors';
-import { FiPlus, FiServer, FiGlobe, FiCheckCircle } from '../../components/icons/FeatherIcons';
+import { FiPlus, FiServer, FiGlobe, FiCheckCircle, FiMail, FiDatabase } from '../../components/icons/FeatherIcons';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
@@ -378,6 +378,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
     const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
+    const [selectedProducts, setSelectedProducts] = useState(['napcrm']);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -389,6 +390,33 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
         custom_domain: ''
     });
     const [loading, setLoading] = useState(false);
+
+    const toggleProduct = (slug) => {
+        setSelectedProducts(prev => {
+            if (prev.includes(slug)) {
+                const next = prev.filter(p => p !== slug);
+                return next.length === 0 ? prev : next;
+            }
+            return [...prev, slug];
+        });
+    };
+
+    const PRODUCTS = [
+        {
+            slug: 'napcrm',
+            name: 'NapCRM',
+            desc: 'Full CRM with contacts, deals, tasks, storefront',
+            icon: FiDatabase,
+            color: 'brand'
+        },
+        {
+            slug: 'napmail',
+            name: 'NapMail',
+            desc: 'Email marketing campaigns & automation',
+            icon: FiMail,
+            color: 'sky'
+        }
+    ];
 
     useEffect(() => {
         const fetchData = async () => {
@@ -425,9 +453,13 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (selectedProducts.length === 0) {
+            toast.error('Select at least one product');
+            return;
+        }
         setLoading(true);
         try {
-            await tenantsAPI.create(formData);
+            await tenantsAPI.create({ ...formData, tools: selectedProducts });
             toast.success('Tenant created and provisioning started!');
             onCreated();
         } catch (error) {
@@ -450,6 +482,41 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Products *
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {PRODUCTS.map(product => {
+                                const isSelected = selectedProducts.includes(product.slug);
+                                const Icon = product.icon;
+                                return (
+                                    <button
+                                        key={product.slug}
+                                        type="button"
+                                        onClick={() => toggleProduct(product.slug)}
+                                        className={`relative flex flex-col items-start gap-1 p-3 rounded-lg border-2 text-left transition-all ${
+                                            isSelected
+                                                ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                                        }`}
+                                    >
+                                        {isSelected && (
+                                            <FiCheckCircle className="absolute top-2 right-2 text-brand-500" size={16} />
+                                        )}
+                                        <Icon className={isSelected ? 'text-brand-500' : 'text-slate-400'} size={20} />
+                                        <span className={`text-sm font-semibold ${isSelected ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                            {product.name}
+                                        </span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+                                            {product.desc}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-4 py-3 text-sm text-brand-700 dark:text-brand-300">
                         New tenants are created automatically as a 14-day trial with the selected plan. You can adjust the trial, activate access, send a payment link, or mark them paid from the tenant detail page after creation.
                     </div>
@@ -520,6 +587,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedProducts.includes('napcrm') && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Industry
@@ -546,6 +614,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                                 <option value="travel">Travel</option>
                             </select>
                         </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Plan
@@ -568,12 +637,13 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
+                        {selectedProducts.includes('napcrm') && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
                                 <FiServer className="text-brand-500" /> Destination Server
                             </label>
                             <select
-                                required
+                                required={selectedProducts.includes('napcrm')}
                                 name="server_id"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                 value={formData.server_id}
@@ -587,6 +657,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                                 ))}
                             </select>
                         </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
                                 <FiGlobe className="text-sky-500" /> Custom Domain
