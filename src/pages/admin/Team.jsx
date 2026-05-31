@@ -18,6 +18,8 @@ export default function Team() {
     const [newDept, setNewDept] = useState('');
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingMember, setEditingMember] = useState(null);
+    const [editForm, setEditForm] = useState({});
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
@@ -86,6 +88,30 @@ export default function Team() {
             fetchMembers(); // Refresh list
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to send invite');
+        }
+    };
+
+    const handleEditOpen = (member) => {
+        setEditingMember(member);
+        setEditForm({
+            name: member.name || '',
+            phone: member.phone || '',
+            position: member.position || '',
+            role: member.role || 'sales_operator',
+            department: member.department || '',
+            status: member.status || 'active',
+        });
+    };
+
+    const handleEditSave = async (e) => {
+        e.preventDefault();
+        try {
+            await apiClient.put(`/teams/${editingMember.id}`, editForm);
+            toast.success('Member updated');
+            setEditingMember(null);
+            fetchMembers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to update member');
         }
     };
 
@@ -186,13 +212,22 @@ export default function Team() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleDelete(member.id)}
-                                            className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"
-                                            title="Remove Member"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => handleEditOpen(member)}
+                                                className="text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-2 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg"
+                                                title="Edit Member"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(member.id)}
+                                                className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"
+                                                title="Remove Member"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -340,6 +375,69 @@ export default function Team() {
                         <button onClick={() => setShowSuccessModal(false)} className="btn btn-primary w-full">
                             Done
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingMember && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border border-transparent dark:border-slate-700">
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Edit Employee</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{editingMember.email}</p>
+                        <form onSubmit={handleEditSave} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
+                                    <input type="text" required className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
+                                    <input type="tel" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Position</label>
+                                    <input type="text" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.position} onChange={e => setEditForm({ ...editForm, position: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Role</label>
+                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
+                                        <option value="admin">Admin</option>
+                                        <option value="manager">Manager</option>
+                                        <option value="sales_operator">Sales Operator</option>
+                                        <option value="user">User</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Department</label>
+                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.department} onChange={e => setEditForm({ ...editForm, department: e.target.value })}>
+                                        <option value="">Select Department</option>
+                                        {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
+                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
+                                        value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setEditingMember(null)} className="btn btn-secondary flex-1">Cancel</button>
+                                <button type="submit" className="btn btn-primary flex-1">Save Changes</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
