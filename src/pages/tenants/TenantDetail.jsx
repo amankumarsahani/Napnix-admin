@@ -33,6 +33,7 @@ const TenantDetail = () => {
     const [showDomainModal, setShowDomainModal] = useState(false);
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
+    const [repairingDns, setRepairingDns] = useState(false);
     const [sendingAgreement, setSendingAgreement] = useState(false);
     const [sendingBillingInvoice, setSendingBillingInvoice] = useState(false);
     const [savingBilling, setSavingBilling] = useState(false);
@@ -273,6 +274,24 @@ const TenantDetail = () => {
             toast.error(error.response?.data?.error || 'Failed to setup domains');
         } finally {
             setDomainLoading(false);
+        }
+    };
+
+    const handleRepairDns = async () => {
+        if (!window.confirm('Re-attach Pages custom domains and wait for active state before DNS creation. This may take up to 60s. Continue?')) return;
+        setRepairingDns(true);
+        try {
+            const result = await tenantsAPI.repairDns(tenant.id);
+            if (result.success) {
+                toast.success('DNS repaired — domains are now active');
+                fetchTenant();
+            } else {
+                toast.error('Repair attempted but Pages domain may still be initializing. Try again in 30s.');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'DNS repair failed');
+        } finally {
+            setRepairingDns(false);
         }
     };
 
@@ -718,7 +737,10 @@ const TenantDetail = () => {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiGlobe className="w-5 h-5 text-slate-500" />
                     Domains
-                    <button onClick={openDomainModal} className="ml-auto text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+                    <button onClick={handleRepairDns} disabled={repairingDns} title="Fixes Cloudflare Error 1014 — re-attaches Pages custom domains" className="ml-auto text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1 mr-2 disabled:opacity-50">
+                        {repairingDns ? 'Repairing…' : '⚡ Repair DNS'}
+                    </button>
+                    <button onClick={openDomainModal} className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Configure
                     </button>
