@@ -34,6 +34,7 @@ const TenantDetail = () => {
     const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
     const [domainLoading, setDomainLoading] = useState(false);
     const [repairingDns, setRepairingDns] = useState(false);
+    const [runningMigration, setRunningMigration] = useState(false);
     const [sendingAgreement, setSendingAgreement] = useState(false);
     const [sendingBillingInvoice, setSendingBillingInvoice] = useState(false);
     const [savingBilling, setSavingBilling] = useState(false);
@@ -274,6 +275,19 @@ const TenantDetail = () => {
             toast.error(error.response?.data?.error || 'Failed to setup domains');
         } finally {
             setDomainLoading(false);
+        }
+    };
+
+    const handleRunMigration = async () => {
+        if (!window.confirm(`Run database migrations for tenant "${tenant.slug}"? This will create any missing tables for the ${tenant.industry_type || 'core'} industry.`)) return;
+        setRunningMigration(true);
+        try {
+            await tenantsAPI.runMigration(tenant.id);
+            toast.success('Migration completed — all tables are up to date');
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Migration failed');
+        } finally {
+            setRunningMigration(false);
         }
     };
 
@@ -813,6 +827,9 @@ const TenantDetail = () => {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiDatabase className="w-5 h-5 text-slate-500" />
                     Infrastructure Details
+                    <button onClick={handleRunMigration} disabled={runningMigration} title="Run database migrations to create missing industry tables" className="ml-auto text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 disabled:opacity-50">
+                        {runningMigration ? 'Running…' : '⚡ Run Migration'}
+                    </button>
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
