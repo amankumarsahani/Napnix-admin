@@ -172,6 +172,7 @@ export const tenantsAPI = {
     markPaid: async (id, data = {}) => { const r = await apiClient.post(`/tenants/${id}/mark-paid`, data); return r.data; },
     sendAgreement: async (id) => { const r = await apiClient.post(`/tenants/${id}/send-agreement`); return r.data; },
     repairDns: async (id) => { const r = await apiClient.post(`/tenants/${id}/repair-dns`); return r.data; },
+    runMigration: async (id) => { const r = await apiClient.post(`/tenants/${id}/migrate`); return r.data; },
 };
 
 // ─── Plans API ───────────────────────────────────────────────────────────────
