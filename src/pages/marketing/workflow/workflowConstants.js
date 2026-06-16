@@ -1,4 +1,4 @@
-import { TriggerNode, ActionNode, ConditionNode, DelayNode } from './WorkflowNodes';
+import { TriggerNode, ActionNode, ConditionNode, DelayNode, WhatsAppNode } from './WorkflowNodes';
 
 export const NODE_PALETTE = {
     triggers: [
@@ -35,6 +35,9 @@ export const NODE_PALETTE = {
         { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' },
         { id: 'index_url', label: 'Google Search URL Index', type: 'action', actionType: 'index_url' }
     ],
+    whatsapp: [
+        { id: 'send_whatsapp', label: 'Send WhatsApp', type: 'whatsapp', actionType: 'send_whatsapp' }
+    ],
     conditions: [
         { id: 'condition', label: 'If/Else Condition', type: 'condition' }
     ],
@@ -47,5 +50,6 @@ export const nodeTypes = {
     trigger: TriggerNode,
     action: ActionNode,
     condition: ConditionNode,
-    delay: DelayNode
+    delay: DelayNode,
+    whatsapp: WhatsAppNode
 };
