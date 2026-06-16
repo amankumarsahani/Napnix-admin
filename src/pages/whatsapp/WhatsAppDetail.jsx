@@ -210,19 +210,19 @@ export default function WhatsAppDetail() {
     });
 
     if (isLoading) return (
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center -m-6 h-[calc(100vh-64px)]">
             <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
     if (!account) return (
-        <div className="flex items-center justify-center h-screen text-slate-400">Account not found</div>
+        <div className="flex items-center justify-center -m-6 h-[calc(100vh-64px)] text-slate-400">Account not found</div>
     );
 
     const cfg = STATUS_CONFIG[account.status] || STATUS_CONFIG.disconnected;
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)]">
+        <div className="flex flex-col -m-6 h-[calc(100vh-64px)]">
             {/* Top bar */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
                 <div className="flex items-center gap-4">
