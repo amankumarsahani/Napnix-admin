@@ -314,7 +314,8 @@ const NODE_PALETTE = {
         { id: 'stripe_payment_received', label: 'Stripe Payment Received', type: 'trigger' },
         { id: 'stripe_subscription_created', label: 'Stripe Subscription Created', type: 'trigger' },
         { id: 'stripe_subscription_cancelled', label: 'Stripe Subscription Cancelled', type: 'trigger' },
-        { id: 'stripe_invoice_paid', label: 'Stripe Invoice Paid', type: 'trigger' }
+        { id: 'stripe_invoice_paid', label: 'Stripe Invoice Paid', type: 'trigger' },
+        { id: 'whatsapp_message_received', label: 'WhatsApp Message Received', type: 'trigger' }
     ],
     actions: [
         { id: 'send_email', label: 'Send Email', type: 'action', actionType: 'send_email' },
@@ -335,6 +336,10 @@ const NODE_PALETTE = {
         { id: 'ai_fetch_image', label: 'Fetch Image (Unsplash)', type: 'action', actionType: 'ai_fetch_image' },
         { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' },
         { id: 'index_url', label: 'Google Search URL Index', type: 'action', actionType: 'index_url' }
+    ],
+    whatsapp: [
+        { id: 'send_whatsapp', label: 'Send WhatsApp', type: 'whatsapp', actionType: 'send_whatsapp' },
+        { id: 'send_whatsapp_reply', label: 'Reply on WhatsApp', type: 'whatsapp', actionType: 'send_whatsapp_reply' }
     ],
     conditions: [
         { id: 'condition', label: 'If/Else Condition', type: 'condition' }
