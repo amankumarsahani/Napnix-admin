@@ -14,7 +14,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
     const { toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
-    const [openMenus, setOpenMenus] = useState(['main-menu', 'infrastructure']);
+    const [openMenus, setOpenMenus] = useState(['main-menu', 'infrastructure', 'comm-menu']);
 
     const handleLogout = () => {
         logout();
