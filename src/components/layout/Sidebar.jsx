@@ -45,6 +45,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Inquiries', path: '/inquiries', icon: <FiMail />, roles: ['admin', 'sales_operator'] },
                 { name: 'Campaigns', path: '/campaigns', icon: <FiMessageCircle />, roles: ['admin'] },
+                { name: 'WhatsApp', path: '/whatsapp', icon: <FiMessageCircle />, roles: ['admin'] },
                 { name: 'Workflows', path: '/workflows', icon: <FiActivity />, roles: ['admin'] },
                 { name: 'Blogs', path: '/blogs', icon: <FiFileText />, roles: ['admin'] },
             ]
