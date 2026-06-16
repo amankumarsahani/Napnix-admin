@@ -45,7 +45,10 @@ function QRModal({ account, onClose, onConnected }) {
                                 const du = await QRCode.toDataURL(ev.qr, { width: 256, margin: 1 });
                                 if (!cancelled) { setQrDataUrl(du); setStatus('pending_qr'); }
                             }
-                            if (ev.type === 'connected') { setStatus('connected'); onConnected(); setTimeout(onClose, 1200); }
+                            // Handle both 'connected' event and 'status' event with connected: true
+                            if (ev.type === 'connected' || (ev.type === 'status' && ev.connected)) {
+                                setStatus('connected'); onConnected(); setTimeout(onClose, 1200);
+                            }
                         } catch (_) {}
                     }
                 }
@@ -228,6 +231,13 @@ function AccountCard({ account, onRefresh }) {
     const handleConnect = async (e) => {
         e.stopPropagation();
         try {
+            // Check live status first — session may already be connected
+            const live = await whatsappApi.getStatus(account.id);
+            if (live.connected || live.status === 'connected') {
+                toast.success('Already connected!');
+                onRefresh();
+                return;
+            }
             await whatsappApi.connectAccount(account.id);
             setModal('qr');
         } catch (err) {
