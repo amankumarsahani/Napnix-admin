@@ -66,6 +66,21 @@ const WorkflowNodePanel = ({ addNode }) => {
             </div>
 
             <div className="mb-4">
+                <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">WhatsApp</h4>
+                <div className="space-y-2">
+                    {NODE_PALETTE.whatsapp.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => addNode(item)}
+                            className="w-full text-left px-3 py-2 text-sm bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mb-4">
                 <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Timing</h4>
                 <div className="space-y-2">
                     {NODE_PALETTE.delays.map(item => (
