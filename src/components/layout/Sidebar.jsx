@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'WhatsApp', path: '/whatsapp', icon: <FiMessageCircle />, roles: ['admin'] },
                 { name: 'Workflows', path: '/workflows', icon: <FiActivity />, roles: ['admin'] },
                 { name: 'Blogs', path: '/blogs', icon: <FiFileText />, roles: ['admin'] },
+                { name: 'Portfolio', path: '/portfolio', icon: <FiBriefcase />, roles: ['admin'] },
             ]
         },
         {

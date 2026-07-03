@@ -40,6 +40,8 @@ const WorkflowEditor = React.lazy(() => import('./pages/marketing/WorkflowEditor
 const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage'));
 const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
 const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
+const PortfolioList = React.lazy(() => import('./pages/portfolio/PortfolioList'));
+const PortfolioEditor = React.lazy(() => import('./pages/portfolio/PortfolioEditor'));
 
 const EmailMarketingDashboard = React.lazy(() => import('./pages/email-marketing/Dashboard'));
 const EmailContacts = React.lazy(() => import('./pages/email-marketing/Contacts'));
@@ -111,6 +113,9 @@ function AppRoutes() {
             <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
             <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
             <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
+            <Route path="portfolio" element={<LazyRoute element={<PortfolioList />} />} />
+            <Route path="portfolio/new" element={<LazyRoute element={<PortfolioEditor />} />} />
+            <Route path="portfolio/:id/edit" element={<LazyRoute element={<PortfolioEditor />} />} />
             <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
             <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
             <Route path="whatsapp" element={<LazyRoute element={<WhatsAppSettings />} />} />

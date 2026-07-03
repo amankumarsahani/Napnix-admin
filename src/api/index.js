@@ -295,6 +295,13 @@ export const blogsAPI = {
     getStats: statsEndpoint('/blogs'),
 };
 
+// ─── Portfolio API (Content Management) ─────────────────────────────────────
+
+export const portfolioAPI = {
+    ...createCrudAPI('/portfolio'),
+    getStats: statsEndpoint('/portfolio'),
+};
+
 // ─── Tool Registry API ──────────────────────────────────────────────────────
 
 export const toolsAPI = {
