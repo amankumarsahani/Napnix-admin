@@ -302,6 +302,13 @@ export const portfolioAPI = {
     getStats: statsEndpoint('/portfolio'),
 };
 
+// ─── Case Studies API ────────────────────────────────────────────────────────
+
+export const caseStudiesAPI = {
+    ...createCrudAPI('/case-studies'),
+    getStats: statsEndpoint('/case-studies'),
+};
+
 // ─── Tool Registry API ──────────────────────────────────────────────────────
 
 export const toolsAPI = {

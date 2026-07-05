@@ -49,6 +49,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Workflows', path: '/workflows', icon: <FiActivity />, roles: ['admin'] },
                 { name: 'Blogs', path: '/blogs', icon: <FiFileText />, roles: ['admin'] },
                 { name: 'Portfolio', path: '/portfolio', icon: <FiBriefcase />, roles: ['admin'] },
+                { name: 'Case Studies', path: '/case-studies', icon: <FiLayers />, roles: ['admin'] },
             ]
         },
         {
