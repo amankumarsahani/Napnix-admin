@@ -385,6 +385,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
         email: '',
         phone: '',
         industry_type: 'general',
+        academic_mode: 'school', // only sent/used when industry_type === 'school'
         plan_id: '',
         server_id: '',
         custom_domain: ''
@@ -600,7 +601,8 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                             >
                                 <option value="general">General CRM</option>
                                 <option value="ecommerce">E-Commerce</option>
-                                <option value="education">Education</option>
+                                <option value="education">Education (coaching / training)</option>
+                                <option value="school">School / College (full ERP)</option>
                                 <option value="fitness">Fitness / Gym</option>
                                 <option value="healthcare">Healthcare</option>
                                 <option value="hospitality">Hospitality</option>
@@ -616,6 +618,25 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                                 <option value="car_rental">Car Rental</option>
                                 <option value="boat_rental">Boat Rental</option>
                             </select>
+                        </div>
+                        )}
+                        {selectedProducts.includes('napcrm') && formData.industry_type === 'school' && (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Academic mode
+                            </label>
+                            <select
+                                name="academic_mode"
+                                value={formData.academic_mode || 'school'}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            >
+                                <option value="school">School (K-12) — classes, terms, report cards</option>
+                                <option value="college">College — semesters, credits, SGPA/CGPA, backlogs</option>
+                            </select>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Same schema either way. College turns on credits, SGPA/CGPA and the backlog register.
+                            </p>
                         </div>
                         )}
                         <div>
