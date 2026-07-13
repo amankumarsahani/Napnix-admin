@@ -33,6 +33,7 @@ const BackupAccounts = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState(EMPTY_FORM);
     const [editingId, setEditingId] = useState(null);
+    const [editingAccountMeta, setEditingAccountMeta] = useState(null);
     const [saving, setSaving] = useState(false);
     const [oauthConnecting, setOauthConnecting] = useState(false);
     const [confirmState, setConfirmState] = useState({ isOpen: false });
@@ -45,6 +46,9 @@ const BackupAccounts = () => {
     }), [accounts]);
 
     const getRedirectUri = () => `${window.location.origin}/infrastructure/backups`;
+    const hasStoredOauthClientSecret = Boolean(editingId && editingAccountMeta?.oauth_client_secret_configured);
+    const hasStoredOauthRefreshToken = Boolean(editingId && editingAccountMeta?.oauth_refresh_token_configured);
+    const hasStoredCredentialsJson = Boolean(editingId && editingAccountMeta?.credentials_configured);
 
     const clearOAuthParams = () => {
         const url = new URL(window.location.href);
@@ -127,9 +131,18 @@ const BackupAccounts = () => {
             if (pending.editingId) setEditingId(pending.editingId);
 
             try {
+                const clientSecret = pending.form.oauth_client_secret || '';
+                const canReuseStoredSecret = Boolean(pending.editingId);
+
+                if (!clientSecret && !canReuseStoredSecret) {
+                    toast.error('OAuth client secret missing. Enter it once or reconnect from an account that already has it stored.');
+                    return;
+                }
+
                 const res = await serverService.exchangeGoogleOauthCode({
+                    account_id: pending.editingId || undefined,
                     client_id: pending.form.oauth_client_id,
-                    client_secret: pending.form.oauth_client_secret,
+                    client_secret: clientSecret,
                     code,
                     redirect_uri: getRedirectUri(),
                 });
@@ -155,6 +168,7 @@ const BackupAccounts = () => {
     const openCreate = () => {
         setFormData(EMPTY_FORM);
         setEditingId(null);
+        setEditingAccountMeta(null);
         setIsModalOpen(true);
     };
 
@@ -162,19 +176,21 @@ const BackupAccounts = () => {
         setIsModalOpen(false);
         setFormData(EMPTY_FORM);
         setEditingId(null);
+        setEditingAccountMeta(null);
     };
 
     const handleEdit = (account) => {
         const authType = account.auth_type === 'oauth_personal' ? 'oauth_personal' : 'service_account';
+        setEditingAccountMeta(account);
         setFormData({
             auth_type: authType,
             account_name: account.account_name || '',
             folder_id: account.folder_id || '',
             subject_email: account.subject_email || '',
-            credentials_json: safePrettyJson(account.credentials_json),
+            credentials_json: '',
             oauth_client_id: account.oauth_client_id || '',
-            oauth_client_secret: account.oauth_client_secret || '',
-            oauth_refresh_token: account.oauth_refresh_token || '',
+            oauth_client_secret: '',
+            oauth_refresh_token: '',
         });
         setEditingId(account.id);
         setIsModalOpen(true);
@@ -216,9 +232,15 @@ const BackupAccounts = () => {
                     oauth_refresh_token: formData.oauth_refresh_token.trim(),
                 };
             } else {
-                let json;
-                try { json = JSON.parse(formData.credentials_json); } catch {
-                    toast.error('Invalid JSON in credentials field');
+                let json = null;
+                if (formData.credentials_json.trim()) {
+                    try { json = JSON.parse(formData.credentials_json); } catch {
+                        toast.error('Invalid JSON in credentials field');
+                        setSaving(false);
+                        return;
+                    }
+                } else if (!hasStoredCredentialsJson) {
+                    toast.error('Service account credentials are required.');
                     setSaving(false);
                     return;
                 }
@@ -271,12 +293,23 @@ const BackupAccounts = () => {
     };
 
     const handleConnectGoogleDrive = () => {
-        if (!formData.oauth_client_id.trim() || !formData.oauth_client_secret.trim()) {
-            toast.error('Enter OAuth Client ID and Client Secret first.');
+        if (!formData.oauth_client_id.trim()) {
+            toast.error('Enter OAuth Client ID first.');
+            return;
+        }
+        if (!formData.oauth_client_secret.trim() && !hasStoredOauthClientSecret) {
+            toast.error('Enter OAuth Client Secret first.');
             return;
         }
         const state = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        sessionStorage.setItem(GOOGLE_OAUTH_SESSION_KEY, JSON.stringify({ state, editingId, form: formData }));
+        sessionStorage.setItem(GOOGLE_OAUTH_SESSION_KEY, JSON.stringify({
+            state,
+            editingId,
+            form: {
+                ...formData,
+                oauth_client_secret: formData.oauth_client_secret.trim(),
+            }
+        }));
         const params = new URLSearchParams({
             client_id: formData.oauth_client_id.trim(),
             redirect_uri: getRedirectUri(),
@@ -515,10 +548,15 @@ const BackupAccounts = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">OAuth Client Secret</label>
-                                            <input type="text" required value={formData.oauth_client_secret}
+                                            <input type="text" required={!hasStoredOauthClientSecret} value={formData.oauth_client_secret}
                                                 onChange={e => setFormData(p => ({ ...p, oauth_client_secret: e.target.value }))}
                                                 placeholder="GOCSPX-…"
                                                 className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 placeholder-slate-400 text-sm" />
+                                            {hasStoredOauthClientSecret && (
+                                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                    Leave blank to reuse the OAuth client secret already stored in the backend.
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -540,9 +578,14 @@ const BackupAccounts = () => {
                                             OAuth Refresh Token
                                             <span className="ml-2 text-xs text-slate-400">(auto-filled after Connect, or paste manually)</span>
                                         </label>
-                                        <textarea required rows={4} value={formData.oauth_refresh_token} spellCheck={false}
+                                        <textarea required={!hasStoredOauthRefreshToken} rows={4} value={formData.oauth_refresh_token} spellCheck={false}
                                             onChange={e => setFormData(p => ({ ...p, oauth_refresh_token: e.target.value }))}
                                             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-950 text-cyan-200 font-mono text-xs focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
+                                        {hasStoredOauthRefreshToken && (
+                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                Leave blank to keep the stored refresh token, or reconnect to replace it.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
@@ -557,10 +600,15 @@ const BackupAccounts = () => {
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Service Account Credentials (JSON)</label>
-                                        <textarea required rows={10} value={formData.credentials_json} spellCheck={false}
+                                        <textarea required={!hasStoredCredentialsJson} rows={10} value={formData.credentials_json} spellCheck={false}
                                             onChange={e => setFormData(p => ({ ...p, credentials_json: e.target.value }))}
                                             placeholder="Paste content of your Google Service Account JSON key file…"
                                             className="w-full px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-950 text-cyan-200 font-mono text-xs focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500" />
+                                        {hasStoredCredentialsJson && (
+                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                Leave blank to keep the service account credentials already stored in the backend.
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Impersonate Email <span className="text-slate-400 font-normal">(Workspace / DWD only)</span></label>
