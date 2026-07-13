@@ -69,6 +69,14 @@ const BackupAccounts = () => {
 
     useEffect(() => { fetchAccounts(); }, []);
 
+    useEffect(() => {
+        if (!editingId || editingAccountMeta || accounts.length === 0) return;
+        const account = accounts.find((item) => item.id === editingId);
+        if (account) {
+            setEditingAccountMeta(account);
+        }
+    }, [accounts, editingAccountMeta, editingId]);
+
     // Restore pending form from sessionStorage after Google redirect
     useEffect(() => {
         const raw = sessionStorage.getItem(GOOGLE_OAUTH_SESSION_KEY);
@@ -82,6 +90,7 @@ const BackupAccounts = () => {
                 });
             }
             if (pending?.editingId) setEditingId(prev => prev || pending.editingId);
+            if (pending?.editingAccountMeta) setEditingAccountMeta(prev => prev || pending.editingAccountMeta);
         } catch {
             sessionStorage.removeItem(GOOGLE_OAUTH_SESSION_KEY);
         }
@@ -305,6 +314,7 @@ const BackupAccounts = () => {
         sessionStorage.setItem(GOOGLE_OAUTH_SESSION_KEY, JSON.stringify({
             state,
             editingId,
+            editingAccountMeta,
             form: {
                 ...formData,
                 oauth_client_secret: formData.oauth_client_secret.trim(),
