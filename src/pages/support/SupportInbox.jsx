@@ -211,14 +211,22 @@ function TicketDrawer({ id, onClose }) {
                                     );
                                 }
                                 return (
-                                    <div key={m.id} className={`flex ${agency ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${agency ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-100'}`}>
-                                            <div className={`mb-1 flex items-center gap-2 text-[11px] ${agency ? 'text-blue-100' : 'text-slate-400'}`}>
-                                                <span className="font-semibold">{m.author_name || (agency ? 'Support' : 'Customer')}</span>
-                                                <span>{fmt(m.created_at)}</span>
+                                    <div key={m.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                        <div className="mb-2 flex items-center gap-3">
+                                            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${agency ? 'bg-blue-600' : 'bg-slate-500'}`}>
+                                                {agency ? 'S' : (m.author_name || 'C').trim().charAt(0).toUpperCase()}
                                             </div>
-                                            <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">{m.author_name || (agency ? 'Support' : 'Customer')}</span>
+                                                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${agency ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                        {agency ? 'Support' : 'Customer'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-slate-400">{fmt(m.created_at)}</span>
+                                            </div>
                                         </div>
+                                        <p className="whitespace-pre-wrap pl-11 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{m.body}</p>
                                     </div>
                                 );
                             })}
