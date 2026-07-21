@@ -345,6 +345,16 @@ export const expensesAPI = {
     bulkDelete: async (ids) => { const r = await apiClient.post('/expenses/bulk-delete', { ids }); return r.data; },
 };
 
+// ─── Support Desk API ───────────────────────────────────────────────────────
+// Agency inbox for tenant-raised support tickets (master napnix DB).
+
+export const supportAPI = {
+    listTickets: async (params = {}) => { const r = await apiClient.get('/support/admin/tickets', { params }); return r.data; },
+    getTicket: async (id) => { const r = await apiClient.get(`/support/admin/tickets/${id}`); return r.data; },
+    reply: async (id, message, internal_note = false) => { const r = await apiClient.post(`/support/admin/tickets/${id}/messages`, { message, internal_note }); return r.data; },
+    update: async (id, data) => { const r = await apiClient.patch(`/support/admin/tickets/${id}`, data); return r.data; },
+};
+
 // ─── NapMail API ────────────────────────────────────────────────────────────
 
 export const nexmailAPI = {

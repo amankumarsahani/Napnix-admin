@@ -59,6 +59,7 @@ const EmailSmtp = React.lazy(() => import('./pages/email-marketing/SmtpAccounts'
 const EmailDomains = React.lazy(() => import('./pages/email-marketing/Domains'));
 const ToolRegistry = React.lazy(() => import('./pages/tools/ToolRegistry'));
 const Expenses = React.lazy(() => import('./pages/expenses/Expenses'));
+const SupportInbox = React.lazy(() => import('./pages/support/SupportInbox'));
 const WhatsAppSettings = React.lazy(() => import('./pages/whatsapp/WhatsAppSettings'));
 const WhatsAppDetail = React.lazy(() => import('./pages/whatsapp/WhatsAppDetail'));
 
@@ -123,6 +124,7 @@ function AppRoutes() {
             <Route path="case-studies/:id/edit" element={<LazyRoute element={<CaseStudyEditor />} />} />
             <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
             <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
+            <Route path="support" element={<LazyRoute element={<SupportInbox />} />} />
             <Route path="whatsapp" element={<LazyRoute element={<WhatsAppSettings />} />} />
             <Route path="whatsapp/:id" element={<LazyRoute element={<WhatsAppDetail />} />} />
             <Route path="email-marketing" element={<LazyRoute element={<EmailMarketingDashboard />} />} />
