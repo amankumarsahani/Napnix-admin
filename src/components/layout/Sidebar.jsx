@@ -9,6 +9,7 @@ import {
     FiDollarSign
 } from '../icons/FeatherIcons';
 import { LuSun, LuMoon } from 'react-icons/lu';
+import { FiLifeBuoy } from 'react-icons/fi';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
@@ -43,6 +44,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             title: 'Communication',
             id: 'comm-menu',
             items: [
+                { name: 'Support Tickets', path: '/support', icon: <FiLifeBuoy />, roles: ['admin', 'sales_operator'], badge: 'NEW' },
                 { name: 'Inquiries', path: '/inquiries', icon: <FiMail />, roles: ['admin', 'sales_operator'] },
                 { name: 'Campaigns', path: '/campaigns', icon: <FiMessageCircle />, roles: ['admin'] },
                 { name: 'WhatsApp', path: '/whatsapp', icon: <FiMessageCircle />, roles: ['admin'] },
