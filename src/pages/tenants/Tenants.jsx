@@ -77,8 +77,8 @@ const Tenants = () => {
                     break;
             }
             fetchData();
-        } catch {
-            toast.error(`Failed to ${action} tenant`);
+        } catch (error) {
+            toast.error(error.response?.data?.error || `Failed to ${action} tenant`);
         } finally {
             setActionLoading(prev => ({ ...prev, [tenantId]: null }));
         }
@@ -229,18 +229,7 @@ const Tenants = () => {
                                                         <FiCheckCircle className="w-5 h-5" />
                                                     </button>
                                                 )}
-                                                {tenant.process_status !== 'running' ? (
-                                                    <button
-                                                        onClick={() => handleAction(tenant.id, 'start')}
-                                                        disabled={actionLoading[tenant.id]}
-                                                        className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
-                                                        title="Start"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                                            <path d="M8 5v14l11-7z" />
-                                                        </svg>
-                                                    </button>
-                                                ) : (
+                                                {tenant.process_status === 'running' ? (
                                                     <>
                                                         <button
                                                             onClick={() => handleAction(tenant.id, 'stop')}
@@ -263,6 +252,37 @@ const Tenants = () => {
                                                             </svg>
                                                         </button>
                                                     </>
+                                                ) : tenant.process_status === 'starting' ? (
+                                                    <button
+                                                        disabled
+                                                        className="p-2 text-blue-500 opacity-60 cursor-wait rounded-lg"
+                                                        title={`Provisioning${tenant.provision_step ? `: ${tenant.provision_step}` : ''}`}
+                                                    >
+                                                        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="3" />
+                                                            <path className="opacity-75" fill="currentColor" d="M12 3a9 9 0 019 9h-3a6 6 0 00-6-6V3z" />
+                                                        </svg>
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleAction(
+                                                            tenant.id,
+                                                            tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name
+                                                                ? 'provision'
+                                                                : 'start'
+                                                        )}
+                                                        disabled={actionLoading[tenant.id]}
+                                                        className={`p-2 rounded-lg transition-colors ${
+                                                            tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name
+                                                                ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30'
+                                                                : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                                                        }`}
+                                                        title={tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name ? 'Retry provisioning' : 'Start'}
+                                                    >
+                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M8 5v14l11-7z" />
+                                                        </svg>
+                                                    </button>
                                                 )}
                                                 <button
                                                     onClick={() => navigate(`/tenants/${tenant.id}`)}
@@ -310,15 +330,7 @@ const Tenants = () => {
                         </div>
 
                         <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
-                            {tenant.process_status !== 'running' ? (
-                                <button
-                                    onClick={() => handleAction(tenant.id, 'start')}
-                                    disabled={actionLoading[tenant.id]}
-                                    className="flex-1 py-2.5 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
-                                >
-                                    Start
-                                </button>
-                            ) : (
+                            {tenant.process_status === 'running' ? (
                                 <>
                                     <button
                                         onClick={() => handleAction(tenant.id, 'stop')}
@@ -335,6 +347,30 @@ const Tenants = () => {
                                         Restart
                                     </button>
                                 </>
+                            ) : tenant.process_status === 'starting' ? (
+                                <button
+                                    disabled
+                                    className="flex-1 py-2.5 text-blue-600 bg-blue-50 dark:bg-blue-900/30 rounded-lg font-medium text-sm"
+                                >
+                                    Provisioning...
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleAction(
+                                        tenant.id,
+                                        tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name
+                                            ? 'provision'
+                                            : 'start'
+                                    )}
+                                    disabled={actionLoading[tenant.id]}
+                                    className={`flex-1 py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 ${
+                                        tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name
+                                            ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/30'
+                                            : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30'
+                                    }`}
+                                >
+                                    {tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name ? 'Retry Provisioning' : 'Start'}
+                                </button>
                             )}
                             <button
                                 onClick={() => navigate(`/tenants/${tenant.id}`)}
@@ -353,9 +389,10 @@ const Tenants = () => {
                 showCreateModal && (
                     <CreateTenantModal
                         onClose={() => setShowCreateModal(false)}
-                        onCreated={() => {
+                        onCreated={(tenantId) => {
                             setShowCreateModal(false);
                             fetchData();
+                            if (tenantId) navigate(`/tenants/${tenantId}`);
                         }}
                     />
                 )
@@ -378,7 +415,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
     const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
-    const [selectedProducts, setSelectedProducts] = useState(['napcrm']);
+    const [selectedProducts, setSelectedProducts] = useState(['nexcrm']);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -404,7 +441,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
 
     const PRODUCTS = [
         {
-            slug: 'napcrm',
+            slug: 'nexcrm',
             name: 'NapCRM',
             desc: 'Full CRM with contacts, deals, tasks, storefront',
             icon: FiDatabase,
@@ -460,9 +497,9 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
         }
         setLoading(true);
         try {
-            await tenantsAPI.create({ ...formData, tools: selectedProducts });
-            toast.success('Tenant created and provisioning started!');
-            onCreated();
+            const response = await tenantsAPI.create({ ...formData, tools: selectedProducts });
+            toast.success('Tenant created. Provisioning is now running.');
+            onCreated(response.data?.tenantId);
         } catch (error) {
             toast.error(error.response?.data?.error || 'Failed to create tenant');
         } finally {
@@ -588,7 +625,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {selectedProducts.includes('napcrm') && (
+                        {selectedProducts.includes('nexcrm') && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Industry
@@ -620,7 +657,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                             </select>
                         </div>
                         )}
-                        {selectedProducts.includes('napcrm') && formData.industry_type === 'school' && (
+                        {selectedProducts.includes('nexcrm') && formData.industry_type === 'school' && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Academic mode
@@ -661,13 +698,13 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
-                        {selectedProducts.includes('napcrm') && (
+                        {selectedProducts.includes('nexcrm') && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
                                 <FiServer className="text-brand-500" /> Destination Server
                             </label>
                             <select
-                                required={selectedProducts.includes('napcrm')}
+                                required={selectedProducts.includes('nexcrm')}
                                 name="server_id"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                 value={formData.server_id}

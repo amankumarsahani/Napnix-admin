@@ -235,8 +235,9 @@ const TenantDetail = () => {
             }
             await fetchTenant();
             await fetchLogs();
-        } catch {
-            toast.error(`Failed to ${action} tenant`);
+        } catch (error) {
+            const apiError = error.response?.data;
+            toast.error(apiError?.provisionError || apiError?.error || `Failed to ${action} tenant`);
         } finally {
             setActionLoading(null);
         }
@@ -614,6 +615,14 @@ const TenantDetail = () => {
         );
     }
 
+    const infrastructureReady = Boolean(
+        tenant.assigned_port
+        && tenant.db_name
+        && tenant.process_status !== 'starting'
+        && tenant.process_status !== 'error'
+        && !tenant.provision_error
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -641,15 +650,7 @@ const TenantDetail = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {tenant.process_status !== 'running' ? (
-                        <button
-                            onClick={() => handleAction('start')}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                        >
-                            Start
-                        </button>
-                    ) : (
+                    {tenant.process_status === 'running' ? (
                         <>
                             <button
                                 onClick={() => handleAction('stop')}
@@ -666,6 +667,29 @@ const TenantDetail = () => {
                                 Restart
                             </button>
                         </>
+                    ) : tenant.process_status === 'starting' ? (
+                        <button
+                            disabled
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg opacity-70 cursor-wait transition-colors flex items-center gap-2"
+                        >
+                            Provisioning{tenant.provision_step ? `: ${tenant.provision_step.replace(/_/g, ' ')}` : '...'}
+                        </button>
+                    ) : tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name ? (
+                        <button
+                            onClick={() => handleAction('provision')}
+                            disabled={actionLoading}
+                            className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                        >
+                            {actionLoading === 'provision' ? 'Retrying...' : 'Retry Provisioning'}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => handleAction('start')}
+                            disabled={actionLoading}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                        >
+                            Start
+                        </button>
                     )}
 
                     <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2"></div>
@@ -726,6 +750,18 @@ const TenantDetail = () => {
                 </div>
             </div>
 
+            {(tenant.process_status === 'error' || tenant.provision_error) && (
+                <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 px-5 py-4">
+                    <div className="font-semibold text-rose-800 dark:text-rose-200">Provisioning failed</div>
+                    <div className="mt-1 text-sm text-rose-700 dark:text-rose-300">
+                        {tenant.provision_step && (
+                            <span className="font-medium">Step: {tenant.provision_step.replace(/_/g, ' ')}. </span>
+                        )}
+                        {tenant.provision_error || 'The tenant infrastructure is incomplete. Retry provisioning to continue from the existing database and port.'}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Port</div>
@@ -751,10 +787,10 @@ const TenantDetail = () => {
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                     <FiGlobe className="w-5 h-5 text-slate-500" />
                     Domains
-                    <button onClick={handleRepairDns} disabled={repairingDns} title="Fixes Cloudflare Error 1014 — re-attaches Pages custom domains" className="ml-auto text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1 mr-2 disabled:opacity-50">
+                    <button onClick={handleRepairDns} disabled={repairingDns || !infrastructureReady} title={infrastructureReady ? 'Re-attach Pages custom domains' : 'Finish tenant provisioning before repairing DNS'} className="ml-auto text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1 mr-2 disabled:opacity-50">
                         {repairingDns ? 'Repairing…' : '⚡ Repair DNS'}
                     </button>
-                    <button onClick={openDomainModal} className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+                    <button onClick={openDomainModal} disabled={!infrastructureReady} title={infrastructureReady ? 'Configure custom domains' : 'Finish tenant provisioning before configuring domains'} className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 disabled:opacity-50">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         Configure
                     </button>
@@ -774,11 +810,11 @@ const TenantDetail = () => {
                                         {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
                                     </span>
                                 ) : (
-                                    <span className="text-[10px] text-slate-400">Default</span>
+                                    <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
+                        <a href={infrastructureReady ? (tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
@@ -791,10 +827,10 @@ const TenantDetail = () => {
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
                                 <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-slate-400">Managed by Napnix</span>
+                                <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Managed by Napnix' : 'Not provisioned'}</span>
                             </div>
                         </div>
-                        <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
+                        <a href={infrastructureReady ? `https://${tenant.slug}-crm-api.${domain}` : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
@@ -812,11 +848,11 @@ const TenantDetail = () => {
                                         {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
                                     </span>
                                 ) : (
-                                    <span className="text-[10px] text-slate-400">Default</span>
+                                    <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
                                 )}
                             </div>
                         </div>
-                        <a href={tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">
+                        <a href={infrastructureReady ? (tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
