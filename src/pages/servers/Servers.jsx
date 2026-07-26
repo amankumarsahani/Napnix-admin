@@ -18,7 +18,15 @@ const Servers = () => {
         ssh_user: 'admin',
         cloudflare_tunnel_id: '',
         db_host: 'localhost',
-        is_active: true
+        db_port: 3306,
+        db_user: 'nexcrm',
+        db_password: '',
+        nexcrm_backend_path: '/var/www/html/nexcrm-backend',
+        ecosystem_config_path: '/var/www/html/ecosystem.config.js',
+        cloudflare_config_path: '/etc/cloudflared/config.yml',
+        port_start: 3001,
+        port_end: 3050,
+        is_active: false
     });
 
     const fetchServers = async () => {
@@ -27,7 +35,7 @@ const Servers = () => {
             if (searchTerm) params.search = searchTerm;
             const res = await serverService.getAllServers(params);
             if (res.success) setServers(res.data);
-        } catch (_error) {
+        } catch {
             toast.error('Failed to load servers');
         } finally {
             setLoading(false);
@@ -48,8 +56,8 @@ const Servers = () => {
             } else {
                 toast.error(`Connection failed: ${res.message}`);
             }
-        } catch (_error) {
-            toast.error('Connection test failed');
+        } catch (error) {
+            toast.error(error.response?.data?.error || error.response?.data?.message || 'Connection test failed');
         } finally {
             setTestingId(null);
         }
@@ -63,6 +71,14 @@ const Servers = () => {
             ssh_user: server.ssh_user,
             cloudflare_tunnel_id: server.cloudflare_tunnel_id,
             db_host: server.db_host,
+            db_port: server.db_port || 3306,
+            db_user: server.db_user || 'nexcrm',
+            db_password: '',
+            nexcrm_backend_path: server.nexcrm_backend_path || '/var/www/html/nexcrm-backend',
+            ecosystem_config_path: server.ecosystem_config_path || '/var/www/html/ecosystem.config.js',
+            cloudflare_config_path: server.cloudflare_config_path || '/etc/cloudflared/config.yml',
+            port_start: server.port_start || 3001,
+            port_end: server.port_end || 3050,
             is_active: server.is_active
         });
         setIsModalOpen(true);
@@ -76,7 +92,7 @@ const Servers = () => {
                 toast.success(`Server ${newStatus ? 'activated' : 'deactivated'}`);
                 fetchServers();
             }
-        } catch (error) {
+        } catch {
             toast.error('Failed to update status');
         }
     };
@@ -90,7 +106,15 @@ const Servers = () => {
             ssh_user: 'admin',
             cloudflare_tunnel_id: '',
             db_host: 'localhost',
-            is_active: true
+            db_port: 3306,
+            db_user: 'nexcrm',
+            db_password: '',
+            nexcrm_backend_path: '/var/www/html/nexcrm-backend',
+            ecosystem_config_path: '/var/www/html/ecosystem.config.js',
+            cloudflare_config_path: '/etc/cloudflared/config.yml',
+            port_start: 3001,
+            port_end: 3050,
+            is_active: false
         });
     };
 
@@ -109,8 +133,11 @@ const Servers = () => {
                 closeModal();
                 fetchServers();
             }
-        } catch (_error) {
-            toast.error(`Failed to ${editingId ? 'update' : 'add'} server`);
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message
+                || `Failed to ${editingId ? 'update' : 'add'} server`
+            );
         }
     };
 
@@ -207,6 +234,10 @@ const Servers = () => {
                                         <span>Running: <strong>{server.running_count || 0}</strong></span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <FiDatabase className="text-slate-400" />
+                                        <span>Ports free: <strong>{server.available_ports || 0}/{server.total_ports || 0}</strong></span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                                         <FiCloud className="text-sky-500" />
                                         <span className="truncate max-w-[150px]" title={server.cloudflare_tunnel_id}>
                                             Tunnel: {server.cloudflare_tunnel_id?.substring(0, 8)}...
@@ -240,7 +271,7 @@ const Servers = () => {
             {/* Add/Edit Server Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-md p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8 shadow-2xl scale-in border border-slate-100 dark:border-slate-700">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {editingId ? 'Edit Server' : 'Add New Server'}
@@ -249,37 +280,149 @@ const Servers = () => {
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
-                                <input
-                                    type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
-                                    placeholder="e.g. Server-2"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hostname (via CF Tunnel)</label>
-                                <input
-                                    type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
-                                    placeholder="e.g. ssh2.domain.com"
-                                    value={formData.hostname}
-                                    onChange={e => setFormData({ ...formData, hostname: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cloudflare Tunnel ID</label>
-                                <input
-                                    type="text" required
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 placeholder-slate-500"
-                                    placeholder="Tunnel UUID"
-                                    value={formData.cloudflare_tunnel_id}
-                                    onChange={e => setFormData({ ...formData, cloudflare_tunnel_id: e.target.value })}
-                                />
-                            </div>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <section>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Connection</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Display Name</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            placeholder="e.g. Alpine Server 2"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">SSH User</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.ssh_user}
+                                            onChange={e => setFormData({ ...formData, ssh_user: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hostname</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            placeholder="ssh2.napnix.in"
+                                            value={formData.hostname}
+                                            onChange={e => setFormData({ ...formData, hostname: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cloudflare Tunnel ID</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            placeholder="Tunnel UUID"
+                                            value={formData.cloudflare_tunnel_id}
+                                            onChange={e => setFormData({ ...formData, cloudflare_tunnel_id: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">MariaDB</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Database Host</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.db_host}
+                                            onChange={e => setFormData({ ...formData, db_host: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Database Port</label>
+                                        <input
+                                            type="number" min="1" max="65535" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.db_port}
+                                            onChange={e => setFormData({ ...formData, db_port: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Database User</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.db_user}
+                                            onChange={e => setFormData({ ...formData, db_user: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Database Password</label>
+                                        <input
+                                            type="password"
+                                            required={!editingId}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            placeholder={editingId ? 'Leave blank to keep current password' : 'Required'}
+                                            value={formData.db_password}
+                                            onChange={e => setFormData({ ...formData, db_password: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Runtime Paths and Ports</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">NexCRM Backend Path</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono"
+                                            value={formData.nexcrm_backend_path}
+                                            onChange={e => setFormData({ ...formData, nexcrm_backend_path: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">PM2 Ecosystem Path</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono"
+                                            value={formData.ecosystem_config_path}
+                                            onChange={e => setFormData({ ...formData, ecosystem_config_path: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tunnel Config Path</label>
+                                        <input
+                                            type="text" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono"
+                                            value={formData.cloudflare_config_path}
+                                            onChange={e => setFormData({ ...formData, cloudflare_config_path: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tenant Port Start</label>
+                                        <input
+                                            type="number" min="1024" max="65535" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.port_start}
+                                            onChange={e => setFormData({ ...formData, port_start: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tenant Port End</label>
+                                        <input
+                                            type="number" min="1024" max="65535" required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                            value={formData.port_end}
+                                            onChange={e => setFormData({ ...formData, port_end: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                    Ports are unique per server. The same local range can be reused safely on another server.
+                                </p>
+                            </section>
                             <div className="flex gap-4 pt-2">
                                 <button
                                     type="button"
