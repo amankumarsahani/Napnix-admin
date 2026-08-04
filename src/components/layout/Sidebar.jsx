@@ -6,7 +6,7 @@ import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText,
     FiMail, FiMessageCircle, FiLayout, FiCreditCard, FiActivity, FiSearch, FiLayers,
     FiServer, FiHardDrive, FiChevronDown, FiChevronRight, FiGrid, FiPlus, FiXCircle,
-    FiDollarSign
+    FiDollarSign, FiGlobe
 } from '../icons/FeatherIcons';
 import { LuSun, LuMoon } from 'react-icons/lu';
 import { FiLifeBuoy } from 'react-icons/fi';
@@ -37,6 +37,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Dashboard', path: '/dashboard', icon: <FiBarChart2 />, roles: ['admin', 'sales_operator'] },
                 { name: 'Tenants', path: '/tenants', icon: <FiLayers />, roles: ['admin'] },
+                { name: 'Partners', path: '/partners', icon: <FiGlobe />, roles: ['admin'], enabled: isFullEdition },
                 { name: 'Clients', path: '/clients', icon: <FiUsers />, roles: ['admin', 'user'] , enabled: isFullEdition },
                 { name: 'Projects', path: '/projects', icon: <FiBriefcase />, roles: ['admin', 'user'] , enabled: isFullEdition },
                 { name: 'Leads', path: '/leads', icon: <FiZap />, roles: ['admin', 'sales_operator'], badge: 'NEW' , enabled: isFullEdition },
