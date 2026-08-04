@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { mobileAppAdminAPI } from '../../api/admin';
+import { brand } from '../../brand';
 
 export default function MobileApp() {
     const queryClient = useQueryClient();
@@ -64,7 +65,7 @@ export default function MobileApp() {
                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-600">Android Distribution</p>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mt-2">Mobile App APK</h1>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-                            Upload a new APK from Napnix Admin. The previous published APK is replaced immediately, and every tenant CRM gets the updated Android download link.
+                            Upload a new APK from {brand.productName}. The previous published APK is replaced immediately, and every tenant CRM gets the updated Android download link.
                         </p>
                     </div>
                     {release?.download_url && (
@@ -85,7 +86,7 @@ export default function MobileApp() {
                     <div className="flex items-center justify-between gap-4 mb-5">
                         <div>
                             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Current Release</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">The APK currently visible across all NapCRM tenants.</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">The APK currently visible across all {brand.crmProductName} tenants.</p>
                         </div>
                     </div>
 

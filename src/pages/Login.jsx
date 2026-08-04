@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { brand } from '../brand';
 
 const loginSchema = z.object({
     email: z.string().min(1, 'Email is required').email('Invalid email address'),
@@ -59,7 +60,7 @@ export default function Login() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-3 text-center">Napnix <br></br> Admin Portal</h1>
+                    <h1 className="text-3xl font-bold text-white mb-3 text-center">{brand.productShortName} <br></br> Admin Portal</h1>
                     <p className="text-slate-400 text-base leading-relaxed text-center">
                         Multi-tenant business management platform.
                     </p>
@@ -104,7 +105,7 @@ export default function Login() {
                 </div>
 
                 <div className="absolute bottom-8 text-center">
-                    <p className="text-slate-500 text-xs">&copy; {new Date().getFullYear()} Napnix</p>
+                    <p className="text-slate-500 text-xs">&copy; {new Date().getFullYear()} {brand.productShortName}</p>
                 </div>
             </div>
 
@@ -118,7 +119,7 @@ export default function Login() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Napnix</h1>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">{brand.productShortName}</h1>
                     </div>
 
                     <div className="mb-8">
@@ -218,7 +219,7 @@ export default function Login() {
                     </form>
 
                     <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                        Napnix Admin Portal
+                        {brand.productShortName} Admin Portal
                     </p>
                 </div>
             </div>

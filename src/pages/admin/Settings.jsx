@@ -5,6 +5,7 @@ import { settingsAPI } from '../../api';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { brand } from '../../brand';
 
 const profileSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
@@ -951,7 +952,7 @@ export default function Settings() {
                                                 type="text"
                                                 value={smtpSettings.smtp_from_name}
                                                 onChange={e => setSmtpSettings({ ...smtpSettings, smtp_from_name: e.target.value })}
-                                                placeholder="Napnix"
+                                                placeholder={brand.productShortName}
                                                 className={inputBase}
                                             />
                                         </div>

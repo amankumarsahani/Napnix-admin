@@ -11,7 +11,9 @@
     "test": "vitest run",
     "preview": "vite preview",
     "predeploy": "npm run build:prod",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "brand-guard": "node scripts/brand-guard.mjs",
+    "prebuild": "npm run brand-guard"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",

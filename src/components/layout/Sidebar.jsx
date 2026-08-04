@@ -10,6 +10,7 @@ import {
 } from '../icons/FeatherIcons';
 import { LuSun, LuMoon } from 'react-icons/lu';
 import { FiLifeBuoy } from 'react-icons/fi';
+import { brand } from '../../brand';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
@@ -106,7 +107,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 <FiZap size={24} />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Napnix</h1>
+                                <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{brand.productShortName}</h1>
                                 <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-widest">Enterprise</p>
                             </div>
                         </div>

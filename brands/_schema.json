@@ -1,0 +1,229 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "napnix://brands/_schema.json",
+  "title": "Whitelabel brand token set",
+  "description": "Canonical brand token schema shared by Nexspire-admin, nexcrm-frontend and nexcrm-storefront. One file per brand in brands/<slug>.json, selected at build time with VITE_BRAND. See nexcrm-agents/shared/whitelabel-execution-plan.md (P0-01).",
+  "type": "object",
+  "required": [
+    "slug",
+    "productName",
+    "baseDomain",
+    "colors"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Must match the filename: brands/<slug>.json"
+    },
+    "productName": {
+      "type": "string",
+      "description": "Full product name shown in UI chrome, page titles and emails."
+    },
+    "productShortName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Compact form for collapsed sidebars and mobile headers. Falls back to productName."
+    },
+    "companyLegalName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Legal entity for invoice footers and email footers."
+    },
+    "crmProductName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the CRM product SKU, e.g. NapCRM. Falls back to productName."
+    },
+    "mailProductName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Name of the email-marketing product SKU, e.g. NapMail. Falls back to productName."
+    },
+    "baseDomain": {
+      "type": "string",
+      "description": "Root domain for tenant hostnames, e.g. napnix.in. Must match NEXCRM_DOMAIN on the backend."
+    },
+    "websiteUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "logoLight": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Logo for light backgrounds. Path under public/."
+    },
+    "logoDark": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "logoMark": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Square icon form, used for collapsed sidebar and mobile."
+    },
+    "favicon": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "colors": {
+      "type": "object",
+      "required": [
+        "primary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "Base brand colour. If brandScale is omitted, the 50-950 scale is derived from this."
+        },
+        "primaryFg": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "description": "Foreground colour that must read on top of primary."
+        },
+        "accent": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "sidebar": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "surface": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "brandScale": {
+          "$ref": "#/definitions/scale",
+          "description": "Explicit 50-950 ramp. Supply this when an existing palette must be preserved exactly; otherwise it is derived from primary."
+        },
+        "accentScale": {
+          "$ref": "#/definitions/scale"
+        }
+      }
+    },
+    "themeDefault": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark",
+        "system"
+      ],
+      "default": "system"
+    },
+    "fontFamily": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "CSS font-family stack. Null keeps the app default."
+    },
+    "customCss": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Raw CSS injected last. Escape hatch only - prefer tokens."
+    },
+    "supportEmail": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "supportUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "docsUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "termsUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "privacyUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "hidePoweredBy": {
+      "type": "boolean",
+      "default": true
+    },
+    "legacyDomains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Retired base domains this brand still answers on, so old bookmarks keep resolving. A new brand ships an empty list."
+    },
+    "tagline": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short descriptor appended to the page title and used as the meta description, e.g. 'Customer Relationship Management'."
+    }
+  },
+  "definitions": {
+    "scale": {
+      "type": "object",
+      "required": [
+        "50",
+        "100",
+        "200",
+        "300",
+        "400",
+        "500",
+        "600",
+        "700",
+        "800",
+        "900",
+        "950"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(50|100|200|300|400|500|600|700|800|900|950)$": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { brand } from '../../brand';
 
 // Inline SVG Icons (Heroicons style - matching existing project components)
 const Icons = {
@@ -123,7 +124,7 @@ const Icons = {
 };
 
 const ApiDocumentation = () => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
     const { isDark } = useTheme();
     const [expandedCategories, setExpandedCategories] = useState(['Core']);
     const [expandedEndpoints, setExpandedEndpoints] = useState({});
@@ -368,7 +369,7 @@ const ApiDocumentation = () => {
                         </div>
                         <div>
                             <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>API Documentation</h1>
-                            <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'} text-sm`}>NapCRM v1.0 • 13 Industries • REST API</p>
+                            <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'} text-sm`}>{brand.crmProductName} v1.0 • 13 Industries • REST API</p>
                         </div>
                     </div>
                     <div className="relative">
@@ -504,7 +505,7 @@ const ApiDocumentation = () => {
                 {/* Footer */}
                 <div className={`mt-8 p-6 text-center text-sm rounded-xl ${isDark ? 'bg-slate-800/50 text-slate-500 border-slate-700' : 'bg-white text-gray-400 border-gray-200'} border`}>
                     <p>Need help? Contact <a href={`mailto:support@${domain}`} className="text-brand-400 hover:underline">support@{domain}</a></p>
-                    <p className="mt-1 text-xs">© 2024 Napnix</p>
+                    <p className="mt-1 text-xs">© 2024 {brand.productShortName}</p>
                 </div>
             </div>
         </div>

@@ -9,9 +9,10 @@ import { FiPlus, FiServer, FiGlobe, FiCheckCircle, FiMail, FiDatabase } from '..
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { brand } from '../../brand';
 
 const Tenants = () => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
     const navigate = useNavigate();
     const [tenants, setTenants] = useState([]);
     const [stats, setStats] = useState(null);
@@ -101,7 +102,7 @@ const Tenants = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Tenants</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Manage NexCRM customers</p>
+                    <p className="text-slate-500 dark:text-slate-400">Manage {brand.crmProductName} customers</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
@@ -412,7 +413,7 @@ const Tenants = () => {
 };
 
 const CreateTenantModal = ({ onClose, onCreated }) => {
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
     const [selectedProducts, setSelectedProducts] = useState(['nexcrm']);
@@ -442,14 +443,14 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
     const PRODUCTS = [
         {
             slug: 'nexcrm',
-            name: 'NapCRM',
+            name: brand.crmProductName,
             desc: 'Full CRM with contacts, deals, tasks, storefront',
             icon: FiDatabase,
             color: 'brand'
         },
         {
             slug: 'napmail',
-            name: 'NapMail',
+            name: brand.mailProductName,
             desc: 'Email marketing campaigns & automation',
             icon: FiMail,
             color: 'sky'
