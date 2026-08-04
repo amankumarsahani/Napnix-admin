@@ -9,59 +9,66 @@ import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
+import { isFullEdition, FEATURE_NAPMAIL, FEATURE_WHATSAPP } from './config/edition';
+
+// Each excluded page is guarded by a plain ternary rather than a helper call.
+// That matters: the condition folds to a literal at build time, so Rollup can
+// prove the import() unreachable and drop the chunk. Routed through a helper the
+// loader closure stays reachable and the agency screens ship in the partner
+// bundle anyway - which defeats the point.
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const ClientsList = React.lazy(() => import('./pages/clients/ClientsList'));
-const ClientDetail = React.lazy(() => import('./pages/clients/ClientDetail'));
-const ProjectsList = React.lazy(() => import('./pages/projects/ProjectsList'));
-const LeadsList = React.lazy(() => import('./pages/leads/LeadsList'));
-const LeadDetail = React.lazy(() => import('./pages/leads/LeadDetail'));
-const Inquiries = React.lazy(() => import('./pages/Inquiries'));
-const InquiryDetail = React.lazy(() => import('./pages/inquiries/InquiryDetail'));
+const ClientsList = isFullEdition ? React.lazy(() => import('./pages/clients/ClientsList')) : null;
+const ClientDetail = isFullEdition ? React.lazy(() => import('./pages/clients/ClientDetail')) : null;
+const ProjectsList = isFullEdition ? React.lazy(() => import('./pages/projects/ProjectsList')) : null;
+const LeadsList = isFullEdition ? React.lazy(() => import('./pages/leads/LeadsList')) : null;
+const LeadDetail = isFullEdition ? React.lazy(() => import('./pages/leads/LeadDetail')) : null;
+const Inquiries = isFullEdition ? React.lazy(() => import('./pages/Inquiries')) : null;
+const InquiryDetail = isFullEdition ? React.lazy(() => import('./pages/inquiries/InquiryDetail')) : null;
 const Team = React.lazy(() => import('./pages/admin/Team'));
 const Settings = React.lazy(() => import('./pages/admin/Settings'));
-const Transactions = React.lazy(() => import('./pages/admin/Transactions'));
-const Templates = React.lazy(() => import('./pages/admin/Templates'));
-const Documents = React.lazy(() => import('./pages/admin/Documents'));
-const DocumentEdit = React.lazy(() => import('./pages/admin/DocumentEdit'));
+const Transactions = isFullEdition ? React.lazy(() => import('./pages/admin/Transactions')) : null;
+const Templates = isFullEdition ? React.lazy(() => import('./pages/admin/Templates')) : null;
+const Documents = isFullEdition ? React.lazy(() => import('./pages/admin/Documents')) : null;
+const DocumentEdit = isFullEdition ? React.lazy(() => import('./pages/admin/DocumentEdit')) : null;
 const Tenants = React.lazy(() => import('./pages/tenants/Tenants'));
 const TenantDetail = React.lazy(() => import('./pages/tenants/TenantDetail'));
 const Servers = React.lazy(() => import('./pages/servers/Servers'));
-const BackupAccounts = React.lazy(() => import('./pages/backups/BackupAccounts'));
+const BackupAccounts = isFullEdition ? React.lazy(() => import('./pages/backups/BackupAccounts')) : null;
 const ApiDocumentation = React.lazy(() => import('./pages/admin/ApiDocumentation'));
 const MobileApp = React.lazy(() => import('./pages/admin/MobileApp'));
-const Telemetry = React.lazy(() => import('./pages/system/Telemetry'));
-const SiteAnalytics = React.lazy(() => import('./pages/system/SiteAnalytics'));
-const Campaigns = React.lazy(() => import('./pages/marketing/Campaigns'));
-const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail'));
-const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
-const Workflows = React.lazy(() => import('./pages/marketing/Workflows'));
-const WorkflowEditor = React.lazy(() => import('./pages/marketing/WorkflowEditor'));
-const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage'));
-const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
-const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
-const PortfolioList = React.lazy(() => import('./pages/portfolio/PortfolioList'));
-const PortfolioEditor = React.lazy(() => import('./pages/portfolio/PortfolioEditor'));
-const CaseStudiesList = React.lazy(() => import('./pages/caseStudies/CaseStudiesList'));
-const CaseStudyEditor = React.lazy(() => import('./pages/caseStudies/CaseStudyEditor'));
+const Telemetry = isFullEdition ? React.lazy(() => import('./pages/system/Telemetry')) : null;
+const SiteAnalytics = isFullEdition ? React.lazy(() => import('./pages/system/SiteAnalytics')) : null;
+const Campaigns = isFullEdition ? React.lazy(() => import('./pages/marketing/Campaigns')) : null;
+const CampaignDetail = isFullEdition ? React.lazy(() => import('./pages/marketing/CampaignDetail')) : null;
+const SmtpAccounts = isFullEdition ? React.lazy(() => import('./pages/marketing/SmtpAccounts')) : null;
+const Workflows = isFullEdition ? React.lazy(() => import('./pages/marketing/Workflows')) : null;
+const WorkflowEditor = isFullEdition ? React.lazy(() => import('./pages/marketing/WorkflowEditor')) : null;
+const PricingPage = isFullEdition ? React.lazy(() => import('./pages/marketing/PricingPage')) : null;
+const BlogsList = isFullEdition ? React.lazy(() => import('./pages/blogs/BlogsList')) : null;
+const BlogEditor = isFullEdition ? React.lazy(() => import('./pages/blogs/BlogEditor')) : null;
+const PortfolioList = isFullEdition ? React.lazy(() => import('./pages/portfolio/PortfolioList')) : null;
+const PortfolioEditor = isFullEdition ? React.lazy(() => import('./pages/portfolio/PortfolioEditor')) : null;
+const CaseStudiesList = isFullEdition ? React.lazy(() => import('./pages/caseStudies/CaseStudiesList')) : null;
+const CaseStudyEditor = isFullEdition ? React.lazy(() => import('./pages/caseStudies/CaseStudyEditor')) : null;
 
-const EmailMarketingDashboard = React.lazy(() => import('./pages/email-marketing/Dashboard'));
-const EmailContacts = React.lazy(() => import('./pages/email-marketing/Contacts'));
-const EmailContactDetail = React.lazy(() => import('./pages/email-marketing/ContactDetail'));
-const EmailTemplates = React.lazy(() => import('./pages/email-marketing/Templates'));
-const TemplateEditor = React.lazy(() => import('./pages/email-marketing/TemplateEditor'));
-const EmailCampaigns = React.lazy(() => import('./pages/email-marketing/Campaigns'));
-const CampaignWizard = React.lazy(() => import('./pages/email-marketing/CampaignWizard'));
-const EmailCampaignDetail = React.lazy(() => import('./pages/email-marketing/CampaignDetail'));
-const EmailAutomations = React.lazy(() => import('./pages/email-marketing/Automations'));
-const AutomationEditor = React.lazy(() => import('./pages/email-marketing/AutomationEditor'));
-const EmailSmtp = React.lazy(() => import('./pages/email-marketing/SmtpAccounts'));
-const EmailDomains = React.lazy(() => import('./pages/email-marketing/Domains'));
-const ToolRegistry = React.lazy(() => import('./pages/tools/ToolRegistry'));
-const Expenses = React.lazy(() => import('./pages/expenses/Expenses'));
+const EmailMarketingDashboard = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Dashboard')) : null;
+const EmailContacts = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Contacts')) : null;
+const EmailContactDetail = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/ContactDetail')) : null;
+const EmailTemplates = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Templates')) : null;
+const TemplateEditor = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/TemplateEditor')) : null;
+const EmailCampaigns = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Campaigns')) : null;
+const CampaignWizard = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/CampaignWizard')) : null;
+const EmailCampaignDetail = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/CampaignDetail')) : null;
+const EmailAutomations = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Automations')) : null;
+const AutomationEditor = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/AutomationEditor')) : null;
+const EmailSmtp = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/SmtpAccounts')) : null;
+const EmailDomains = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Domains')) : null;
+const ToolRegistry = isFullEdition ? React.lazy(() => import('./pages/tools/ToolRegistry')) : null;
+const Expenses = isFullEdition ? React.lazy(() => import('./pages/expenses/Expenses')) : null;
 const SupportInbox = React.lazy(() => import('./pages/support/SupportInbox'));
-const WhatsAppSettings = React.lazy(() => import('./pages/whatsapp/WhatsAppSettings'));
-const WhatsAppDetail = React.lazy(() => import('./pages/whatsapp/WhatsAppDetail'));
+const WhatsAppSettings = FEATURE_WHATSAPP ? React.lazy(() => import('./pages/whatsapp/WhatsAppSettings')) : null;
+const WhatsAppDetail = FEATURE_WHATSAPP ? React.lazy(() => import('./pages/whatsapp/WhatsAppDetail')) : null;
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[60vh]">
@@ -82,65 +89,97 @@ function AppRoutes() {
         <Route path="/" element={<DashboardLayout />}>
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<LazyRoute element={<Dashboard />} />} />
-          <Route path="clients" element={<LazyRoute element={<ClientsList />} />} />
-          <Route path="clients/:id" element={<LazyRoute element={<ClientDetail />} />} />
-          <Route path="projects" element={<LazyRoute element={<ProjectsList />} />} />
-          <Route path="leads" element={<LazyRoute element={<LeadsList />} />} />
-          <Route path="leads/:id" element={<LazyRoute element={<LeadDetail />} />} />
-          <Route path="inquiries" element={<LazyRoute element={<Inquiries />} />} />
-          <Route path="inquiries/:id" element={<LazyRoute element={<InquiryDetail />} />} />
-          <Route path="documents" element={<LazyRoute element={<Documents />} />} />
-          <Route path="documents/:id/edit" element={<LazyRoute element={<DocumentEdit />} />} />
+
+          {/* Our own agency CRM. Absent from a partner build. */}
+          {isFullEdition && (
+            <>
+              <Route path="clients" element={<LazyRoute element={<ClientsList />} />} />
+              <Route path="clients/:id" element={<LazyRoute element={<ClientDetail />} />} />
+              <Route path="projects" element={<LazyRoute element={<ProjectsList />} />} />
+              <Route path="leads" element={<LazyRoute element={<LeadsList />} />} />
+              <Route path="leads/:id" element={<LazyRoute element={<LeadDetail />} />} />
+              <Route path="inquiries" element={<LazyRoute element={<Inquiries />} />} />
+              <Route path="inquiries/:id" element={<LazyRoute element={<InquiryDetail />} />} />
+              <Route path="documents" element={<LazyRoute element={<Documents />} />} />
+              <Route path="documents/:id/edit" element={<LazyRoute element={<DocumentEdit />} />} />
+            </>
+          )}
 
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="templates" element={<LazyRoute element={<Templates />} />} />
+            {/* Control plane - both editions */}
             <Route path="team" element={<LazyRoute element={<Team />} />} />
             <Route path="settings" element={<LazyRoute element={<Settings />} />} />
-            <Route path="transactions" element={<LazyRoute element={<Transactions />} />} />
             <Route path="tenants" element={<LazyRoute element={<Tenants />} />} />
             <Route path="tenants/:id" element={<LazyRoute element={<TenantDetail />} />} />
-            <Route path="infrastructure/servers" element={<LazyRoute element={<Servers />} />} />
-            <Route path="infrastructure/backups" element={<LazyRoute element={<BackupAccounts />} />} />
-            <Route path="campaigns" element={<LazyRoute element={<Campaigns />} />} />
-            <Route path="campaigns/:id" element={<LazyRoute element={<CampaignDetail />} />} />
-            <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />
-            <Route path="workflows" element={<LazyRoute element={<Workflows />} />} />
-            <Route path="workflows/new" element={<LazyRoute element={<WorkflowEditor />} />} />
-            <Route path="workflows/:id" element={<LazyRoute element={<Workflows />} />} />
-            <Route path="workflows/:id/edit" element={<LazyRoute element={<WorkflowEditor />} />} />
             <Route path="api-docs" element={<LazyRoute element={<ApiDocumentation />} />} />
             <Route path="mobile-app" element={<LazyRoute element={<MobileApp />} />} />
-            <Route path="telemetry" element={<LazyRoute element={<Telemetry />} />} />
-            <Route path="site-analytics" element={<LazyRoute element={<SiteAnalytics />} />} />
-            <Route path="pricing" element={<LazyRoute element={<PricingPage />} />} />
-            <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
-            <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
-            <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
-            <Route path="portfolio" element={<LazyRoute element={<PortfolioList />} />} />
-            <Route path="portfolio/new" element={<LazyRoute element={<PortfolioEditor />} />} />
-            <Route path="portfolio/:id/edit" element={<LazyRoute element={<PortfolioEditor />} />} />
-            <Route path="case-studies" element={<LazyRoute element={<CaseStudiesList />} />} />
-            <Route path="case-studies/new" element={<LazyRoute element={<CaseStudyEditor />} />} />
-            <Route path="case-studies/:id/edit" element={<LazyRoute element={<CaseStudyEditor />} />} />
-            <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
-            <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
             <Route path="support" element={<LazyRoute element={<SupportInbox />} />} />
-            <Route path="whatsapp" element={<LazyRoute element={<WhatsAppSettings />} />} />
-            <Route path="whatsapp/:id" element={<LazyRoute element={<WhatsAppDetail />} />} />
-            <Route path="email-marketing" element={<LazyRoute element={<EmailMarketingDashboard />} />} />
-            <Route path="email-marketing/contacts" element={<LazyRoute element={<EmailContacts />} />} />
-            <Route path="email-marketing/contacts/:id" element={<LazyRoute element={<EmailContactDetail />} />} />
-            <Route path="email-marketing/templates" element={<LazyRoute element={<EmailTemplates />} />} />
-            <Route path="email-marketing/templates/new" element={<LazyRoute element={<TemplateEditor />} />} />
-            <Route path="email-marketing/templates/:id/edit" element={<LazyRoute element={<TemplateEditor />} />} />
-            <Route path="email-marketing/campaigns" element={<LazyRoute element={<EmailCampaigns />} />} />
-            <Route path="email-marketing/campaigns/new" element={<LazyRoute element={<CampaignWizard />} />} />
-            <Route path="email-marketing/campaigns/:id" element={<LazyRoute element={<EmailCampaignDetail />} />} />
-            <Route path="email-marketing/automations" element={<LazyRoute element={<EmailAutomations />} />} />
-            <Route path="email-marketing/automations/new" element={<LazyRoute element={<AutomationEditor />} />} />
-            <Route path="email-marketing/automations/:id/edit" element={<LazyRoute element={<AutomationEditor />} />} />
-            <Route path="email-marketing/smtp" element={<LazyRoute element={<EmailSmtp />} />} />
-            <Route path="email-marketing/domains" element={<LazyRoute element={<EmailDomains />} />} />
+
+            {/* A partner operates their own instance, so they see its servers.
+                What they do not get is the per-tenant infrastructure detail
+                (process name, port, DB name, raw PM2 logs) - decision D3. Those
+                three panels are not wired into TenantDetail yet; when they are,
+                gate them on showInfraDetail from config/edition. */}
+            <Route path="infrastructure/servers" element={<LazyRoute element={<Servers />} />} />
+
+            {/* Agency operations: our documents, our money, our marketing site,
+                our website telemetry, our internal tooling. */}
+            {isFullEdition && (
+              <>
+                <Route path="templates" element={<LazyRoute element={<Templates />} />} />
+                <Route path="transactions" element={<LazyRoute element={<Transactions />} />} />
+                <Route path="infrastructure/backups" element={<LazyRoute element={<BackupAccounts />} />} />
+                <Route path="campaigns" element={<LazyRoute element={<Campaigns />} />} />
+                <Route path="campaigns/:id" element={<LazyRoute element={<CampaignDetail />} />} />
+                <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />
+                <Route path="workflows" element={<LazyRoute element={<Workflows />} />} />
+                <Route path="workflows/new" element={<LazyRoute element={<WorkflowEditor />} />} />
+                <Route path="workflows/:id" element={<LazyRoute element={<Workflows />} />} />
+                <Route path="workflows/:id/edit" element={<LazyRoute element={<WorkflowEditor />} />} />
+                <Route path="telemetry" element={<LazyRoute element={<Telemetry />} />} />
+                <Route path="site-analytics" element={<LazyRoute element={<SiteAnalytics />} />} />
+                <Route path="pricing" element={<LazyRoute element={<PricingPage />} />} />
+                <Route path="blogs" element={<LazyRoute element={<BlogsList />} />} />
+                <Route path="blogs/new" element={<LazyRoute element={<BlogEditor />} />} />
+                <Route path="blogs/:id/edit" element={<LazyRoute element={<BlogEditor />} />} />
+                <Route path="portfolio" element={<LazyRoute element={<PortfolioList />} />} />
+                <Route path="portfolio/new" element={<LazyRoute element={<PortfolioEditor />} />} />
+                <Route path="portfolio/:id/edit" element={<LazyRoute element={<PortfolioEditor />} />} />
+                <Route path="case-studies" element={<LazyRoute element={<CaseStudiesList />} />} />
+                <Route path="case-studies/new" element={<LazyRoute element={<CaseStudyEditor />} />} />
+                <Route path="case-studies/:id/edit" element={<LazyRoute element={<CaseStudyEditor />} />} />
+                <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
+                <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
+              </>
+            )}
+
+            {/* WhatsApp Business - add-on (decision D4) */}
+            {FEATURE_WHATSAPP && (
+              <>
+                <Route path="whatsapp" element={<LazyRoute element={<WhatsAppSettings />} />} />
+                <Route path="whatsapp/:id" element={<LazyRoute element={<WhatsAppDetail />} />} />
+              </>
+            )}
+
+            {/* NapMail - add-on (decision D4) */}
+            {FEATURE_NAPMAIL && (
+              <>
+                <Route path="email-marketing" element={<LazyRoute element={<EmailMarketingDashboard />} />} />
+                <Route path="email-marketing/contacts" element={<LazyRoute element={<EmailContacts />} />} />
+                <Route path="email-marketing/contacts/:id" element={<LazyRoute element={<EmailContactDetail />} />} />
+                <Route path="email-marketing/templates" element={<LazyRoute element={<EmailTemplates />} />} />
+                <Route path="email-marketing/templates/new" element={<LazyRoute element={<TemplateEditor />} />} />
+                <Route path="email-marketing/templates/:id/edit" element={<LazyRoute element={<TemplateEditor />} />} />
+                <Route path="email-marketing/campaigns" element={<LazyRoute element={<EmailCampaigns />} />} />
+                <Route path="email-marketing/campaigns/new" element={<LazyRoute element={<CampaignWizard />} />} />
+                <Route path="email-marketing/campaigns/:id" element={<LazyRoute element={<EmailCampaignDetail />} />} />
+                <Route path="email-marketing/automations" element={<LazyRoute element={<EmailAutomations />} />} />
+                <Route path="email-marketing/automations/new" element={<LazyRoute element={<AutomationEditor />} />} />
+                <Route path="email-marketing/automations/:id/edit" element={<LazyRoute element={<AutomationEditor />} />} />
+                <Route path="email-marketing/smtp" element={<LazyRoute element={<EmailSmtp />} />} />
+                <Route path="email-marketing/domains" element={<LazyRoute element={<EmailDomains />} />} />
+              </>
+            )}
           </Route>
         </Route>
       </Route>

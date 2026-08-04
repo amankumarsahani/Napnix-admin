@@ -10,12 +10,12 @@
  */
 
 /**
- * Agency-operations surfaces. These are Napnix's own business - our CRM, our
+ * Agency-operations surfaces. These are our own business - our CRM, our
  * marketing site CMS, our money, our infrastructure telemetry - and are never
  * mounted, routed or bundled in a whitelabel build. Because they cannot reach a
  * partner, they are also exempt from the brand guard.
  */
-export const NAPNIX_ONLY_PATHS = [
+export const AGENCY_ONLY_PATHS = [
     // Our own agency CRM
     'pages/clients',
     'pages/projects',
@@ -65,6 +65,6 @@ export const INFRA_DETAIL_PATHS = [
 
 /** Everything excluded from a whitelabel build. */
 export const WHITELABEL_EXCLUDED_PATHS = [
-    ...NAPNIX_ONLY_PATHS,
+    ...AGENCY_ONLY_PATHS,
     ...INFRA_DETAIL_PATHS,
 ];

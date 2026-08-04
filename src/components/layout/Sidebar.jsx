@@ -11,6 +11,7 @@ import {
 import { LuSun, LuMoon } from 'react-icons/lu';
 import { FiLifeBuoy } from 'react-icons/fi';
 import { brand } from '../../brand';
+import { isFullEdition, features, showInfraDetail } from '../../config/edition';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
@@ -36,9 +37,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             items: [
                 { name: 'Dashboard', path: '/dashboard', icon: <FiBarChart2 />, roles: ['admin', 'sales_operator'] },
                 { name: 'Tenants', path: '/tenants', icon: <FiLayers />, roles: ['admin'] },
-                { name: 'Clients', path: '/clients', icon: <FiUsers />, roles: ['admin', 'user'] },
-                { name: 'Projects', path: '/projects', icon: <FiBriefcase />, roles: ['admin', 'user'] },
-                { name: 'Leads', path: '/leads', icon: <FiZap />, roles: ['admin', 'sales_operator'], badge: 'NEW' },
+                { name: 'Clients', path: '/clients', icon: <FiUsers />, roles: ['admin', 'user'] , enabled: isFullEdition },
+                { name: 'Projects', path: '/projects', icon: <FiBriefcase />, roles: ['admin', 'user'] , enabled: isFullEdition },
+                { name: 'Leads', path: '/leads', icon: <FiZap />, roles: ['admin', 'sales_operator'], badge: 'NEW' , enabled: isFullEdition },
             ]
         },
         {
@@ -46,34 +47,34 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             id: 'comm-menu',
             items: [
                 { name: 'Support Tickets', path: '/support', icon: <FiLifeBuoy />, roles: ['admin', 'sales_operator'], badge: 'NEW' },
-                { name: 'Inquiries', path: '/inquiries', icon: <FiMail />, roles: ['admin', 'sales_operator'] },
-                { name: 'Campaigns', path: '/campaigns', icon: <FiMessageCircle />, roles: ['admin'] },
-                { name: 'WhatsApp', path: '/whatsapp', icon: <FiMessageCircle />, roles: ['admin'] },
-                { name: 'Workflows', path: '/workflows', icon: <FiActivity />, roles: ['admin'] },
-                { name: 'Blogs', path: '/blogs', icon: <FiFileText />, roles: ['admin'] },
-                { name: 'Portfolio', path: '/portfolio', icon: <FiBriefcase />, roles: ['admin'] },
-                { name: 'Case Studies', path: '/case-studies', icon: <FiLayers />, roles: ['admin'] },
+                { name: 'Inquiries', path: '/inquiries', icon: <FiMail />, roles: ['admin', 'sales_operator'] , enabled: isFullEdition },
+                { name: 'Campaigns', path: '/campaigns', icon: <FiMessageCircle />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'WhatsApp', path: '/whatsapp', icon: <FiMessageCircle />, roles: ['admin'] , enabled: features.whatsapp },
+                { name: 'Workflows', path: '/workflows', icon: <FiActivity />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'Blogs', path: '/blogs', icon: <FiFileText />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'Portfolio', path: '/portfolio', icon: <FiBriefcase />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'Case Studies', path: '/case-studies', icon: <FiLayers />, roles: ['admin'] , enabled: isFullEdition },
             ]
         },
         {
             title: 'Infrastructure',
             id: 'infrastructure',
             items: [
-                { name: 'Servers', path: '/infrastructure/servers', icon: <FiServer />, roles: ['admin'] },
-                { name: 'Backups', path: '/infrastructure/backups', icon: <FiHardDrive />, roles: ['admin'] },
+                { name: 'Servers', path: '/infrastructure/servers', icon: <FiServer />, roles: ['admin'] , enabled: showInfraDetail },
+                { name: 'Backups', path: '/infrastructure/backups', icon: <FiHardDrive />, roles: ['admin'] , enabled: isFullEdition },
             ]
         },
         {
             title: 'System',
             id: 'system-menu',
             items: [
-                { name: 'Documents', path: '/documents', icon: <FiFileText />, roles: ['admin', 'sales_operator'] },
-                { name: 'Templates', path: '/templates', icon: <FiLayout />, roles: ['admin'] },
+                { name: 'Documents', path: '/documents', icon: <FiFileText />, roles: ['admin', 'sales_operator'] , enabled: isFullEdition },
+                { name: 'Templates', path: '/templates', icon: <FiLayout />, roles: ['admin'] , enabled: isFullEdition },
                 { name: 'Mobile App', path: '/mobile-app', icon: <FiGrid />, roles: ['admin'] },
-                { name: 'Telemetry', path: '/telemetry', icon: <FiActivity />, roles: ['admin'] },
-                { name: 'Site Analytics', path: '/site-analytics', icon: <FiBarChart2 />, roles: ['admin'], badge: 'NEW' },
-                { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] },
-                { name: 'Expenses', path: '/expenses', icon: <FiDollarSign />, roles: ['admin'] },
+                { name: 'Telemetry', path: '/telemetry', icon: <FiActivity />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'Site Analytics', path: '/site-analytics', icon: <FiBarChart2 />, roles: ['admin'], badge: 'NEW' , enabled: isFullEdition },
+                { name: 'Transactions', path: '/transactions', icon: <FiCreditCard />, roles: ['admin'] , enabled: isFullEdition },
+                { name: 'Expenses', path: '/expenses', icon: <FiDollarSign />, roles: ['admin'] , enabled: isFullEdition },
                 { name: 'Settings', path: '/settings', icon: <FiSettings />, roles: ['admin'] },
                 { name: 'Team', path: '/team', icon: <FiUsers />, roles: ['admin'] },
             ]
@@ -123,7 +124,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                 {/* Navigation */}
                 <nav className="flex-1 px-4 py-2 overflow-y-auto custom-scrollbar">
-                    {navSections.map((section) => (
+                    {navSections
+                        .filter(section => section.items.some(item => isVisible(item.roles) && item.enabled !== false))
+                        .map((section) => (
                         <div key={section.title} className="mb-6">
                                 <button
                                 onClick={() => toggleMenu(section.id)}
@@ -136,7 +139,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                             {openMenus.includes(section.id) && (
                                 <div className="space-y-1">
-                                    {section.items.filter(item => isVisible(item.roles)).map((item) => (
+                                    {section.items.filter(item => isVisible(item.roles) && item.enabled !== false).map((item) => (
                                         <NavLink
                                             key={item.path}
                                             to={item.path}
