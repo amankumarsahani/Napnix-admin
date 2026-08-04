@@ -199,6 +199,27 @@
         "null"
       ],
       "description": "Short descriptor appended to the page title and used as the meta description, e.g. 'Customer Relationship Management'."
+    },
+    "adminDomain": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Hostname the admin panel is served from. Emitted as CNAME at build time. Defaults to admin.<baseDomain>."
+    },
+    "defaultDbUser": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pre-filled DB user in the server-registration form. Platform-specific, so it must not carry another brand name."
+    },
+    "defaultBackendPath": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pre-filled tenant backend path in the server-registration form."
     }
   },
   "definitions": {
