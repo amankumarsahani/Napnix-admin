@@ -11,7 +11,7 @@ import {
 import { LuSun, LuMoon } from 'react-icons/lu';
 import { FiLifeBuoy } from 'react-icons/fi';
 import { brand } from '../../brand';
-import { isFullEdition, features, showInfraDetail } from '../../config/edition';
+import { isFullEdition, features } from '../../config/edition';
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const { user, logout } = useAuth();
@@ -38,6 +38,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 { name: 'Dashboard', path: '/dashboard', icon: <FiBarChart2 />, roles: ['admin', 'sales_operator'] },
                 { name: 'Tenants', path: '/tenants', icon: <FiLayers />, roles: ['admin'] },
                 { name: 'Partners', path: '/partners', icon: <FiGlobe />, roles: ['admin'], enabled: isFullEdition },
+                { name: 'Plans', path: '/plans', icon: <FiDollarSign />, roles: ['admin'] },
                 { name: 'Clients', path: '/clients', icon: <FiUsers />, roles: ['admin', 'user'] , enabled: isFullEdition },
                 { name: 'Projects', path: '/projects', icon: <FiBriefcase />, roles: ['admin', 'user'] , enabled: isFullEdition },
                 { name: 'Leads', path: '/leads', icon: <FiZap />, roles: ['admin', 'sales_operator'], badge: 'NEW' , enabled: isFullEdition },
@@ -61,7 +62,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             title: 'Infrastructure',
             id: 'infrastructure',
             items: [
-                { name: 'Servers', path: '/infrastructure/servers', icon: <FiServer />, roles: ['admin'] , enabled: showInfraDetail },
+                { name: 'Servers', path: '/infrastructure/servers', icon: <FiServer />, roles: ['admin'] },
                 { name: 'Backups', path: '/infrastructure/backups', icon: <FiHardDrive />, roles: ['admin'] , enabled: isFullEdition },
             ]
         },
