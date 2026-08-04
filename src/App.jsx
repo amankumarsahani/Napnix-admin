@@ -32,6 +32,10 @@ const Templates = isFullEdition ? React.lazy(() => import('./pages/admin/Templat
 const Documents = isFullEdition ? React.lazy(() => import('./pages/admin/Documents')) : null;
 const DocumentEdit = isFullEdition ? React.lazy(() => import('./pages/admin/DocumentEdit')) : null;
 const Tenants = React.lazy(() => import('./pages/tenants/Tenants'));
+// Both editions: every instance operator prices their own customers. On a partner
+// instance these are the partner's retail prices, and our wholesale rate - and so
+// their margin - is never on this screen.
+const Plans = React.lazy(() => import('./pages/plans/Plans'));
 const TenantDetail = React.lazy(() => import('./pages/tenants/TenantDetail'));
 const Servers = React.lazy(() => import('./pages/servers/Servers'));
 const BackupAccounts = isFullEdition ? React.lazy(() => import('./pages/backups/BackupAccounts')) : null;
@@ -115,6 +119,7 @@ function AppRoutes() {
             <Route path="settings" element={<LazyRoute element={<Settings />} />} />
             <Route path="tenants" element={<LazyRoute element={<Tenants />} />} />
             <Route path="tenants/:id" element={<LazyRoute element={<TenantDetail />} />} />
+            <Route path="plans" element={<LazyRoute element={<Plans />} />} />
             <Route path="api-docs" element={<LazyRoute element={<ApiDocumentation />} />} />
             <Route path="mobile-app" element={<LazyRoute element={<MobileApp />} />} />
             <Route path="support" element={<LazyRoute element={<SupportInbox />} />} />
