@@ -680,7 +680,7 @@ export default function Settings() {
                                             type="email"
                                             value={paymentSettings.contact_sales_email || ''}
                                             onChange={e => setPaymentSettings({ ...paymentSettings, contact_sales_email: e.target.value })}
-                                            placeholder="sales@napnix.com"
+                                            placeholder={`sales@${brand.baseDomain}`}
                                             className={inputBase}
                                         />
                                     </div>

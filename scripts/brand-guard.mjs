@@ -14,8 +14,15 @@ import { join, relative, sep } from 'node:path';
 
 const ROOT = process.cwd();
 
-/** Directories scanned. Everything shipped to the browser. */
-const SCAN_DIRS = ['src'];
+/**
+ * Directories scanned. Everything shipped to the browser.
+ *
+ * public/ is included because static assets are copied into dist verbatim and are
+ * reachable by no build-time transform. That is exactly how a hardcoded 404.html
+ * title and a CNAME pointing at our own admin hostname survived the first pass and
+ * shipped in a partner build.
+ */
+const SCAN_DIRS = ['src', 'public'];
 
 /** Files scanned individually. */
 const SCAN_FILES = ['index.html'];
