@@ -66,6 +66,10 @@ const EmailSmtp = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marke
 const EmailDomains = FEATURE_NAPMAIL ? React.lazy(() => import('./pages/email-marketing/Domains')) : null;
 const ToolRegistry = isFullEdition ? React.lazy(() => import('./pages/tools/ToolRegistry')) : null;
 const Expenses = isFullEdition ? React.lazy(() => import('./pages/expenses/Expenses')) : null;
+// Only the master keeps a mirror of the partner fleet, so a partner instance
+// has no partners of its own to administer.
+const Partners = isFullEdition ? React.lazy(() => import('./pages/partners/Partners')) : null;
+const PartnerDetail = isFullEdition ? React.lazy(() => import('./pages/partners/PartnerDetail')) : null;
 const SupportInbox = React.lazy(() => import('./pages/support/SupportInbox'));
 const WhatsAppSettings = FEATURE_WHATSAPP ? React.lazy(() => import('./pages/whatsapp/WhatsAppSettings')) : null;
 const WhatsAppDetail = FEATURE_WHATSAPP ? React.lazy(() => import('./pages/whatsapp/WhatsAppDetail')) : null;
@@ -150,6 +154,8 @@ function AppRoutes() {
                 <Route path="case-studies/:id/edit" element={<LazyRoute element={<CaseStudyEditor />} />} />
                 <Route path="tools" element={<LazyRoute element={<ToolRegistry />} />} />
                 <Route path="expenses" element={<LazyRoute element={<Expenses />} />} />
+                <Route path="partners" element={<LazyRoute element={<Partners />} />} />
+                <Route path="partners/:id" element={<LazyRoute element={<PartnerDetail />} />} />
               </>
             )}
 
