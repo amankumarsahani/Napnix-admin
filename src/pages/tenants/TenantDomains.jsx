@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FiGlobe, FiExternalLink } from '../../components/icons/FeatherIcons';
+import { brand } from '../../brand';
 
 const TenantDomains = ({
     tenant,
@@ -57,7 +58,7 @@ const TenantDomains = ({
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
                                 <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-slate-400">Managed by Napnix</span>
+                                <span className="text-[10px] text-slate-400">Managed by {brand.productShortName}</span>
                             </div>
                         </div>
                         <a href={`https://${tenant.slug}-crm-api.${domain}`} target="_blank" rel="noreferrer" className="p-2 text-slate-400 hover:text-brand-600 transition">

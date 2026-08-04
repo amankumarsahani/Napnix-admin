@@ -8,6 +8,7 @@ import { tenantsAPI, billingAPI, plansAPI, toolsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { brand } from '../../brand';
 
 const TenantDetail = () => {
     const { id } = useParams();
@@ -57,7 +58,7 @@ const TenantDetail = () => {
     const logsRef = useRef(null);
     const refreshInterval = useRef(null);
 
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
+    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
 
     useEffect(() => {
         fetchTenant();
@@ -827,7 +828,7 @@ const TenantDetail = () => {
                             <div>
                                 <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
                                 <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Managed by Napnix' : 'Not provisioned'}</span>
+                                <span className="text-[10px] text-slate-400">{infrastructureReady ? `Managed by ${brand.productShortName}` : 'Not provisioned'}</span>
                             </div>
                         </div>
                         <a href={infrastructureReady ? `https://${tenant.slug}-crm-api.${domain}` : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>

@@ -4,6 +4,7 @@ import {
 } from '../../components/icons/FeatherIcons';
 import serverService from '../../api/admin';
 import toast from 'react-hot-toast';
+import { brand } from '../../brand';
 
 const Servers = () => {
     const [servers, setServers] = useState([]);
@@ -308,7 +309,7 @@ const Servers = () => {
                                         <input
                                             type="text" required
                                             className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                                            placeholder="ssh2.napnix.in"
+                                            placeholder={`ssh2.${brand.baseDomain}`}
                                             value={formData.hostname}
                                             onChange={e => setFormData({ ...formData, hostname: e.target.value })}
                                         />
@@ -374,7 +375,7 @@ const Servers = () => {
                                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Runtime Paths and Ports</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">NexCRM Backend Path</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{brand.crmProductName} Backend Path</label>
                                         <input
                                             type="text" required
                                             className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-mono"
