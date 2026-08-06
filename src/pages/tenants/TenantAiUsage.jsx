@@ -25,6 +25,30 @@ const usd = (value) => {
 
 const compactNumber = (value) => Number(value || 0).toLocaleString();
 
+/**
+ * One side's verdict on a detector.
+ *
+ * "Not rated" is shown rather than an empty bar, because no opinion and a
+ * negative opinion are different facts and a blank bar reads as the latter.
+ */
+function Verdict({ side }) {
+    if (!side || !side.total) {
+        return <span className="w-28 shrink-0 text-center text-[11px] text-slate-300 dark:text-slate-600">not rated</span>;
+    }
+    const pct = Math.round((side.useful / side.total) * 100);
+    return (
+        <span className="flex w-28 shrink-0 items-center gap-1.5" title={`${side.useful} useful / ${side.notUseful} not useful`}>
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                <span
+                    className={`block h-full rounded-full ${pct >= 50 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                    style={{ width: `${Math.max(pct, 4)}%` }}
+                />
+            </span>
+            <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-slate-400">{pct}%</span>
+        </span>
+    );
+}
+
 function Stat({ label, value, hint }) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -180,25 +204,31 @@ export default function TenantAiUsage({ tenantId }) {
                                 Was it useful?
                             </h4>
                             {usage.feedback?.length > 0 ? (
-                                <div className="space-y-1.5">
-                                    {usage.feedback.map(f => {
-                                        const rate = f.total ? Math.round((f.useful / f.total) * 100) : 0;
-                                        return (
-                                            <div key={f.subjectKey} className="flex items-center gap-3">
-                                                <span className="w-56 shrink-0 truncate text-xs text-slate-600 dark:text-slate-400" title={f.subjectKey}>
-                                                    {f.subjectKey}
-                                                </span>
-                                                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                                                    {/* Green share is the proportion who found it worth surfacing;
-                                                        a mostly-grey bar is a detector worth re-tuning. */}
-                                                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${rate}%` }} />
-                                                </div>
-                                                <span className="w-24 shrink-0 text-right text-xs tabular-nums text-slate-400">
-                                                    {f.useful}/{f.total} useful
-                                                </span>
-                                            </div>
-                                        );
-                                    })}
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3 text-[10px] uppercase tracking-wide text-slate-400">
+                                        <span className="w-56 shrink-0">Detector</span>
+                                        <span className="w-28 text-center">Tenant</span>
+                                        <span className="w-28 text-center">Us</span>
+                                    </div>
+                                    {usage.feedback.map(f => (
+                                        <div key={f.subjectKey} className="flex items-center gap-3">
+                                            <span className="flex w-56 shrink-0 items-center gap-1.5 truncate text-xs text-slate-600 dark:text-slate-400" title={f.subjectKey}>
+                                                <span className="truncate">{f.subjectKey}</span>
+                                                {/* Both sides judged it and disagreed — the case that
+                                                    an averaged bar would have hidden entirely. */}
+                                                {f.disputed && (
+                                                    <span
+                                                        className="shrink-0 rounded bg-amber-100 px-1 text-[9px] font-bold uppercase text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                                        title="The tenant and we reached opposite conclusions"
+                                                    >
+                                                        split
+                                                    </span>
+                                                )}
+                                            </span>
+                                            <Verdict side={f.tenant} />
+                                            <Verdict side={f.operator} />
+                                        </div>
+                                    ))}
                                 </div>
                             ) : (
                                 <p className="text-xs text-slate-400">
@@ -230,8 +260,19 @@ export default function TenantAiUsage({ tenantId }) {
                                                 <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                                                     {insight.narrative}
                                                 </p>
-                                                <p className="mt-1 font-mono text-[10px] text-slate-400">
-                                                    {insight.insightKey} · {insight.agent}
+                                                <p className="mt-1 flex items-center gap-2 font-mono text-[10px] text-slate-400">
+                                                    <span className="truncate">{insight.insightKey} · {insight.agent}</span>
+                                                    {/* What the tenant said, shown before we judge it —
+                                                        rating without knowing their view is guessing. */}
+                                                    {insight.tenantRating && (
+                                                        <span className={`shrink-0 rounded px-1 text-[9px] font-bold uppercase ${
+                                                            insight.tenantRating === 'useful'
+                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                                        }`}>
+                                                            tenant: {insight.tenantRating === 'useful' ? 'useful' : 'noise'}
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                             {/* Our verdict on whether this should have fired — the
