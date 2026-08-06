@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { brand } from '../../brand';
+import TenantAiUsage from './TenantAiUsage';
 
 const TenantDetail = () => {
     const { id } = useParams();
@@ -1383,6 +1384,8 @@ const TenantDetail = () => {
                     {logs || 'No logs available'}
                 </div>
             </div>
+
+            <TenantAiUsage tenantId={tenant.id} />
 
             <div className="bg-rose-50 dark:bg-rose-900/10 rounded-xl border border-rose-200 dark:border-rose-900/30 p-6">
                 <h3 className="text-lg font-semibold text-rose-700 dark:text-rose-400 mb-2 flex items-center gap-2">

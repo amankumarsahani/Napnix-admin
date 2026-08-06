@@ -154,6 +154,10 @@ export const tenantsAPI = {
     stop: async (id) => { const r = await apiClient.post(`/tenants/${id}/stop`); return r.data; },
     restart: async (id) => { const r = await apiClient.post(`/tenants/${id}/restart`); return r.data; },
     getStats: statsEndpoint('/tenants'),
+    getAiUsage: async (id, days = 30) => {
+        const response = await apiClient.get(`/tenants/${id}/ai-usage`, { params: { days } });
+        return response.data;
+    },
     getLogs: async (id, lines = 100) => {
         const response = await apiClient.get(`/tenants/${id}/logs`, { params: { lines } });
         return response.data;
