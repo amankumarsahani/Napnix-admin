@@ -158,6 +158,14 @@ export const tenantsAPI = {
         const response = await apiClient.get(`/tenants/${id}/ai-usage`, { params: { days } });
         return response.data;
     },
+    getAiInsights: async (id, limit = 25) => {
+        const response = await apiClient.get(`/tenants/${id}/ai-insights`, { params: { limit } });
+        return response.data;
+    },
+    rateAiInsight: async (id, insightId, payload) => {
+        const response = await apiClient.post(`/tenants/${id}/ai-insights/${insightId}/rate`, payload);
+        return response.data;
+    },
     getLogs: async (id, lines = 100) => {
         const response = await apiClient.get(`/tenants/${id}/logs`, { params: { lines } });
         return response.data;
