@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { FiCpu, FiAlertCircle } from 'react-icons/fi';
+import { FiCpu, FiAlertCircle, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { tenantsAPI } from '../../api';
 
 /**
@@ -34,8 +35,17 @@ function Stat({ label, value, hint }) {
     );
 }
 
+const SEVERITY_STYLE = {
+    critical: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+    high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    low: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    info: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400'
+};
+
 export default function TenantAiUsage({ tenantId }) {
     const [days, setDays] = useState(30);
+    const queryClient = useQueryClient();
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['tenant-ai-usage', tenantId, days],
@@ -43,6 +53,29 @@ export default function TenantAiUsage({ tenantId }) {
         staleTime: 2 * 60 * 1000,
         enabled: Boolean(tenantId)
     });
+
+    const { data: insightData } = useQuery({
+        queryKey: ['tenant-ai-insights', tenantId],
+        queryFn: () => tenantsAPI.getAiInsights(tenantId, 25),
+        staleTime: 2 * 60 * 1000,
+        enabled: Boolean(tenantId)
+    });
+
+    const rate = useMutation({
+        mutationFn: ({ insight, rating }) => tenantsAPI.rateAiInsight(tenantId, insight.id, {
+            rating,
+            insightKey: insight.insightKey
+        }),
+        onSuccess: () => {
+            // Both views move together: the rating changes the summary bars.
+            queryClient.invalidateQueries({ queryKey: ['tenant-ai-insights', tenantId] });
+            queryClient.invalidateQueries({ queryKey: ['tenant-ai-usage', tenantId] });
+        },
+        onError: (err) => toast.error(err.response?.data?.error || 'Failed to record rating')
+    });
+
+    const insights = insightData?.data?.insights || [];
+    const ratingsEnabled = insightData?.data?.ratingsEnabled;
 
     const usage = data?.data;
     const totals = usage?.totals;
@@ -169,8 +202,69 @@ export default function TenantAiUsage({ tenantId }) {
                                 </div>
                             ) : (
                                 <p className="text-xs text-slate-400">
-                                    No ratings yet. Feedback appears here once users rate insights in the tenant CRM.
+                                    No ratings yet — rate the insights below and the pattern per detector builds up here.
                                 </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                Recent insights
+                            </h4>
+                            {insights.length === 0 ? (
+                                <p className="text-xs text-slate-400">No insights generated yet.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {insights.map(insight => (
+                                        <div
+                                            key={insight.id}
+                                            className="flex items-start gap-3 rounded-lg border border-slate-100 p-3 dark:border-slate-700"
+                                        >
+                                            <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase ${SEVERITY_STYLE[insight.severity] || SEVERITY_STYLE.low}`}>
+                                                {insight.severity}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                    {insight.title}
+                                                </p>
+                                                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                                                    {insight.narrative}
+                                                </p>
+                                                <p className="mt-1 font-mono text-[10px] text-slate-400">
+                                                    {insight.insightKey} · {insight.agent}
+                                                </p>
+                                            </div>
+                                            {/* Our verdict on whether this should have fired — the
+                                                tenant acts on the insight, we judge the detector. */}
+                                            <div className="flex shrink-0 items-center gap-1">
+                                                <button
+                                                    disabled={!ratingsEnabled || rate.isPending}
+                                                    onClick={() => rate.mutate({ insight, rating: 'useful' })}
+                                                    title={ratingsEnabled ? 'Worth surfacing' : 'Run migration 119 on this tenant first'}
+                                                    className={`rounded-md p-1.5 transition-colors disabled:opacity-40 ${
+                                                        insight.rating === 'useful'
+                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                            : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    <FiThumbsUp className="h-3.5 w-3.5" />
+                                                </button>
+                                                <button
+                                                    disabled={!ratingsEnabled || rate.isPending}
+                                                    onClick={() => rate.mutate({ insight, rating: 'not_useful' })}
+                                                    title={ratingsEnabled ? 'Noise — retune this detector' : 'Run migration 119 on this tenant first'}
+                                                    className={`rounded-md p-1.5 transition-colors disabled:opacity-40 ${
+                                                        insight.rating === 'not_useful'
+                                                            ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                                                            : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    <FiThumbsDown className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     </div>
