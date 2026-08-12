@@ -9,7 +9,7 @@ import { expensesAPI } from '../../api';
 import {
     FiPlus, FiSearch, FiTrash2, FiEdit2, FiDownload,
     FiDollarSign, FiTrendingUp, FiRepeat, FiX, FiSave,
-    FiBarChart2, FiFilter, FiCheckCircle
+    FiBarChart2, FiFilter, FiCheckCircle, FiUsers
 } from '../../components/icons/FeatherIcons';
 
 const EXPENSE_CATEGORIES = [
@@ -61,6 +61,7 @@ const EMPTY_FORM = (type = 'expense') => ({
     category: type === 'deposit' ? 'Client Payment' : 'Other',
     description: '',
     vendor: '',
+    spent_by: '',
     payment_method: 'card',
     is_recurring: false,
     recurring_interval: 'monthly',
@@ -72,7 +73,7 @@ export default function Expenses() {
     const qc = useQueryClient();
     const [filters, setFilters] = useState({
         search: '', type: '', category: '',
-        date_from: '', date_to: '', payment_method: ''
+        date_from: '', date_to: '', payment_method: '', spent_by: ''
     });
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState([]);
@@ -87,6 +88,7 @@ export default function Expenses() {
         if (filters.date_from)      p.date_from = filters.date_from;
         if (filters.date_to)        p.date_to = filters.date_to;
         if (filters.payment_method) p.payment_method = filters.payment_method;
+        if (filters.spent_by)       p.spent_by = filters.spent_by;
         return p;
     }, [filters, page]);
 
@@ -100,6 +102,19 @@ export default function Expenses() {
         queryKey: ['expenses-stats'],
         queryFn: () => expensesAPI.getStats(),
         staleTime: 2 * 60 * 1000,
+    });
+
+    const { data: peopleData } = useQuery({
+        queryKey: ['expense-people'],
+        queryFn: () => expensesAPI.getPeople(),
+        staleTime: 5 * 60 * 1000,
+    });
+    const people = peopleData?.data || [];
+
+    const addPersonMutation = useMutation({
+        mutationFn: (name) => expensesAPI.addPerson(name),
+        onSuccess: () => { qc.invalidateQueries({ queryKey: ['expense-people'] }); toast.success('Person added'); },
+        onError: (e) => toast.error(e.response?.data?.error || 'Failed to add person'),
     });
 
     const invalidate = () => {
@@ -160,9 +175,9 @@ export default function Expenses() {
     };
 
     const exportCSV = () => {
-        const headers = ['Type','Date','Vendor / From','Category','Description','Amount','Payment Method','Reference','Recurring'];
+        const headers = ['Type','Date','Vendor / From','Spent By','Category','Description','Amount','Payment Method','Reference','Recurring'];
         const rows = records.map(r => [
-            r.type, r.date?.slice(0, 10), r.vendor || '', r.category,
+            r.type, r.date?.slice(0, 10), r.vendor || '', r.spent_by || '', r.category,
             r.description || '', r.amount,
             PAYMENT_LABELS[r.payment_method] || r.payment_method,
             r.reference || '',
@@ -299,6 +314,12 @@ export default function Expenses() {
                         <option value="">All Categories</option>
                         {filterCategories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
+                    <select value={filters.spent_by}
+                        onChange={e => { setFilters(f => ({ ...f, spent_by: e.target.value })); setPage(1); }}
+                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                        <option value="">All People</option>
+                        {people.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
+                    </select>
                     <select value={filters.payment_method}
                         onChange={e => { setFilters(f => ({ ...f, payment_method: e.target.value })); setPage(1); }}
                         className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
@@ -311,8 +332,8 @@ export default function Expenses() {
                     <input type="date" value={filters.date_to} title="To date"
                         onChange={e => { setFilters(f => ({ ...f, date_to: e.target.value })); setPage(1); }}
                         className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
-                    {(filters.search || filters.type || filters.category || filters.date_from || filters.date_to || filters.payment_method) && (
-                        <button onClick={() => { setFilters({ search:'', type:'', category:'', date_from:'', date_to:'', payment_method:'' }); setPage(1); }}
+                    {(filters.search || filters.type || filters.category || filters.date_from || filters.date_to || filters.payment_method || filters.spent_by) && (
+                        <button onClick={() => { setFilters({ search:'', type:'', category:'', date_from:'', date_to:'', payment_method:'', spent_by:'' }); setPage(1); }}
                             className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1">
                             <FiX size={14} /> Clear
                         </button>
@@ -344,6 +365,7 @@ export default function Expenses() {
                                 <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 w-24">Type</th>
                                 <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Date</th>
                                 <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Vendor / From</th>
+                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Spent By</th>
                                 <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Category</th>
                                 <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Description</th>
                                 <th className="px-4 py-3 text-right font-medium text-slate-500 dark:text-slate-400">Amount</th>
@@ -354,10 +376,10 @@ export default function Expenses() {
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-400">Loading...</td></tr>
+                                <tr><td colSpan={11} className="px-4 py-12 text-center text-slate-400">Loading...</td></tr>
                             ) : records.length === 0 ? (
                                 <tr>
-                                    <td colSpan={10} className="px-4 py-16 text-center">
+                                    <td colSpan={11} className="px-4 py-16 text-center">
                                         <FiDollarSign className="mx-auto text-slate-300 dark:text-slate-600 mb-3" size={36} />
                                         <p className="text-slate-400 font-medium">No records found</p>
                                         <p className="text-slate-300 dark:text-slate-600 text-xs mt-1">Add an expense or deposit to get started</p>
@@ -382,6 +404,13 @@ export default function Expenses() {
                                     <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{row.date?.slice(0, 10)}</td>
                                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-white max-w-32 truncate">
                                         {row.vendor || <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                        {row.spent_by
+                                            ? <span className="inline-flex items-center gap-1.5">
+                                                <FiUsers size={12} className="text-slate-400" />{row.spent_by}
+                                              </span>
+                                            : <span className="text-slate-300 dark:text-slate-600">—</span>}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[row.category] || CATEGORY_COLORS['Other']}`}>
@@ -426,7 +455,7 @@ export default function Expenses() {
                         {records.length > 0 && (
                             <tfoot>
                                 <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
-                                    <td colSpan={6} className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    <td colSpan={7} className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
                                         {pagination.total} record{pagination.total !== 1 ? 's' : ''}
                                     </td>
                                     <td className={`px-4 py-3 text-right text-sm font-bold ${listTotal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -459,6 +488,9 @@ export default function Expenses() {
                 <RecordModal
                     mode={modal.mode}
                     data={modal.data}
+                    people={people}
+                    onAddPerson={(name) => addPersonMutation.mutateAsync(name)}
+                    addingPerson={addPersonMutation.isPending}
                     onClose={() => setModal(null)}
                     onSubmit={handleSubmit}
                     loading={createMutation.isPending || updateMutation.isPending}
@@ -487,8 +519,8 @@ function StatCard({ label, value, icon, color, small }) {
     );
 }
 
-function RecordModal({ mode, data, onClose, onSubmit, loading }) {
-    const [form, setForm] = useState({ ...data });
+function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClose, onSubmit, loading }) {
+    const [form, setForm] = useState({ ...data, spent_by: data.spent_by || '' });
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
     const isDeposit = form.type === 'deposit';
     const categories = isDeposit ? DEPOSIT_CATEGORIES : EXPENSE_CATEGORIES;
@@ -559,6 +591,19 @@ function RecordModal({ mode, data, onClose, onSubmit, loading }) {
                     </div>
 
                     <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            {isDeposit ? 'Received By' : 'Spent By'}
+                        </label>
+                        <PersonSelect
+                            value={form.spent_by}
+                            people={people}
+                            onChange={(v) => set('spent_by', v)}
+                            onAddPerson={onAddPerson}
+                            adding={addingPerson}
+                        />
+                    </div>
+
+                    <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Description</label>
                         <input type="text" value={form.description} onChange={e => set('description', e.target.value)} placeholder="Brief description"
                             className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
@@ -624,5 +669,68 @@ function RecordModal({ mode, data, onClose, onSubmit, loading }) {
                 </form>
             </div>
         </div>
+    );
+}
+
+// Dropdown of saved people with an "Add new person" escape hatch pinned to the
+// bottom of the list. New names are persisted to expense_people, so they show
+// up in every future record and in the page filter.
+function PersonSelect({ value, people, onChange, onAddPerson, adding }) {
+    const [addMode, setAddMode] = useState(false);
+    const [newName, setNewName] = useState('');
+
+    const names = people.map(p => p.name);
+    // A legacy value saved before this person existed must still render.
+    const options = value && !names.includes(value) ? [value, ...names] : names;
+
+    const handleSelect = (v) => {
+        if (v === '__add__') { setAddMode(true); setNewName(''); return; }
+        onChange(v);
+    };
+
+    const saveNew = async () => {
+        const name = newName.trim();
+        if (!name) { toast.error('Enter a name'); return; }
+        try {
+            await onAddPerson(name);
+        } catch (err) {
+            // Already exists → still usable, so fall through and select it.
+            if (err?.response?.status !== 409) return;
+        }
+        onChange(name);
+        setAddMode(false);
+        setNewName('');
+    };
+
+    if (addMode) {
+        return (
+            <div className="flex gap-2">
+                <input type="text" autoFocus value={newName} placeholder="Person name"
+                    onChange={e => setNewName(e.target.value)}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter') { e.preventDefault(); saveNew(); }
+                        if (e.key === 'Escape') { e.preventDefault(); setAddMode(false); }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                <button type="button" onClick={saveNew} disabled={adding}
+                    className="px-3 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-1.5">
+                    <FiCheckCircle size={14} /> Add
+                </button>
+                <button type="button" onClick={() => setAddMode(false)}
+                    className="px-2 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg">
+                    <FiX size={16} />
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <select value={value || ''} onChange={e => handleSelect(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+            <option value="">— Not specified —</option>
+            {options.map(n => <option key={n} value={n}>{n}</option>)}
+            <option disabled>──────────</option>
+            <option value="__add__">＋ Add new person…</option>
+        </select>
     );
 }
