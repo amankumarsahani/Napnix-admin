@@ -55,5 +55,7 @@
   "hidePoweredBy": false,
   "adminDomain": "admin.napnix.in",
   "defaultDbUser": "nexcrm",
-  "defaultBackendPath": "/var/www/html/nexcrm-backend"
+  "defaultBackendPath": "/var/www/html/nexcrm-backend",
+  "pagesProjectCrm": "nexcrm-frontend",
+  "pagesProjectStorefront": "nexcrm-storefront"
 }

@@ -10,6 +10,7 @@ import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { brand } from '../../brand';
+import { SKU_CRM, SKU_MAIL } from '../../config/products';
 
 const Tenants = () => {
     const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
@@ -416,7 +417,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
     const domain = import.meta.env.VITE_APP_BASE_DOMAIN || brand.baseDomain;
     const [plans, setPlans] = useState([]);
     const [servers, setServers] = useState([]);
-    const [selectedProducts, setSelectedProducts] = useState(['nexcrm']);
+    const [selectedProducts, setSelectedProducts] = useState([SKU_CRM]);
     const [formData, setFormData] = useState({
         name: '',
         slug: '',
@@ -442,14 +443,14 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
 
     const PRODUCTS = [
         {
-            slug: 'nexcrm',
+            slug: SKU_CRM,
             name: brand.crmProductName,
             desc: 'Full CRM with contacts, deals, tasks, storefront',
             icon: FiDatabase,
             color: 'brand'
         },
         {
-            slug: 'napmail',
+            slug: SKU_MAIL,
             name: brand.mailProductName,
             desc: 'Email marketing campaigns & automation',
             icon: FiMail,
@@ -626,7 +627,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {selectedProducts.includes('nexcrm') && (
+                        {selectedProducts.includes(SKU_CRM) && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Industry
@@ -658,7 +659,7 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                             </select>
                         </div>
                         )}
-                        {selectedProducts.includes('nexcrm') && formData.industry_type === 'school' && (
+                        {selectedProducts.includes(SKU_CRM) && formData.industry_type === 'school' && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Academic mode
@@ -699,13 +700,13 @@ const CreateTenantModal = ({ onClose, onCreated }) => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
-                        {selectedProducts.includes('nexcrm') && (
+                        {selectedProducts.includes(SKU_CRM) && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-2">
                                 <FiServer className="text-brand-500" /> Destination Server
                             </label>
                             <select
-                                required={selectedProducts.includes('nexcrm')}
+                                required={selectedProducts.includes(SKU_CRM)}
                                 name="server_id"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                                 value={formData.server_id}

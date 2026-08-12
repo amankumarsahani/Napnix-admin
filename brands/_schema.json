@@ -220,6 +220,20 @@
         "null"
       ],
       "description": "Pre-filled tenant backend path in the server-registration form."
+    },
+    "pagesProjectCrm": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Cloudflare Pages project serving the tenant CRM. Shown as the CNAME target in the custom-domain instructions, so it must name this instance's own project."
+    },
+    "pagesProjectStorefront": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Cloudflare Pages project serving tenant storefronts. Shown as the CNAME target in the custom-domain instructions."
     }
   },
   "definitions": {

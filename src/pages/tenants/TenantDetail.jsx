@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { brand } from '../../brand';
+import { SKU_CRM } from '../../config/products';
 import TenantAiUsage from './TenantAiUsage';
 
 const TenantDetail = () => {
@@ -518,7 +519,7 @@ const TenantDetail = () => {
         const formState = toolForms[tool.id] || {};
         setToolActionLoading(`enable-${tool.id}`);
         try {
-            if (tool.slug === 'nexcrm') {
+            if (tool.slug === SKU_CRM) {
                 const response = await toolsAPI.enableCRM(tenant.id, {
                     plan_id: billingForm.plan_id ? Number(billingForm.plan_id) : tenant.plan_id,
                     server_id: tenant.server_id || undefined
@@ -1225,7 +1226,7 @@ const TenantDetail = () => {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {tool.slug !== 'nexcrm' && isEnabled && (
+                                                {tool.slug !== SKU_CRM && isEnabled && (
                                                     <button
                                                         onClick={() => handleDisableTool(tool)}
                                                         disabled={toolActionLoading === loadingKey}
@@ -1240,7 +1241,7 @@ const TenantDetail = () => {
                                                         disabled={toolActionLoading === loadingKey}
                                                         className="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
                                                     >
-                                                        {toolActionLoading === loadingKey ? 'Enabling...' : tool.slug === 'nexcrm' ? 'Provision CRM' : 'Enable'}
+                                                        {toolActionLoading === loadingKey ? 'Enabling...' : tool.slug === SKU_CRM ? 'Provision CRM' : 'Enable'}
                                                     </button>
                                                 )}
                                             </div>
@@ -1252,7 +1253,7 @@ const TenantDetail = () => {
                                                 <select
                                                     value={formState.tool_plan_id || ''}
                                                     onChange={(e) => handleToolFormChange(tool.id, 'tool_plan_id', e.target.value)}
-                                                    disabled={tool.slug === 'nexcrm' || plansForTool.length === 0}
+                                                    disabled={tool.slug === SKU_CRM || plansForTool.length === 0}
                                                     className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
                                                 >
                                                     <option value="">No plan</option>
@@ -1270,14 +1271,14 @@ const TenantDetail = () => {
                                                     min="1"
                                                     value={formState.trial_days || ''}
                                                     onChange={(e) => handleToolFormChange(tool.id, 'trial_days', e.target.value)}
-                                                    disabled={tool.slug === 'nexcrm'}
+                                                    disabled={tool.slug === SKU_CRM}
                                                     placeholder="Leave empty for active"
                                                     className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
                                                 />
                                             </div>
                                             <div className="flex items-end">
                                                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                    {tool.slug === 'nexcrm'
+                                                    {tool.slug === SKU_CRM
                                                         ? 'CRM uses tenant process/server provisioning and is managed separately from add-on tools.'
                                                         : assignment?.trial_ends_at
                                                             ? `Trial ends ${new Date(assignment.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
@@ -1422,7 +1423,7 @@ const TenantDetail = () => {
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                                 placeholder="crm.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-frontend.pages.dev</code></p>
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{brand.pagesProjectCrm}.pages.dev</code></p>
                         </div>
 
                         {/* Storefront Domain */}
@@ -1435,7 +1436,7 @@ const TenantDetail = () => {
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                                 placeholder="yourbrand.com or store.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-storefront.pages.dev</code></p>
+                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{brand.pagesProjectStorefront}.pages.dev</code></p>
                         </div>
 
                         {/* Setup Help Section */}
@@ -1473,8 +1474,8 @@ const TenantDetail = () => {
                                             <p className="font-medium text-slate-700 dark:text-slate-300">Tenant adds CNAME records in their DNS provider</p>
                                             <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
                                             <div className="mt-2 bg-slate-50 dark:bg-slate-900 rounded-md p-2 text-xs font-mono space-y-1">
-                                                <p><span className="text-slate-400">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
-                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
+                                                <p><span className="text-slate-400">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">{brand.pagesProjectCrm}.pages.dev</span></p>
+                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">{brand.pagesProjectStorefront}.pages.dev</span></p>
                                             </div>
                                             <p className="text-xs mt-1.5 text-slate-500">Works with any DNS provider — no Cloudflare account needed for the tenant.</p>
                                         </div>
