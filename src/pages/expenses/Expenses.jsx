@@ -200,6 +200,9 @@ export default function Expenses() {
     }, 0);
 
     const trend = stats.monthlyTrend || [];
+    // Backend returns this already sorted by total desc; cap it so one long list
+    // cannot push the table off the screen.
+    const spenders = (stats.bySpender || []).slice(0, 10);
 
     return (
         <div className="p-6 space-y-6">
@@ -285,6 +288,37 @@ export default function Expenses() {
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '13px' }} />
                                     <Legend iconType="circle" iconSize={9} />
                                 </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                    {spenders.length > 0 && (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 lg:col-span-2">
+                            <div className="flex items-baseline justify-between mb-4">
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Spend by Person</h3>
+                                <span className="text-xs text-slate-400">Expenses, year to date</span>
+                            </div>
+                            {/* Horizontal bars: names need the long axis to stay readable. */}
+                            <ResponsiveContainer width="100%" height={Math.max(140, spenders.length * 38)}>
+                                <BarChart data={spenders} layout="vertical" barSize={18}
+                                    margin={{ top: 0, right: 24, bottom: 0, left: 8 }}>
+                                    <XAxis type="number" tick={{ fontSize: 11 }}
+                                        tickFormatter={v => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)} />
+                                    <YAxis type="category" dataKey="spent_by" width={130}
+                                        tick={{ fontSize: 12 }} interval={0} />
+                                    <Tooltip
+                                        cursor={{ fill: 'rgba(148,163,184,0.12)' }}
+                                        formatter={(v, _n, item) => [
+                                            `${fmt(v)} · ${item.payload.count} record${item.payload.count !== 1 ? 's' : ''}`,
+                                            'Spent',
+                                        ]}
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '13px' }}
+                                    />
+                                    <Bar dataKey="total" radius={[0, 3, 3, 0]}>
+                                        {spenders.map((_, i) => (
+                                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
                             </ResponsiveContainer>
                         </div>
                     )}
