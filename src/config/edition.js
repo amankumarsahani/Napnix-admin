@@ -49,7 +49,7 @@ export const FEATURE_NAPLEAD = import.meta.env.VITE_FEATURE_NAPLEAD === undefine
     : (import.meta.env.VITE_FEATURE_NAPLEAD === 'true' || import.meta.env.VITE_FEATURE_NAPLEAD === '1');
 
 export const features = {
-    napmail: FEATURE_NAPMAIL,
+    napmail: FEATURE_NAPMAIL, // brand-guard: allow - feature-flag key, matches the product SKU rather than display text
     whatsapp: FEATURE_WHATSAPP,
     naplead: FEATURE_NAPLEAD,
 };

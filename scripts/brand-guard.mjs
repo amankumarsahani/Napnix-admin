@@ -22,7 +22,7 @@ const ROOT = process.cwd();
  * title and a CNAME pointing at our own admin hostname survived the first pass and
  * shipped in a partner build.
  */
-const SCAN_DIRS = ['src', 'public'];
+const SCAN_DIRS = ['src', 'public', 'scripts'];
 
 /** Files scanned individually. */
 const SCAN_FILES = ['index.html'];
@@ -55,9 +55,34 @@ async function loadEditionAllowlist() {
 
 const ALLOWLIST = [...BASE_ALLOWLIST, ...(await loadEditionAllowlist())];
 
-const BANNED = /NexCRM|NapCRM|Napnix|NAPNIX|napnix\.in|nexcrm\.|Nexspire/;
+/**
+ * Platform identifiers, matched case-insensitively on word boundaries.
+ *
+ * The previous pattern was case-sensitive and spelled its domains literally, which
+ * let three live leaks through in nexcrm-frontend: `NapCrm` (wrong case),
+ * `name@napnix.com` (only `.in` was listed) and `napnix\.in` written inside a
+ * source regex (the backslash broke the literal match). Word boundaries are what
+ * make the case-insensitive form safe - `nexcrm_tenant` and `NEXCRM_BLOCKS` do not
+ * match, because `_` is a word character, so load-bearing storage keys stay legal
+ * without an exemption.
+ */
+const BANNED = /\b(nexcrm|napcrm|napmail|napnix|napmailer|napnixsolutions|nexspire)\b/i;
 
-const TEXT_EXT = /\.(js|jsx|ts|tsx|css|html|json|md|svg)$/;
+const TEXT_EXT = /\.(js|jsx|mjs|ts|tsx|css|html|json|md|svg)$/;
+
+/** Comment-only lines. Stripped by the minifier, so they never reach a browser. */
+const COMMENT_LINE = /^\s*(\/\/|\/\*|\*|\{\/\*)/;
+
+/**
+ * Escape hatch for a brand string that must stay on a shipped line - a wire
+ * identifier, a storage key with a non-word separator, or the default brand slug.
+ * Requires a reason on the same line, so every exemption is visible in review:
+ *
+ *     const KEY = 'nexcrm:manufacturing:default-terms'; // brand-guard: allow - stored key, renaming orphans saved data
+ */
+const ALLOW_MARKER = /brand-guard:\s*allow/;
+
+const isExempt = (line) => COMMENT_LINE.test(line) || ALLOW_MARKER.test(line);
 
 function isAllowed(rel) {
     const norm = rel.split(sep).join('/');
@@ -96,6 +121,7 @@ const violations = [];
 for (const file of files) {
     const lines = readFileSync(file, 'utf-8').split('\n');
     lines.forEach((line, i) => {
+        if (isExempt(line)) return;
         const match = line.match(BANNED);
         if (match) {
             violations.push({
@@ -127,7 +153,11 @@ Replace hardcoded brand strings with tokens from the brand module:
     brand.baseDomain       // "napnix.in"
     brand.supportEmail
 
-If a string genuinely must stay, add its path to ALLOWLIST in scripts/brand-guard.mjs
-and say why in the commit message.
+If a string genuinely must stay on a shipped line - a wire identifier, a storage
+key, the default brand slug - append a marker with the reason:
+
+    // brand-guard: allow - <why this cannot be tokenised>
+
+Add a path to ALLOWLIST only when a whole file is legitimately brand-bound.
 `);
 process.exit(1);

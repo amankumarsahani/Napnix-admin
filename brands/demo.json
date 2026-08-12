@@ -31,5 +31,7 @@
   "tagline": null,
   "adminDomain": "admin.demo.example",
   "defaultDbUser": "demo",
-  "defaultBackendPath": "/var/www/html/demo-backend"
+  "defaultBackendPath": "/var/www/html/demo-backend",
+  "pagesProjectCrm": "demo-crm",
+  "pagesProjectStorefront": "demo-storefront"
 }
