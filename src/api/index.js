@@ -343,6 +343,9 @@ export const expensesAPI = {
     update: async (id, data) => { const r = await apiClient.patch(`/expenses/${id}`, data); return r.data; },
     delete: async (id) => { const r = await apiClient.delete(`/expenses/${id}`); return r.data; },
     bulkDelete: async (ids) => { const r = await apiClient.post('/expenses/bulk-delete', { ids }); return r.data; },
+    getPeople: async () => { const r = await apiClient.get('/expenses/people'); return r.data; },
+    addPerson: async (name) => { const r = await apiClient.post('/expenses/people', { name }); return r.data; },
+    deletePerson: async (id) => { const r = await apiClient.delete(`/expenses/people/${id}`); return r.data; },
 };
 
 // ─── Support Desk API ───────────────────────────────────────────────────────
