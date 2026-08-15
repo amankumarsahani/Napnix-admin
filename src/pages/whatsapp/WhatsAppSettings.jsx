@@ -49,10 +49,15 @@ function QRModal({ account, onClose, onConnected }) {
                             if (ev.type === 'connected' || (ev.type === 'status' && ev.connected)) {
                                 setStatus('connected'); onConnected(); setTimeout(onClose, 1200);
                             }
-                        } catch (_) {}
+                        } catch (err) {
+                            console.error('Failed to parse SSE event line:', line, err);
+                        }
                     }
                 }
-            } catch { if (!cancelled) setStatus('error'); }
+            } catch (err) {
+                console.error('WhatsApp QR SSE stream reader failed:', err);
+                if (!cancelled) setStatus('error');
+            }
         })();
 
         return () => { cancelled = true; readerRef.current?.cancel(); };
