@@ -73,6 +73,10 @@ const Tenants = () => {
                     await tenantsAPI.provision(tenantId);
                     toast.success('Tenant provisioned');
                     break;
+                case 'unsuspend':
+                    await tenantsAPI.unsuspend(tenantId);
+                    toast.success('Tenant unsuspended');
+                    break;
                 default:
                     break;
             }
@@ -229,6 +233,28 @@ const Tenants = () => {
                                                         <FiCheckCircle className="w-5 h-5" />
                                                     </button>
                                                 )}
+                                                {tenant.status === 'suspended' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setConfirmState({
+                                                                isOpen: true,
+                                                                title: 'Unsuspend Tenant',
+                                                                message: 'Reactivate this tenant and restart its process? Its plan and data are unchanged.',
+                                                                variant: 'info',
+                                                                confirmText: 'Unsuspend',
+                                                                onConfirm: async () => {
+                                                                    setConfirmState({ isOpen: false });
+                                                                    await handleAction(tenant.id, 'unsuspend');
+                                                                },
+                                                            });
+                                                        }}
+                                                        disabled={actionLoading[tenant.id]}
+                                                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                                        title="Unsuspend Tenant"
+                                                    >
+                                                        <FiCheckCircle className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                                 {tenant.process_status === 'running' ? (
                                                     <>
                                                         <button
@@ -330,6 +356,27 @@ const Tenants = () => {
                         </div>
 
                         <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+                            {tenant.status === 'suspended' && (
+                                <button
+                                    onClick={() => {
+                                        setConfirmState({
+                                            isOpen: true,
+                                            title: 'Unsuspend Tenant',
+                                            message: 'Reactivate this tenant and restart its process? Its plan and data are unchanged.',
+                                            variant: 'info',
+                                            confirmText: 'Unsuspend',
+                                            onConfirm: async () => {
+                                                setConfirmState({ isOpen: false });
+                                                await handleAction(tenant.id, 'unsuspend');
+                                            },
+                                        });
+                                    }}
+                                    disabled={actionLoading[tenant.id]}
+                                    className="flex-1 py-2.5 text-green-600 bg-green-50 dark:bg-green-900/30 rounded-lg font-medium text-sm"
+                                >
+                                    Unsuspend
+                                </button>
+                            )}
                             {tenant.process_status === 'running' ? (
                                 <>
                                     <button
