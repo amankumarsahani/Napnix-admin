@@ -235,6 +235,10 @@ const TenantDetail = () => {
                     await tenantsAPI.provision(tenant.id);
                     toast.success('Tenant provisioned');
                     break;
+                case 'unsuspend':
+                    await tenantsAPI.unsuspend(tenant.id);
+                    toast.success('Tenant unsuspended');
+                    break;
             }
             await fetchTenant();
             await fetchLogs();
