@@ -14,10 +14,6 @@ npm run dev
 
 Dashboard will run on: **http://localhost:5174**
 
-### 3. Login Credentials
-- **Email:** `***REMOVED***`
-- **Password:** `***REMOVED***`
-
 ## 📦 Features
 
 ✅ Authentication (Login/Logout)
