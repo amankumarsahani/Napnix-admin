@@ -3,7 +3,7 @@
 export { Button, IconButton } from './Button';
 export { Field, Input, Textarea, Select, Checkbox, Switch } from './Field';
 export { SearchInput } from './SearchInput';
-export { Dialog, ConfirmDialog } from './Dialog';
+export { Dialog, Drawer, ConfirmDialog } from './Dialog';
 export { PageHeader, Panel, StatCard, Avatar } from './Layout';
 export { Badge, StatusBadge } from './Badge';
 export { Tabs } from './Tabs';

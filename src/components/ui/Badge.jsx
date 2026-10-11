@@ -11,7 +11,7 @@ export function Badge({ tone = 'neutral', className, children }) {
 const humanize = s => String(s ?? '').replace(/[_-]+/g, ' ').replace(/^\w/, c => c.toUpperCase());
 
 /** Status badge for an entity (client, lead, tenant, project, campaign) using utils/statusColors. */
-export function StatusBadge({ entity, status, className }) {
+export function StatusBadge({ entity, status, label, className }) {
     if (!status) return null;
-    return <span className={cx(BASE, getStatusColor(entity, status), className)}>{humanize(status)}</span>;
+    return <span className={cx(BASE, getStatusColor(entity, status), className)}>{label || humanize(status)}</span>;
 }

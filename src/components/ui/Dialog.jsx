@@ -12,7 +12,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
  * (focus trap) and handles Esc. We add scroll lock, initial focus, focus restore and
  * backdrop-click-to-close.
  */
-export function Dialog({ open, onClose, title, description, size = 'md', footer, children, dismissible = true, className }) {
+export function Dialog({ open, onClose, title, description, size = 'md', footer, children, dismissible = true, side, className }) {
     const ref = useRef(null);
     const returnFocus = useRef(null);
     const titleId = useId();
@@ -46,8 +46,10 @@ export function Dialog({ open, onClose, title, description, size = 'md', footer,
             onCancel={e => { e.preventDefault(); if (dismissible) onClose?.(); }}
             onClick={e => { if (dismissible && e.target === ref.current) onClose?.(); }}
             className={cx(
-                'w-[calc(100%-2rem)] rounded-md border border-border bg-surface text-fg p-0 shadow-modal',
-                'backdrop:bg-black/40 open:flex flex-col max-h-[85dvh] m-auto',
+                'border border-border bg-surface text-fg p-0 shadow-modal backdrop:bg-black/40 open:flex flex-col',
+                side === 'right'
+                    ? 'w-full h-dvh max-h-dvh m-0 ml-auto rounded-none border-y-0 border-r-0'
+                    : 'w-[calc(100%-2rem)] max-h-[85dvh] m-auto rounded-md',
                 SIZES[size], className
             )}
         >
@@ -66,12 +68,17 @@ export function Dialog({ open, onClose, title, description, size = 'md', footer,
                             )}
                         </div>
                     )}
-                    <div data-dialog-body className="px-5 py-4 overflow-y-auto">{children}</div>
-                    {footer && <div className="flex justify-end gap-2 px-5 py-3 border-t border-border bg-surface-2 rounded-b-md">{footer}</div>}
+                    <div data-dialog-body className={cx('overflow-y-auto', side === 'right' ? 'flex-1 flex flex-col min-h-0' : 'px-5 py-4')}>{children}</div>
+                    {footer && <div className={cx('flex justify-end gap-2 px-5 py-3 border-t border-border bg-surface-2', side !== 'right' && 'rounded-b-md')}>{footer}</div>}
                 </>
             )}
         </dialog>
     );
+}
+
+/** Side panel on the same modal primitive (Esc, focus, scroll lock). Body is a flex column the caller fills. */
+export function Drawer(props) {
+    return <Dialog size="lg" {...props} side="right" />;
 }
 
 /** Confirm/cancel dialog. variant: danger | primary. */
