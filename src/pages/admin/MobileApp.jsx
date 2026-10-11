@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { mobileAppAdminAPI } from '../../api/admin';
+import { ConfirmDialog } from '../../components/ui';
 
 export default function MobileApp() {
     const queryClient = useQueryClient();
     const [uploading, setUploading] = useState(false);
+    const [confirmReplace, setConfirmReplace] = useState(false);
     const [form, setForm] = useState({
         version_name: '',
         build_number: '',
@@ -21,13 +23,19 @@ export default function MobileApp() {
         },
     });
 
-    const handleUpload = async (e) => {
+    // Publishing replaces the live APK for every tenant, so confirm when one is already out
+    const handleUpload = (e) => {
         e.preventDefault();
-
         if (!form.file) {
             toast.error('Choose an APK file first');
             return;
         }
+        if (release) setConfirmReplace(true);
+        else doUpload();
+    };
+
+    const doUpload = async () => {
+        setConfirmReplace(false);
 
         const payload = new FormData();
         payload.append('file', form.file);
@@ -191,6 +199,15 @@ export default function MobileApp() {
                     </form>
                 </section>
             </div>
+            <ConfirmDialog
+                open={confirmReplace}
+                onClose={() => setConfirmReplace(false)}
+                onConfirm={doUpload}
+                variant="primary"
+                title="Replace the live APK?"
+                message={`This publishes ${form.version_name || 'the new build'} and replaces ${release?.version_name || 'the current APK'} for every tenant right away.`}
+                confirmText="Publish APK"
+            />
         </div>
     );
 }
