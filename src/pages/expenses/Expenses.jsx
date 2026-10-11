@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { expensesAPI } from '../../api';
 import { Button, ConfirmDialog, Dialog, PageHeader, SearchInput, StatCard } from '../../components/ui';
+import { useChartTheme } from '../../components/charts/useChartTheme';
 import {
     FiPlus, FiSearch, FiTrash2, FiEdit2, FiDownload,
     FiDollarSign, FiTrendingUp, FiRepeat, FiX, FiSave,
@@ -46,7 +47,6 @@ const CATEGORY_COLORS = {
     'Other':                       'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
 };
 
-const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#64748b'];
 
 const PAYMENT_LABELS = {
     cash: 'Cash', card: 'Card',
@@ -72,6 +72,7 @@ const EMPTY_FORM = (type = 'expense') => ({
 
 export default function Expenses() {
     const qc = useQueryClient();
+    const chart = useChartTheme();
     const [filters, setFilters] = useState({
         search: '', type: '', category: '',
         date_from: '', date_to: '', payment_method: '', spent_by: ''
@@ -223,6 +224,13 @@ export default function Expenses() {
     }, 0);
 
     const trend = stats.monthlyTrend || [];
+    // Six fixed colour slots: largest 5 categories, the rest grouped (colours never cycle)
+    const breakdown = (() => {
+        const rows = [...(expStats.byCategory || [])].sort((a, b) => Number(b.total) - Number(a.total));
+        if (rows.length <= 6) return rows;
+        const rest = rows.slice(5).reduce((sum, r) => sum + Number(r.total || 0), 0);
+        return [...rows.slice(0, 5), { category: 'Other (grouped)', total: rest }];
+    })();
     // Backend returns this already sorted by total desc; cap it so one long list
     // cannot push the table off the screen.
     const spenders = (stats.bySpender || []).slice(0, 10);
@@ -257,15 +265,15 @@ export default function Expenses() {
                         <h3 className="text-sm font-semibold text-fg mb-4">Monthly Cash Flow</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={trend} barSize={12} barGap={3}>
-                                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)} />
+                                <XAxis dataKey="month" tick={chart.axisTick} axisLine={{ stroke: chart.grid }} tickLine={false} />
+                                <YAxis tick={chart.axisTick} axisLine={false} tickLine={false} tickFormatter={v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)} />
                                 <Tooltip
                                     formatter={(v, name) => [fmt(v), name === 'deposit' ? 'Deposits' : 'Expenses']}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '13px' }}
+                                    {...chart.tooltip}
                                 />
                                 <Legend formatter={v => v === 'deposit' ? 'Deposits' : 'Expenses'} />
-                                <Bar dataKey="deposit" fill="#10b981" radius={[3,3,0,0]} />
-                                <Bar dataKey="expense" fill="#6366f1" radius={[3,3,0,0]} />
+                                <Bar dataKey="deposit" fill={chart.series[2]} radius={[4,4,0,0]} />
+                                <Bar dataKey="expense" fill={chart.series[0]} radius={[4,4,0,0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -274,14 +282,14 @@ export default function Expenses() {
                             <h3 className="text-sm font-semibold text-fg mb-4">Expense Breakdown</h3>
                             <ResponsiveContainer width="100%" height={220}>
                                 <PieChart>
-                                    <Pie data={expStats.byCategory} dataKey="total" nameKey="category"
+                                    <Pie data={breakdown} dataKey="total" nameKey="category" stroke={chart.surface} strokeWidth={2}
                                         cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3}>
-                                        {(expStats.byCategory || []).map((_, i) => (
-                                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                        {breakdown.map((d, i) => (
+                                            <Cell key={d.category} fill={d.category === 'Other (grouped)' ? chart.subtle : chart.series[i]} />
                                         ))}
                                     </Pie>
                                     <Tooltip formatter={(v) => [fmt(v)]}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '13px' }} />
+                                        {...chart.tooltip} />
                                     <Legend iconType="circle" iconSize={9} />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -297,23 +305,18 @@ export default function Expenses() {
                             <ResponsiveContainer width="100%" height={Math.max(140, spenders.length * 38)}>
                                 <BarChart data={spenders} layout="vertical" barSize={18}
                                     margin={{ top: 0, right: 24, bottom: 0, left: 8 }}>
-                                    <XAxis type="number" tick={{ fontSize: 11 }}
+                                    <XAxis type="number" tick={chart.axisTick} axisLine={{ stroke: chart.grid }} tickLine={false}
                                         tickFormatter={v => '₹' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)} />
                                     <YAxis type="category" dataKey="spent_by" width={130}
-                                        tick={{ fontSize: 12 }} interval={0} />
+                                        tick={chart.axisTick} axisLine={false} tickLine={false} interval={0} />
                                     <Tooltip
-                                        cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                                         formatter={(v, _n, item) => [
                                             `${fmt(v)} · ${item.payload.count} record${item.payload.count !== 1 ? 's' : ''}`,
                                             'Spent',
                                         ]}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: '13px' }}
+                                        {...chart.tooltip}
                                     />
-                                    <Bar dataKey="total" radius={[0, 3, 3, 0]}>
-                                        {spenders.map((_, i) => (
-                                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                                        ))}
-                                    </Bar>
+                                    <Bar dataKey="total" fill={chart.series[0]} radius={[0, 4, 4, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
