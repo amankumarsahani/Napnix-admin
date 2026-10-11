@@ -28,8 +28,8 @@ export const NAV_GROUPS = [
             { name: 'Inquiries', path: '/inquiries', icon: FiInbox, roles: ['admin', 'sales_operator'], count: 'inquiries' },
             { name: 'WhatsApp', path: '/whatsapp', icon: FiMessageCircle, roles: ADMIN },
             { name: 'Workflows', path: '/workflows', icon: FiActivity, roles: ADMIN },
-            { name: 'Broadcasts (legacy)', path: '/campaigns', icon: FiSend, roles: ADMIN, keywords: 'campaigns' },
-            { name: 'SMTP Accounts (legacy)', path: '/smtp-accounts', icon: FiAtSign, roles: ADMIN },
+            { name: 'Broadcasts (legacy)', path: '/campaigns', icon: FiSend, roles: ADMIN, keywords: 'campaigns', hidden: true },
+            { name: 'SMTP Accounts (legacy)', path: '/smtp-accounts', icon: FiAtSign, roles: ADMIN, hidden: true },
         ],
     },
     {
@@ -85,7 +85,7 @@ export const canSee = (item, role) => !item.roles || item.roles.includes(role ||
 export function navForRole(role) {
     return NAV_GROUPS
         .filter(group => !group.hidden)
-        .map(group => ({ ...group, items: group.items.filter(item => canSee(item, role)) }))
+        .map(group => ({ ...group, items: group.items.filter(item => !item.hidden && canSee(item, role)) }))
         .filter(group => group.items.length > 0);
 }
 
