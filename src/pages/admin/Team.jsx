@@ -1,455 +1,202 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { FiEdit2, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../api/axios';
-import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
-import ConfirmModal from '../../components/common/ConfirmModal';
+import {
+    Avatar, Badge, Button, ConfirmDialog, DataTable, Dialog, EmptyState, Field, IconButton, Input, PageHeader, Panel,
+    SearchInput, Select, cx,
+} from '../../components/ui';
+
+const PAGE_SIZE = 10;
+const BASE_DEPARTMENTS = ['Management', 'Sales', 'Marketing', 'Development', 'Support'];
+const ROLES = [['admin', 'Admin'], ['manager', 'Manager'], ['sales_operator', 'Sales Operator'], ['user', 'User']];
+const ROLE_TONE = { admin: 'info', manager: 'warning' };
+const roleLabel = r => ROLES.find(([v]) => v === r)?.[1] || 'No login';
+const EMPTY = { name: '', email: '', phone: '', position: '', joinDate: '', role: 'sales_operator', department: '', status: 'active' };
+
+function MemberForm({ member, departments, isSelf, onSubmit }) {
+    const editing = !!member?.id;
+    const [form, setForm] = useState(() => (editing
+        ? { name: member.name || '', phone: member.phone || '', position: member.position || '', role: member.role || 'user', department: member.department || '', status: member.status || 'active' }
+        : EMPTY));
+    const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
+    return (
+        <form id="member-form" onSubmit={e => { e.preventDefault(); onSubmit(form); }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Full name" required>
+                <Input required value={form.name} onChange={set('name')} data-autofocus />
+            </Field>
+            {editing ? (
+                <Field label="Email" hint="Email is the login and can't be changed here">
+                    <Input value={member.email || ''} disabled />
+                </Field>
+            ) : (
+                <Field label="Email" required hint="Login details are emailed here">
+                    <Input type="email" required value={form.email} onChange={set('email')} />
+                </Field>
+            )}
+            <Field label="Phone">
+                <Input type="tel" value={form.phone} onChange={set('phone')} />
+            </Field>
+            <Field label="Position">
+                <Input value={form.position} onChange={set('position')} placeholder="e.g. Senior Developer" />
+            </Field>
+            <Field label="Role" hint={isSelf ? "You can't change your own role" : undefined}>
+                <Select value={form.role} onChange={set('role')} disabled={isSelf}>
+                    {ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </Select>
+            </Field>
+            <Field label="Department" hint="Pick one or type a new name">
+                <Input list="team-departments" value={form.department} onChange={set('department')} />
+                <datalist id="team-departments">{departments.map(d => <option key={d} value={d} />)}</datalist>
+            </Field>
+            {editing ? (
+                <Field label="Status">
+                    <Select value={form.status} onChange={set('status')}>
+                        <option value="active">Active</option>
+                        <option value="on_leave">On leave</option>
+                        <option value="inactive">Inactive</option>
+                    </Select>
+                </Field>
+            ) : (
+                <Field label="Join date">
+                    <Input type="date" value={form.joinDate} onChange={set('joinDate')} />
+                </Field>
+            )}
+        </form>
+    );
+}
 
 export default function Team() {
     const { user } = useAuth();
-    const [members, setMembers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [createdUser, setCreatedUser] = useState(null);
-    const [isAddingDept, setIsAddingDept] = useState(false);
-    const [departments, setDepartments] = useState(['Management', 'Sales', 'Marketing', 'Development', 'Support']);
-    const [newDept, setNewDept] = useState('');
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [editingMember, setEditingMember] = useState(null);
-    const [editForm, setEditForm] = useState({});
+    const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+    const [formMember, setFormMember] = useState(null);
+    const [removing, setRemoving] = useState(null);
 
-    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
+    const params = { page, limit: PAGE_SIZE, ...(search && { search }) };
+    const query = useQuery({
+        queryKey: ['teams', params],
+        queryFn: () => apiClient.get('/teams', { params }).then(r => r.data),
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+    });
+    const members = query.data?.data || [];
+    const pagination = query.data?.pagination;
+    const departments = [...new Set([...BASE_DEPARTMENTS, ...members.map(m => m.department).filter(Boolean)])];
+    const isSelf = m => !!m?.email && m.email.toLowerCase() === user?.email?.toLowerCase();
 
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        position: '',
-        joinDate: '',
-        role: 'sales_operator',
-        department: '',
-        status: 'active'
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['teams'] });
+    const save = useMutation({
+        mutationFn: ({ id, form }) => (id ? apiClient.put(`/teams/${id}`, form) : apiClient.post('/teams', form)).then(r => r.data),
+        onSuccess: (res, { id, form }) => {
+            if (id) toast.success('Member updated');
+            else if (res.emailSent) toast.success(`Employee created. Login details emailed to ${form.email}`, { duration: 6000 });
+            else toast.success('Team profile created. This email already had a login, so its role was left unchanged.', { duration: 6000 });
+            setFormMember(null);
+            invalidate();
+        },
+        onError: err => toast.error(err.response?.data?.message || 'Could not save the member'),
+    });
+    const remove = useMutation({
+        mutationFn: id => apiClient.delete(`/teams/${id}`),
+        onSuccess: () => { toast.success('Member removed'); setRemoving(null); invalidate(); },
+        onError: err => toast.error(err.response?.data?.message || 'Failed to remove member'),
     });
 
-    const fetchMembers = async () => {
-        try {
-            const params = { page: currentPage, limit: pageSize };
-            if (searchTerm) params.search = searchTerm;
-            const response = await apiClient.get('/teams', { params });
-            if (response.data.success) {
-                setMembers(response.data.data);
-                if (response.data.pagination) setPagination(response.data.pagination);
-                // Extract unique departments from data to update list dynamically
-                const uniqueDepts = [...new Set(response.data.data.map(m => m.department).filter(Boolean))];
-                setDepartments(prev => [...new Set([...prev, ...uniqueDepts])]);
-            }
-        } catch (error) {
-            toast.error('Failed to load team members');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchMembers();
-    }, [currentPage, searchTerm]);
-
-    const handleAddDepartment = () => {
-        if (newDept.trim() && !departments.includes(newDept)) {
-            setDepartments([...departments, newDept]);
-            setFormData({ ...formData, department: newDept });
-            setNewDept('');
-            setIsAddingDept(false);
-            toast.success('Department added to list');
-        }
-    };
-
-    const handleInvite = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await apiClient.post('/teams', formData);
-
-            // Success handling - email is now sent with credentials
-            setCreatedUser({
-                name: formData.name,
-                email: formData.email,
-                emailSent: response.data.emailSent
-            });
-            setShowModal(false);
-            setShowSuccessModal(true);
-
-            setFormData({
-                name: '', email: '', phone: '', position: '',
-                joinDate: '', role: 'sales_operator', department: '', status: 'active'
-            });
-            fetchMembers(); // Refresh list
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send invite');
-        }
-    };
-
-    const handleEditOpen = (member) => {
-        setEditingMember(member);
-        setEditForm({
-            name: member.name || '',
-            phone: member.phone || '',
-            position: member.position || '',
-            role: member.role || 'sales_operator',
-            department: member.department || '',
-            status: member.status || 'active',
-        });
-    };
-
-    const handleEditSave = async (e) => {
-        e.preventDefault();
-        try {
-            await apiClient.put(`/teams/${editingMember.id}`, editForm);
-            toast.success('Member updated');
-            setEditingMember(null);
-            fetchMembers();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update member');
-        }
-    };
-
-    const handleDelete = (id) => {
-        setConfirmState({
-            isOpen: true,
-            title: 'Remove Team Member',
-            message: 'Are you sure you want to remove this team member? They will lose access to the platform.',
-            variant: 'danger',
-            confirmText: 'Remove',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                try {
-                    await apiClient.delete(`/teams/${id}`);
-                    setMembers(members.filter(m => m.id !== id));
-                    toast.success('Member removed');
-                } catch (error) {
-                    toast.error('Failed to remove member');
-                }
-            },
-        });
-    };
+    const addButton = <Button variant="primary" onClick={() => setFormMember({})}><FiUserPlus className="size-4" />Add employee</Button>;
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Team Management</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage employees, roles and departments.</p>
-                </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="btn btn-primary text-sm"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-                    Add Employee
-                </button>
-            </div>
+        <div className="space-y-4">
+            <PageHeader
+                title="Team"
+                description={pagination ? `${pagination.total} members` : 'Employees, roles and departments'}
+                actions={addButton}
+            />
+            <SearchInput value={search} onChange={t => { setSearch(t); setPage(1); }} placeholder="Search name, email, position" label="Search team" className="w-full sm:w-72" />
 
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Search team members..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-
-            {/* List */}
-            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                <th className="px-6 py-4">Member</th>
-                                <th className="px-6 py-4">Position</th>
-                                <th className="px-6 py-4">Role</th>
-                                <th className="px-6 py-4">Department</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                            {members.map((member) => (
-                                <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 font-bold text-sm">
-                                                {member.name[0]}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-slate-900 dark:text-white">{member.name}</div>
-                                                <div className="text-sm text-slate-500 dark:text-slate-400">{member.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                                        {member.position || '-'}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize 
-                                            ${member.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-400' :
-                                                member.role === 'manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'}`}>
-                                            {member.role || 'employee'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                                        {member.department || '-'}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${member.status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-                                            }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                                            {member.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <button
-                                                onClick={() => handleEditOpen(member)}
-                                                className="text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors p-2 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg"
-                                                title="Edit Member"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(member.id)}
-                                                className="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors p-2 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg"
-                                                title="Remove Member"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
-            </div>
-
-            {/* Invite/Add Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border border-transparent dark:border-slate-700">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Add New Employee</h2>
-                        <form onSubmit={handleInvite} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
-                                    <input type="text" required className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="John Doe" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                                    <input type="email" required className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="john@example.com" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                                    <input type="tel" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="+1 234 567 890" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Position</label>
-                                    <input type="text" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} placeholder="Senior Developer" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Join Date</label>
-                                    <input type="date" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.joinDate} onChange={e => setFormData({ ...formData, joinDate: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Role</label>
-                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                                        <option value="admin">Admin</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="sales_operator">Sales Operator</option>
-                                        <option value="user">User</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="flex items-center justify-between text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                    Department
-                                    {!isAddingDept ? (
-                                        <button type="button" onClick={() => setIsAddingDept(true)} className="text-brand-600 dark:text-brand-400 hover:text-brand-700 text-xs font-bold uppercase">+ Add New</button>
-                                    ) : (
-                                        <button type="button" onClick={() => setIsAddingDept(false)} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 text-xs font-bold uppercase">Cancel</button>
-                                    )}
-                                </label>
-
-                                {isAddingDept ? (
-                                    <div className="flex gap-2">
-                                        <input type="text" className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 outline-none"
-                                            value={newDept} onChange={e => setNewDept(e.target.value)} placeholder="New Department Name" autoFocus />
-                                        <button type="button" onClick={handleAddDepartment} className="btn btn-primary whitespace-nowrap">Add</button>
-                                    </div>
-                                ) : (
-                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })}>
-                                        <option value="">Select Department</option>
-                                        {departments.map(dept => (
-                                            <option key={dept} value={dept}>{dept}</option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
-
-                            <div className="flex gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button type="submit" className="btn btn-primary flex-1">Create Employee</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Success Modal - Email Sent */}
-            {showSuccessModal && createdUser && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-sm w-full shadow-2xl text-center border border-transparent dark:border-slate-700">
-                        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            {createdUser.emailSent ? (
-                                <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            ) : (
-                                <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
+            <Panel flush>
+                <DataTable
+                    caption="Team members"
+                    loading={query.isLoading}
+                    error={query.error}
+                    onRetry={query.refetch}
+                    rows={members}
+                    onRowClick={m => setFormMember(m)}
+                    className={cx(query.isPlaceholderData && 'opacity-60')}
+                    empty={<EmptyState title={search ? `No members match “${search}”` : 'No team members yet'} action={!search && addButton} />}
+                    columns={[
+                        {
+                            key: 'member', header: 'Member',
+                            render: m => (
+                                <span className="flex items-center gap-3 min-w-0">
+                                    <Avatar name={m.name} />
+                                    <span className="min-w-0">
+                                        <span className="block font-medium truncate">{m.name}{isSelf(m) && <span className="ml-1.5 text-xs text-fg-subtle">(you)</span>}</span>
+                                        <span className="block text-xs text-fg-subtle truncate">{m.email}</span>
+                                    </span>
+                                </span>
+                            ),
+                        },
+                        { key: 'position', header: 'Position', className: 'text-fg-muted', render: m => m.position || '—' },
+                        { key: 'role', header: 'Role', render: m => <Badge tone={ROLE_TONE[m.role] || 'neutral'}>{roleLabel(m.role)}</Badge> },
+                        { key: 'department', header: 'Department', className: 'text-fg-muted', render: m => m.department || '—' },
+                        {
+                            key: 'status', header: 'Status',
+                            render: m => <Badge tone={m.status === 'active' ? 'success' : m.status === 'on_leave' ? 'warning' : 'neutral'}>{String(m.status || 'active').replace('_', ' ')}</Badge>,
+                        },
+                    ]}
+                    actions={m => (
+                        <span className="inline-flex gap-0.5">
+                            <IconButton size="sm" label={`Edit ${m.name}`} onClick={() => setFormMember(m)}><FiEdit2 className="size-4" /></IconButton>
+                            {!isSelf(m) && (
+                                <IconButton size="sm" variant="danger" label={`Remove ${m.name}`} onClick={() => setRemoving(m)}><FiTrash2 className="size-4" /></IconButton>
                             )}
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Employee Created!</h2>
-
-                        {createdUser.emailSent ? (
-                            <>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                                    A welcome email with login credentials has been sent to the employee.
-                                </p>
-
-                                <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-4 text-left space-y-3 mb-6 border border-emerald-100 dark:border-emerald-800">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-800 rounded-full flex items-center justify-center">
-                                            <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Email Sent To</p>
-                                            <p className="font-medium text-slate-900 dark:text-white">{createdUser.email}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-6 text-left">
-                                    <p className="text-xs text-blue-700 dark:text-blue-400">
-                                        <strong>📧 Email includes:</strong> Login credentials, password, and a link to the admin dashboard.
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                                User already had an account. Team profile has been created.
-                            </p>
-                        )}
-
-                        <button onClick={() => setShowSuccessModal(false)} className="btn btn-primary w-full">
-                            Done
-                        </button>
+                        </span>
+                    )}
+                />
+                {pagination && pagination.pages > 1 && (
+                    <div className="border-t border-border">
+                        <Pagination currentPage={page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
                     </div>
-                </div>
-            )}
+                )}
+            </Panel>
 
-            {/* Edit Modal */}
-            {editingMember && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-lg w-full shadow-2xl border border-transparent dark:border-slate-700">
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Edit Employee</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{editingMember.email}</p>
-                        <form onSubmit={handleEditSave} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
-                                    <input type="text" required className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                                    <input type="tel" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Position</label>
-                                    <input type="text" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.position} onChange={e => setEditForm({ ...editForm, position: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Role</label>
-                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })}>
-                                        <option value="admin">Admin</option>
-                                        <option value="manager">Manager</option>
-                                        <option value="sales_operator">Sales Operator</option>
-                                        <option value="user">User</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Department</label>
-                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.department} onChange={e => setEditForm({ ...editForm, department: e.target.value })}>
-                                        <option value="">Select Department</option>
-                                        {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                                    <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button type="button" onClick={() => setEditingMember(null)} className="btn btn-secondary flex-1">Cancel</button>
-                                <button type="submit" className="btn btn-primary flex-1">Save Changes</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <Dialog
+                open={!!formMember}
+                onClose={() => setFormMember(null)}
+                title={formMember?.id ? 'Edit employee' : 'Add employee'}
+                description={formMember?.id ? undefined : 'Creates a login and emails the password to the employee.'}
+                size="lg"
+                footer={
+                    <>
+                        <Button onClick={() => setFormMember(null)} disabled={save.isPending}>Cancel</Button>
+                        <Button variant="primary" type="submit" form="member-form" loading={save.isPending}>{formMember?.id ? 'Save changes' : 'Create employee'}</Button>
+                    </>
+                }
+            >
+                {formMember && (
+                    <MemberForm
+                        key={formMember.id ?? 'new'}
+                        member={formMember}
+                        departments={departments}
+                        isSelf={isSelf(formMember)}
+                        onSubmit={form => save.mutate({ id: formMember.id, form })}
+                    />
+                )}
+            </Dialog>
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => setConfirmState({ isOpen: false })}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
+            <ConfirmDialog
+                open={!!removing}
+                onClose={() => setRemoving(null)}
+                onConfirm={() => remove.mutate(removing.id)}
+                loading={remove.isPending}
+                title="Remove team member?"
+                message={removing && `${removing.name} is removed from the team list. Their login account is not deleted.`}
+                confirmText="Remove"
             />
         </div>
     );
