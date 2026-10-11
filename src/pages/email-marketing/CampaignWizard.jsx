@@ -1,282 +1,249 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { FiChevronRight, FiSend, FiUsers, FiLayout, FiAlertTriangle, FiCheckCircle } from '../../components/icons/FeatherIcons';
+import { FiAlertTriangle, FiCheck, FiChevronRight, FiSend } from 'react-icons/fi';
 import { nmCampaignsAPI, nmListsAPI, nmTemplatesAPI } from '../../api/nexmail';
+import { Badge, Button, ConfirmDialog, Field, Input, PageHeader, Panel, Skeleton, Textarea, cx } from '../../components/ui';
 
-const STEPS = ['Setup', 'Audience', 'Content', 'Spam Check', 'Schedule'];
+const STEPS = ['Setup', 'Audience', 'Content', 'Spam check', 'Schedule'];
+const SEVERITY_TONE = { critical: 'danger', high: 'danger', medium: 'warning' };
+const apiErr = (err, fallback) => err?.response?.data?.error || fallback;
+const scoreTone = s => (s >= 80 ? 'text-success' : s >= 60 ? 'text-warning' : 'text-danger');
+
+function Choice({ selected, onClick, title, hint, children }) {
+    return (
+        <button type="button" aria-pressed={selected} onClick={onClick}
+            className={cx('w-full rounded-sm border p-3 text-left transition-colors', selected ? 'border-accent bg-accent-soft' : 'border-border hover:bg-surface-2')}>
+            {children}
+            <span className="block text-sm font-medium text-fg">{title}</span>
+            {hint && <span className="block text-xs text-fg-muted">{hint}</span>}
+        </button>
+    );
+}
 
 export default function CampaignWizard() {
     const navigate = useNavigate();
     const [step, setStep] = useState(0);
-    const [saving, setSaving] = useState(false);
     const [campaign, setCampaign] = useState({
-        name: '', type: 'regular', subject_a: '', subject_b: '',
-        from_name: '', from_email: '', reply_to: '',
-        list_id: null, segment_filter: null,
-        template_id_a: null, html_content_a: '',
-        ab_split_pct: 50, ab_winner_metric: 'open_rate', ab_winner_wait_hours: 4,
-        scheduled_at: null, send_now: true
+        name: '', type: 'regular', subject_a: '', subject_b: '', from_name: '', from_email: '', reply_to: '',
+        list_id: null, segment_filter: null, template_id_a: null, html_content_a: '',
+        ab_split_pct: 50, ab_winner_metric: 'open_rate', ab_winner_wait_hours: 4, scheduled_at: null, send_now: true,
     });
-    const [lists, setLists] = useState([]);
-    const [templates, setTemplates] = useState([]);
-    const [estimatedCount, setEstimatedCount] = useState(null);
-    const [spamResult, setSpamResult] = useState(null);
-    const [checkingSpam, setCheckingSpam] = useState(false);
+    const [spam, setSpam] = useState(null);
     const [testEmail, setTestEmail] = useState('');
-
+    const [draftId, setDraftId] = useState(null); // created by "Send test" so the real send can reuse it
+    const [confirmSend, setConfirmSend] = useState(false);
     const update = (k, v) => setCampaign(p => ({ ...p, [k]: v }));
+    const field = k => e => update(k, e.target.value);
 
-    useEffect(() => {
-        nmListsAPI.getAll().then(r => setLists(r.data || [])).catch(() => {});
-        nmTemplatesAPI.getAll({ status: 'active' }).then(r => setTemplates(r.data || [])).catch(() => {});
-    }, []);
+    const lists = useQuery({ queryKey: ['nexmail-lists'], queryFn: () => nmListsAPI.getAll().then(r => r.data || []), staleTime: 5 * 60 * 1000 }).data || [];
+    const templates = useQuery({ queryKey: ['nexmail-templates', { status: 'active' }], queryFn: () => nmTemplatesAPI.getAll({ status: 'active' }).then(r => r.data || []), staleTime: 5 * 60 * 1000 }).data || [];
+    const estimate = useQuery({
+        queryKey: ['nexmail-estimate', campaign.list_id, campaign.segment_filter],
+        queryFn: () => nmCampaignsAPI.estimateAudience({ list_id: campaign.list_id, segment_filter: campaign.segment_filter }).then(r => r.count),
+        enabled: step >= 1,
+        staleTime: 60 * 1000,
+    });
+    const listName = lists.find(l => l.id === campaign.list_id)?.name;
 
-    useEffect(() => {
-        if (step === 1) {
-            nmCampaignsAPI.estimateAudience({ list_id: campaign.list_id, segment_filter: campaign.segment_filter })
-                .then(r => setEstimatedCount(r.count))
-                .catch(() => setEstimatedCount(null));
-        }
-    }, [step, campaign.list_id]);
+    const spamCheck = useMutation({
+        mutationFn: () => nmTemplatesAPI.checkSpam({ subject: campaign.subject_a, html_content: campaign.html_content_a || undefined, from_email: campaign.from_email }),
+        onSuccess: r => setSpam(r.data),
+        onError: () => { setSpam(null); toast.error('Spam check failed'); },
+    });
 
-    useEffect(() => {
-        if (step === 3) runSpamCheck();
-    }, [step]);
-
-    const runSpamCheck = async () => {
-        setCheckingSpam(true);
-        try {
-            const res = await nmTemplatesAPI.checkSpam({
-                subject: campaign.subject_a,
-                html_content: campaign.html_content_a || undefined,
-                from_email: campaign.from_email
-            });
-            setSpamResult(res.data);
-        } catch (e) {
-            setSpamResult(null);
-            toast.error('Spam check failed');
-        } finally {
-            setCheckingSpam(false);
-        }
+    const saveDraft = async () => {
+        if (draftId) { await nmCampaignsAPI.update(draftId, campaign); return draftId; }
+        const r = await nmCampaignsAPI.create(campaign);
+        setDraftId(r.campaignId);
+        return r.campaignId;
     };
+    const sendTest = useMutation({
+        mutationFn: async () => nmCampaignsAPI.sendTest(await saveDraft(), testEmail),
+        onSuccess: () => toast.success(`Test email sent to ${testEmail}`),
+        onError: err => toast.error(apiErr(err, 'Could not send the test email')),
+    });
+    const create = useMutation({
+        mutationFn: async () => {
+            const id = await saveDraft();
+            if (campaign.send_now) await nmCampaignsAPI.send(id);
+            return id;
+        },
+        onSuccess: () => { toast.success(campaign.send_now ? 'Campaign queued for sending' : 'Campaign scheduled'); navigate('/email-marketing/campaigns'); },
+        onError: err => {
+            setConfirmSend(false);
+            const d = err.response?.data;
+            toast.error(d?.error || 'Failed to create campaign');
+            // The send was blocked on spam score: show the report
+            if (d?.spam_score !== undefined) { setSpam({ score: d.spam_score, rating: d.rating, issues: d.issues || [], suggestions: d.suggestions || [] }); setStep(3); }
+        },
+    });
 
-    const canProceed = () => {
-        switch (step) {
-            case 0: return campaign.name && campaign.subject_a;
-            case 1: return true;
-            case 2: return campaign.html_content_a || campaign.template_id_a;
-            case 3: return spamResult ? spamResult.score >= 20 : false;
-            default: return true;
-        }
-    };
-
-    const handleCreate = async () => {
-        setSaving(true);
-        try {
-            const res = await nmCampaignsAPI.create(campaign);
-            const campaignId = res.campaignId;
-
-            if (campaign.send_now) {
-                try {
-                    await nmCampaignsAPI.send(campaignId);
-                    toast.success('Campaign created and queued for sending!');
-                } catch (e) {
-                    toast.error(e.response?.data?.error || 'Created but failed to send');
-                    if (e.response?.data?.spam_score !== undefined) {
-                        setSpamResult({ score: e.response.data.spam_score, rating: e.response.data.rating, issues: e.response.data.issues || [], suggestions: e.response.data.suggestions || [] });
-                        setStep(3);
-                        setSaving(false);
-                        return;
-                    }
-                }
-            } else {
-                toast.success('Campaign created and scheduled!');
-            }
-            navigate('/email-marketing/campaigns');
-        } catch (e) {
-            toast.error(e.response?.data?.error || 'Failed to create campaign');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const scoreColor = (score) => {
-        if (score >= 80) return { bg: 'bg-emerald-500', text: 'text-emerald-600', ring: 'ring-emerald-200' };
-        if (score >= 60) return { bg: 'bg-amber-500', text: 'text-amber-600', ring: 'ring-amber-200' };
-        if (score >= 40) return { bg: 'bg-orange-500', text: 'text-orange-600', ring: 'ring-orange-200' };
-        return { bg: 'bg-red-500', text: 'text-red-600', ring: 'ring-red-200' };
-    };
+    const goTo = i => { setStep(i); if (i === 3) spamCheck.mutate(); };
+    const scheduleOk = campaign.send_now || !!campaign.scheduled_at;
+    const canProceed = [
+        !!(campaign.name && campaign.subject_a),
+        true,
+        !!(campaign.html_content_a || campaign.template_id_a),
+        !!spam && spam.score >= 20,
+        scheduleOk,
+    ][step];
+    const finalAction = () => (campaign.send_now ? setConfirmSend(true) : create.mutate());
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/email-marketing/campaigns')} className="text-slate-400 hover:text-slate-600">&larr;</button>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create Campaign</h1>
-            </div>
+        <div className="max-w-4xl space-y-4">
+            <PageHeader back={{ to: '/email-marketing/campaigns', label: 'Campaigns' }} title="Create campaign" />
 
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700 overflow-x-auto">
+            <ol className="flex items-center gap-1 overflow-x-auto rounded-md border border-border bg-surface p-2" aria-label="Steps">
                 {STEPS.map((s, i) => (
-                    <div key={s} className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => i <= step && setStep(i)} disabled={i > step}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${i === step ? 'bg-brand-600 text-white' : i < step ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 cursor-pointer' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
-                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border border-current">{i + 1}</span>{s}
+                    <li key={s} className="flex shrink-0 items-center gap-1">
+                        <button type="button" disabled={i > step} onClick={() => goTo(i)} aria-current={i === step ? 'step' : undefined}
+                            className={cx('flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm font-medium whitespace-nowrap',
+                                i === step ? 'bg-accent text-accent-fg' : i < step ? 'bg-accent-soft text-accent' : 'text-fg-subtle')}>
+                            <span className="grid size-5 place-items-center rounded-full border border-current text-2xs">{i < step ? <FiCheck className="size-3" /> : i + 1}</span>{s}
                         </button>
-                        {i < STEPS.length - 1 && <FiChevronRight className="text-slate-300 w-4 h-4 flex-shrink-0" />}
-                    </div>
+                        {i < STEPS.length - 1 && <FiChevronRight aria-hidden="true" className="size-4 text-fg-subtle" />}
+                    </li>
                 ))}
-            </div>
+            </ol>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 min-h-[400px]">
+            <Panel title={STEPS[step]} className="min-h-[360px]">
                 {step === 0 && (
-                    <div className="space-y-4 max-w-lg">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Campaign Setup</h2>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Campaign Name *</label><input type="text" value={campaign.name} onChange={e => update('name', e.target.value)} placeholder="May Newsletter" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject Line *</label><input type="text" value={campaign.subject_a} onChange={e => update('subject_a', e.target.value)} placeholder="{{first_name}}, check out what's new!" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /><p className="text-xs text-slate-400 mt-1">Use {'{{first_name}}'} for personalization</p></div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Name</label><input type="text" value={campaign.from_name} onChange={e => update('from_name', e.target.value)} placeholder="Your Company" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
-                            <div><label className="block text-sm font-medium text-slate-600 mb-1">From Email</label><input type="email" value={campaign.from_email} onChange={e => update('from_email', e.target.value)} placeholder="hello@yourdomain.com" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
+                    <div className="max-w-lg space-y-4">
+                        <Field label="Campaign name" required><Input value={campaign.name} onChange={field('name')} placeholder="May newsletter" data-autofocus /></Field>
+                        <Field label="Subject line" required hint="Use {{first_name}} to personalise"><Input value={campaign.subject_a} onChange={field('subject_a')} placeholder="{{first_name}}, here's what's new" /></Field>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <Field label="From name"><Input value={campaign.from_name} onChange={field('from_name')} placeholder="Your company" /></Field>
+                            <Field label="From email"><Input type="email" value={campaign.from_email} onChange={field('from_email')} placeholder="hello@yourdomain.com" /></Field>
                         </div>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Type</label>
-                            <div className="flex gap-3">{[{ v: 'regular', l: 'Regular' }, { v: 'ab_test', l: 'A/B Test' }].map(t => (
-                                <button key={t.v} onClick={() => update('type', t.v)} className={`flex-1 p-3 rounded-lg border-2 ${campaign.type === t.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}><p className="text-sm font-medium text-slate-900 dark:text-white">{t.l}</p></button>
-                            ))}</div>
-                        </div>
-                        {campaign.type === 'ab_test' && <div><label className="block text-sm font-medium text-slate-600 mb-1">Subject B</label><input type="text" value={campaign.subject_b} onChange={e => update('subject_b', e.target.value)} placeholder="Alternative subject" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>}
+                        <fieldset>
+                            <legend className="mb-1.5 text-sm font-medium text-fg">Type</legend>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Choice selected={campaign.type === 'regular'} onClick={() => update('type', 'regular')} title="Regular" />
+                                <Choice selected={campaign.type === 'ab_test'} onClick={() => update('type', 'ab_test')} title="A/B test" />
+                            </div>
+                        </fieldset>
+                        {campaign.type === 'ab_test' && <Field label="Subject B"><Input value={campaign.subject_b} onChange={field('subject_b')} placeholder="Alternative subject" /></Field>}
                     </div>
                 )}
 
                 {step === 1 && (
                     <div className="space-y-4">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Audience</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <button onClick={() => { update('list_id', null); }} className={`p-4 rounded-lg border-2 text-left ${!campaign.list_id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
-                                <FiUsers className="w-6 h-6 text-brand-600 mb-2" /><p className="text-sm font-medium text-slate-900 dark:text-white">All Contacts</p><p className="text-xs text-slate-500 mt-1">Send to everyone subscribed</p>
-                            </button>
-                            {lists.map(l => (
-                                <button key={l.id} onClick={() => update('list_id', l.id)} className={`p-4 rounded-lg border-2 text-left ${campaign.list_id === l.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
-                                    <FiLayout className="w-5 h-5 text-brand-600 mb-1" /><p className="text-sm font-medium text-slate-900 dark:text-white">{l.name}</p><p className="text-xs text-slate-500">{l.contact_count || 0} contacts</p>
-                                </button>
-                            ))}
+                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <Choice selected={!campaign.list_id} onClick={() => update('list_id', null)} title="All contacts" hint="Everyone who is subscribed" />
+                            {lists.map(l => <Choice key={l.id} selected={campaign.list_id === l.id} onClick={() => update('list_id', l.id)} title={l.name} hint={`${l.contact_count || 0} contacts`} />)}
                         </div>
-                        {estimatedCount !== null && <div className="bg-brand-50 dark:bg-brand-900/20 rounded-lg p-4"><p className="text-sm font-medium text-brand-700">Estimated recipients: <span className="text-lg font-bold">{estimatedCount.toLocaleString()}</span></p></div>}
+                        <p role="status" className="rounded-sm border border-border bg-surface-2 px-4 py-3 text-sm text-fg-muted">
+                            Estimated recipients: {estimate.isLoading ? '…' : estimate.data != null ? <strong className="font-mono tabular-nums text-fg">{estimate.data.toLocaleString('en-IN')}</strong> : 'unavailable'}
+                        </p>
                     </div>
                 )}
 
                 {step === 2 && (
                     <div className="space-y-4">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Content</h2>
-                        {templates.length > 0 && <div><p className="text-sm font-medium text-slate-600 mb-2">Choose a template:</p><div className="grid grid-cols-2 md:grid-cols-3 gap-3">{templates.map(t => (
-                            <button key={t.id} onClick={() => update('template_id_a', t.id)} className={`p-3 rounded-lg border-2 text-left ${campaign.template_id_a === t.id ? 'border-brand-500 bg-brand-50' : 'border-slate-200 dark:border-slate-600'}`}>
-                                <p className="text-xs font-medium text-slate-900 dark:text-white truncate">{t.name}</p><p className="text-[10px] text-slate-400">{t.category}</p>
-                            </button>
-                        ))}</div></div>}
-                        <div className="flex items-center gap-4"><hr className="flex-1" /><span className="text-xs text-slate-400">or</span><hr className="flex-1" /></div>
-                        <div><label className="block text-sm font-medium text-slate-600 mb-1">Custom HTML</label><textarea value={campaign.html_content_a} onChange={e => update('html_content_a', e.target.value)} rows={10} placeholder="<h1>Hello {{first_name}}!</h1>" className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 font-mono text-xs resize-y focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>
-                        <button onClick={() => navigate('/email-marketing/templates/new')} className="text-sm text-brand-600 hover:text-brand-700 font-medium">Open Template Builder →</button>
+                        {templates.length > 0 && (
+                            <div>
+                                <p className="mb-1.5 text-sm font-medium text-fg">Start from a template</p>
+                                <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                    {templates.map(t => <Choice key={t.id} selected={campaign.template_id_a === t.id} onClick={() => update('template_id_a', t.id)} title={t.name} hint={t.category} />)}
+                                </div>
+                            </div>
+                        )}
+                        <Field label="Or paste custom HTML"><Textarea rows={10} value={campaign.html_content_a} onChange={field('html_content_a')} spellCheck={false} className="font-mono text-xs" placeholder="<h1>Hello {{first_name}}!</h1>" /></Field>
+                        <Button size="sm" variant="ghost" onClick={() => navigate('/email-marketing/templates/new')}>Open the template builder</Button>
                     </div>
                 )}
 
                 {step === 3 && (
-                    <div className="space-y-6">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Spam & Deliverability Check</h2>
-                        {checkingSpam ? (
-                            <div className="flex items-center justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div><span className="ml-3 text-sm text-slate-500">Analyzing email content...</span></div>
-                        ) : spamResult ? (
+                    <div className="space-y-5">
+                        {spamCheck.isPending ? <Skeleton className="h-32 rounded-md" /> : spam ? (
                             <>
-                                <div className="flex items-center gap-6">
-                                    <div className={`w-24 h-24 rounded-full flex items-center justify-center ring-8 ${scoreColor(spamResult.score).ring}`}>
-                                        <div className="text-center"><p className={`text-3xl font-bold ${scoreColor(spamResult.score).text}`}>{spamResult.score}</p><p className="text-[10px] text-slate-500">/100</p></div>
-                                    </div>
+                                <div className="flex items-center gap-5">
+                                    <p className={cx('font-mono tabular-nums text-4xl font-semibold', scoreTone(spam.score))}>{spam.score}<span className="text-base text-fg-subtle">/100</span></p>
                                     <div>
-                                        <p className={`text-xl font-bold ${scoreColor(spamResult.score).text}`}>{spamResult.rating}</p>
-                                        <p className="text-sm text-slate-500 mt-1">{spamResult.issueCount} issue{spamResult.issueCount !== 1 ? 's' : ''} found</p>
-                                        {spamResult.score < 20 && <p className="text-sm text-red-600 font-medium mt-1">Campaign blocked — fix critical issues before sending</p>}
+                                        <p className={cx('text-lg font-semibold', scoreTone(spam.score))}>{spam.rating}</p>
+                                        <p className="text-sm text-fg-muted">{spam.issues?.length || 0} issue{spam.issues?.length === 1 ? '' : 's'} found</p>
+                                        {spam.score < 20 && <p role="alert" className="text-sm font-medium text-danger">Blocked. Fix the critical issues before sending.</p>}
                                     </div>
                                 </div>
-
-                                {spamResult.issues.length > 0 && (
-                                    <div className="bg-white dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <div className="p-3 border-b border-slate-200 dark:border-slate-600"><p className="text-sm font-semibold text-slate-900 dark:text-white">Issues Found</p></div>
-                                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                                            {spamResult.issues.map((issue, i) => (
-                                                <div key={i} className="px-4 py-2.5 flex items-start gap-3">
-                                                    <span className={`text-xs px-1.5 py-0.5 rounded font-bold flex-shrink-0 mt-0.5 ${issue.severity === 'critical' ? 'bg-red-100 text-red-700' : issue.severity === 'high' ? 'bg-orange-100 text-orange-700' : issue.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{issue.severity}</span>
-                                                    <p className="text-sm text-slate-700 dark:text-slate-300">{issue.message}</p>
-                                                    <span className="text-xs text-slate-400 ml-auto flex-shrink-0">-{issue.penalty}pts</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                {spam.issues?.length > 0 && (
+                                    <ul className="divide-y divide-border rounded-sm border border-border">
+                                        {spam.issues.map((issue, i) => (
+                                            <li key={i} className="flex items-start gap-3 px-3 py-2">
+                                                <Badge tone={SEVERITY_TONE[issue.severity] || 'neutral'}>{issue.severity}</Badge>
+                                                <span className="text-sm text-fg">{issue.message}</span>
+                                                <span className="ml-auto font-mono text-2xs text-fg-subtle">-{issue.penalty} pts</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {spam.suggestions?.length > 0 && (
+                                    <div className="rounded-sm border border-border bg-surface-2 p-3">
+                                        <p className="mb-1 text-sm font-medium text-fg">Suggestions</p>
+                                        <ul className="space-y-1">{spam.suggestions.map((s, i) => <li key={i} className="text-sm text-fg-muted">• {s}</li>)}</ul>
                                     </div>
                                 )}
-
-                                {spamResult.suggestions.length > 0 && (
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">Suggestions</p>
-                                        <ul className="space-y-1">{spamResult.suggestions.map((s, i) => <li key={i} className="text-sm text-blue-700 dark:text-blue-400 flex items-start gap-2"><FiCheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />{s}</li>)}</ul>
+                                {spam.deliverabilityTips && (
+                                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                        {spam.deliverabilityTips.map((t, i) => <p key={i} className="text-xs text-fg-muted"><span className="font-medium text-fg">{t.category}:</span> {t.tip}</p>)}
                                     </div>
                                 )}
+                                <Button size="sm" onClick={() => spamCheck.mutate()}>Re-check score</Button>
 
-                                {spamResult.deliverabilityTips && (
-                                    <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-4">
-                                        <p className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Deliverability Tips</p>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {spamResult.deliverabilityTips.map((t, i) => (
-                                                <div key={i} className="text-xs"><span className="font-bold text-slate-600 dark:text-slate-400">{t.category}:</span> <span className="text-slate-500">{t.tip}</span></div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <button onClick={runSpamCheck} className="text-sm text-brand-600 hover:text-brand-700 font-medium">Re-check Score →</button>
-
-                                <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                    <label className="text-sm font-medium text-slate-600">Send test email:</label>
-                                    <input type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="your@email.com" className="flex-1 max-w-xs px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
-                                    <button onClick={async () => { if (!testEmail) return; try { toast.success('Test email functionality ready (create campaign first)'); } catch (e) { toast.error('Failed'); } }} className="btn btn-secondary text-sm">Send Test</button>
-                                </div>
+                                <form onSubmit={e => { e.preventDefault(); sendTest.mutate(); }} className="flex flex-wrap items-end gap-2 border-t border-border pt-4">
+                                    <Field label="Send a test email" hint="Saves this campaign as a draft first" className="min-w-56 flex-1 max-w-xs">
+                                        <Input type="email" required value={testEmail} onChange={e => setTestEmail(e.target.value)} placeholder="you@yourdomain.com" />
+                                    </Field>
+                                    <Button type="submit" loading={sendTest.isPending}>Send test</Button>
+                                </form>
                             </>
                         ) : (
-                            <div className="text-center py-16 text-slate-400">
-                                <FiAlertTriangle className="w-8 h-8 mx-auto mb-2" />
-                                <p>Unable to check spam score. Make sure you have content in the previous step.</p>
-                            </div>
+                            <p className="flex items-center gap-2 py-10 text-sm text-fg-muted"><FiAlertTriangle className="size-4" />Couldn&apos;t score this email. Check that the previous steps have content.</p>
                         )}
                     </div>
                 )}
 
                 {step === 4 && (
-                    <div className="space-y-4 max-w-lg">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Schedule</h2>
-                        <div className="space-y-3">
-                            {[{ v: true, l: 'Send Now', d: 'Start sending immediately' }, { v: false, l: 'Schedule', d: 'Pick a date and time' }].map(o => (
-                                <button key={String(o.v)} onClick={() => update('send_now', o.v)} className={`w-full p-4 rounded-lg border-2 text-left ${campaign.send_now === o.v ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-slate-200 dark:border-slate-600'}`}>
-                                    <p className="text-sm font-medium text-slate-900 dark:text-white">{o.l}</p><p className="text-xs text-slate-500">{o.d}</p>
-                                </button>
-                            ))}
+                    <div className="max-w-lg space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <Choice selected={campaign.send_now} onClick={() => update('send_now', true)} title="Send now" hint="Start sending immediately" />
+                            <Choice selected={!campaign.send_now} onClick={() => update('send_now', false)} title="Schedule" hint="Pick a date and time" />
                         </div>
-                        {!campaign.send_now && <div><label className="block text-sm font-medium text-slate-600 mb-1">Send Date & Time</label><input type="datetime-local" value={campaign.scheduled_at || ''} onChange={e => update('scheduled_at', e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" /></div>}
-                        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mt-4">
-                            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">Summary</h3>
-                            <div className="space-y-1 text-sm text-slate-600">
-                                <p><b>Name:</b> {campaign.name}</p><p><b>Subject:</b> {campaign.subject_a}</p>
-                                <p><b>Audience:</b> {campaign.list_id ? `List #${campaign.list_id}` : 'All contacts'}{estimatedCount !== null ? ` (~${estimatedCount})` : ''}</p>
-                                {spamResult && <p><b>Spam Score:</b> <span className={scoreColor(spamResult.score).text}>{spamResult.score}/100 ({spamResult.rating})</span></p>}
-                                <p><b>Schedule:</b> {campaign.send_now ? 'Immediately' : campaign.scheduled_at || 'Not set'}</p>
-                            </div>
-                        </div>
+                        {!campaign.send_now && (
+                            <Field label="Send date and time" required error={!campaign.scheduled_at ? 'Choose when to send' : undefined}>
+                                <Input type="datetime-local" value={campaign.scheduled_at || ''} onChange={field('scheduled_at')} />
+                            </Field>
+                        )}
+                        <dl className="space-y-1 rounded-sm border border-border bg-surface-2 p-4 text-sm">
+                            {[
+                                ['Name', campaign.name], ['Subject', campaign.subject_a],
+                                ['Audience', `${campaign.list_id ? (listName || `List #${campaign.list_id}`) : 'All contacts'}${estimate.data != null ? ` (about ${estimate.data.toLocaleString('en-IN')})` : ''}`],
+                                ['Spam score', spam ? `${spam.score}/100 (${spam.rating})` : 'Not checked'],
+                                ['When', campaign.send_now ? 'Immediately' : campaign.scheduled_at || 'Not set'],
+                            ].map(([k, v]) => <div key={k} className="flex gap-3"><dt className="w-24 shrink-0 text-fg-muted">{k}</dt><dd className="min-w-0 break-words text-fg">{v}</dd></div>)}
+                        </dl>
                     </div>
                 )}
-            </div>
+            </Panel>
 
             <div className="flex items-center justify-between">
-                <button onClick={() => step > 0 ? setStep(step - 1) : navigate('/email-marketing/campaigns')} className="btn btn-secondary">{step === 0 ? 'Cancel' : 'Back'}</button>
-                {step < STEPS.length - 1 ? (
-                    <button onClick={() => canProceed() && setStep(step + 1)} disabled={!canProceed()} className="btn btn-primary flex items-center gap-2 disabled:opacity-50">Next <FiChevronRight className="w-4 h-4" /></button>
-                ) : (
-                    <button onClick={handleCreate} disabled={saving} className="btn btn-primary flex items-center gap-2 disabled:opacity-50"><FiSend className="w-4 h-4" /> {saving ? 'Creating...' : campaign.send_now ? 'Create & Send' : 'Schedule'}</button>
-                )}
+                <Button onClick={() => (step > 0 ? goTo(step - 1) : navigate('/email-marketing/campaigns'))}>{step === 0 ? 'Cancel' : 'Back'}</Button>
+                {step < STEPS.length - 1
+                    ? <Button variant="primary" onClick={() => goTo(step + 1)} disabled={!canProceed || spamCheck.isPending}>Next<FiChevronRight className="size-4" /></Button>
+                    : <Button variant="primary" onClick={finalAction} loading={create.isPending} disabled={!scheduleOk}><FiSend className="size-4" />{campaign.send_now ? 'Create and send' : 'Schedule'}</Button>}
             </div>
+
+            <ConfirmDialog
+                open={confirmSend}
+                onClose={() => setConfirmSend(false)}
+                onConfirm={() => create.mutate()}
+                loading={create.isPending}
+                variant="primary"
+                title="Send this campaign now?"
+                message={`This emails ${estimate.data != null ? `about ${estimate.data.toLocaleString('en-IN')} people` : 'your audience'} straight away and can't be recalled.`}
+                confirmText="Send now"
+            />
         </div>
     );
 }
