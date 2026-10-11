@@ -9,22 +9,47 @@ import { Button, Checkbox, ErrorState, Field, Input, PageHeader, Panel, Select, 
 
 const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 const EMPTY = {
-    title: '', slug: '', excerpt: '', content: '', category: '', author: 'Napnix Admin', image: '',
-    featured: false, status: 'published', read_time: 5, keywords: [],
+    title: '', slug: '', excerpt: '', meta_description: '', content: '', category: '',
+    author: 'Napnix Admin', image: '', og_image: '', image_alt: '',
+    featured: false, status: 'published', read_time: 5, keywords: [], tags: [],
+};
+
+/**
+ * The API row is not the form shape, in two places that both bite silently.
+ *
+ * The column is image_url and this form uses image (so does the create
+ * endpoint), so spreading the row left the image input blank on every edit.
+ * And read_time is stored as "7 min read" while the input is type=number, so
+ * it rendered blank and a save then wrote a bare integer over the string form
+ * every other post uses. The backend canonicalises on write; this parses back.
+ */
+const fromRow = blog => {
+    if (!blog) return { ...EMPTY };
+    return {
+        ...EMPTY,
+        ...blog,
+        image: blog.image_url ?? blog.image ?? '',
+        read_time: parseInt(blog.read_time, 10) || 5,
+    };
 };
 
 function BlogForm({ blog, isEdit, onSave, saving, onCancel }) {
-    const [form, setForm] = useState(() => ({ ...EMPTY, ...blog }));
+    const [form, setForm] = useState(() => fromRow(blog));
     // Slug follows the title until someone edits it by hand
     const [slugTouched, setSlugTouched] = useState(isEdit);
     // keywords are typed as one string and split on save (splitting per keystroke ate trailing commas/spaces)
     const [keywords, setKeywords] = useState(() => (Array.isArray(blog?.keywords) ? blog.keywords.join(', ') : ''));
+    const [tags, setTags] = useState(() => (Array.isArray(blog?.tags) ? blog.tags.join(', ') : ''));
     const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
     const [imgBroken, setImgBroken] = useState(false);
 
     const submit = e => {
         e.preventDefault();
-        onSave({ ...form, keywords: keywords.split(',').map(k => k.trim()).filter(Boolean) });
+        onSave({
+            ...form,
+            keywords: keywords.split(',').map(k => k.trim()).filter(Boolean),
+            tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        });
     };
 
     return (
@@ -53,6 +78,12 @@ function BlogForm({ blog, isEdit, onSave, saving, onCancel }) {
                             </Field>
                             <Field label="Excerpt" hint="Short summary for preview cards">
                                 <Textarea rows={3} value={form.excerpt || ''} onChange={set('excerpt')} />
+                            </Field>
+                            <Field
+                                label="Meta description"
+                                hint={`What Google shows under the title. Falls back to the excerpt. ${(form.meta_description || '').length}/155`}
+                            >
+                                <Textarea rows={2} value={form.meta_description || ''} onChange={set('meta_description')} />
                             </Field>
                             <div>
                                 <p className="mb-1.5 text-sm font-medium text-fg">Main content</p>
@@ -91,7 +122,8 @@ function BlogForm({ blog, isEdit, onSave, saving, onCancel }) {
                             <Field label="Category"><Input value={form.category || ''} onChange={set('category')} placeholder="Guide, Technology…" /></Field>
                             <Field label="Author"><Input value={form.author || ''} onChange={set('author')} /></Field>
                             <Field label="Read time (min)"><Input type="number" min="1" value={form.read_time ?? ''} onChange={set('read_time')} className="font-mono" /></Field>
-                            <Field label="SEO keywords" hint="Comma separated"><Input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="seo, crm, guide" /></Field>
+                            <Field label="SEO keywords" hint="Comma separated. Feeds the Article schema."><Input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="seo, crm, guide" /></Field>
+                            <Field label="Tags" hint="Comma separated. Drives the tag filter on /blog."><Input value={tags} onChange={e => setTags(e.target.value)} placeholder="CRM automation, WhatsApp" /></Field>
                         </div>
                     </Panel>
 
@@ -100,8 +132,14 @@ function BlogForm({ blog, isEdit, onSave, saving, onCancel }) {
                             <Field label="Image URL">
                                 <Input value={form.image || ''} onChange={e => { setImgBroken(false); setForm(f => ({ ...f, image: e.target.value })); }} placeholder="https://…" />
                             </Field>
+                            <Field label="Image alt text" hint="Describes the image for screen readers and search">
+                                <Input value={form.image_alt || ''} onChange={set('image_alt')} placeholder="A dispatch clerk checking a phone" />
+                            </Field>
+                            <Field label="Social / OG image URL" hint="Link preview card. Leave empty to reuse the feature image.">
+                                <Input value={form.og_image || ''} onChange={set('og_image')} placeholder="https://… (1200×630)" />
+                            </Field>
                             {form.image && !imgBroken && (
-                                <img src={form.image} alt="" onError={() => setImgBroken(true)} className="aspect-video w-full rounded-sm border border-border object-cover" />
+                                <img src={form.image} alt={form.image_alt || ''} onError={() => setImgBroken(true)} className="aspect-video w-full rounded-sm border border-border object-cover" />
                             )}
                             {form.image && imgBroken && <p className="text-xs text-danger">This image URL didn&apos;t load.</p>}
                         </div>
