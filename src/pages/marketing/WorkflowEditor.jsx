@@ -2397,15 +2397,28 @@ const WorkflowEditor = () => {
                                         ['http_get', 'HTTP GET (allowlisted hosts only)'],
                                     ].map(([id, label]) => {
                                         const tools = localConfig?.tools || ['keyword_research', 'gsc_opportunities', 'list_blog_posts', 'write_blog_draft'];
+                                        const required = localConfig?.require_tools || [];
                                         return (
-                                            <label key={id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={tools.includes(id)}
-                                                    onChange={(e) => setLocalConfig({ ...localConfig, tools: e.target.checked ? [...tools, id] : tools.filter(t => t !== id) })}
-                                                />
-                                                {label}
-                                            </label>
+                                            <div key={id} className="flex items-center justify-between gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                                <label className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={tools.includes(id)}
+                                                        onChange={(e) => setLocalConfig({ ...localConfig, tools: e.target.checked ? [...tools, id] : tools.filter(t => t !== id) })}
+                                                    />
+                                                    {label}
+                                                </label>
+                                                {tools.includes(id) && (
+                                                    <label className="flex items-center gap-1 text-xs text-slate-500" title="The agent cannot finish until this tool has run successfully">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={required.includes(id)}
+                                                            onChange={(e) => setLocalConfig({ ...localConfig, require_tools: e.target.checked ? [...required, id] : required.filter(t => t !== id) })}
+                                                        />
+                                                        must use
+                                                    </label>
+                                                )}
+                                            </div>
                                         );
                                     })}
                                 </div>
