@@ -1,9 +1,10 @@
 /**
  * Analytics charts for the dashboard. Receives the dashboard stats from the page
- * (one shared query) instead of fetching them again.
+ * (one shared query) instead of fetching them again. The old Revenue panel was removed:
+ * it never received data (there is no revenue-trend endpoint), so it always read empty.
  */
-import { Badge, Panel } from '../ui';
-import { LeadStatusChart, InquiryStatusChart, ConversionRateCard, RevenueTrendChart } from './DashboardCharts';
+import { Panel } from '../ui';
+import { LeadStatusChart, InquiryStatusChart, ConversionRateCard } from './DashboardCharts';
 
 export default function AdminStatsSection({ stats }) {
     const leadStats = {
@@ -14,16 +15,21 @@ export default function AdminStatsSection({ stats }) {
         totalValue: stats.leadTotalValue,
         ...stats.leadsByStatus, // status counts for the charts
     };
-    const inquiryStats = { total: stats.totalInquiries, ...stats.inquiriesByStatus };
+    // API groups inquiries by status name ({ new, contacted, resolved, converted }); the charts
+    // read *Count keys, which were never present, so the donut was empty and conversion showed 0%
+    const byStatus = stats.inquiriesByStatus || {};
+    const inquiryStats = {
+        total: stats.totalInquiries,
+        newCount: byStatus.new || 0,
+        contactedCount: byStatus.contacted || 0,
+        resolvedCount: byStatus.resolved || 0,
+        convertedCount: byStatus.converted || 0,
+    };
 
     return (
         <div className="space-y-4">
             <Panel title="Conversion">
                 <ConversionRateCard inquiryStats={inquiryStats} leadStats={leadStats} />
-            </Panel>
-
-            <Panel title="Revenue" actions={<Badge>Last 6 months</Badge>}>
-                <RevenueTrendChart />
             </Panel>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

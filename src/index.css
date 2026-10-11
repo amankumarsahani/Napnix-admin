@@ -30,6 +30,9 @@
   --danger-soft: oklch(0.960 0.030 25);
   --elev-pop: 0 4px 12px oklch(0.2 0.02 260 / 0.10);
   --elev-modal: 0 16px 40px oklch(0.2 0.02 260 / 0.18);
+  /* Chart series, fixed order (dataviz reference palette; validated on --surface, light) */
+  --chart-1: #2a78d6; --chart-2: #eb6834; --chart-3: #1baf7a;
+  --chart-4: #eda100; --chart-5: #e87ba4; --chart-6: #008300;
 }
 
 .dark {
@@ -54,6 +57,9 @@
   --danger-soft: oklch(0.270 0.060 25);
   --elev-pop: 0 4px 12px oklch(0 0 0 / 0.35);
   --elev-modal: 0 16px 40px oklch(0 0 0 / 0.45);
+  /* validated on dark --surface (#13161d): all pass incl. 3:1 contrast */
+  --chart-1: #3987e5; --chart-2: #d95926; --chart-3: #199e70;
+  --chart-4: #c98500; --chart-5: #d55181; --chart-6: #008300;
 }
 
 @theme inline {
