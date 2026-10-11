@@ -1,681 +1,241 @@
-import { useState, useEffect, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { leadsAPI, billingAPI } from '../../api';
-import { createStatusColorFn } from '../../utils/statusColors';
-
-import toast from 'react-hot-toast';
-import LeadsKanban from './LeadsKanban';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Papa from 'papaparse';
-import usePagination from '../../hooks/usePagination';
+import toast from 'react-hot-toast';
+import { FiColumns, FiDownload, FiEdit2, FiEye, FiLink, FiList, FiPlus, FiTrash2, FiUpload } from 'react-icons/fi';
+import { leadsAPI } from '../../api';
 import Pagination from '../../components/common/Pagination';
-import ConfirmModal from '../../components/common/ConfirmModal';
+import PaymentLinkDialog from '../../components/billing/PaymentLinkDialog';
+import {
+    Avatar, Button, ConfirmDialog, DataTable, EmptyState, IconButton, PageHeader, Panel,
+    QueryState, SearchInput, SkeletonRows, StatusBadge, cx,
+} from '../../components/ui';
+import LeadsKanban from './LeadsKanban';
+import LeadFormDialog from './LeadFormDialog';
+import { toLeadPayload } from './leadFields';
 
-export default function LeadsList() {
-    const [leads, setLeads] = useState([]);
-    const [viewMode, setViewMode] = useState('list'); // 'list' or 'kanban'
-    const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingLead, setEditingLead] = useState(null);
-    const [isImporting, setIsImporting] = useState(false);
-    const fileInputRef = useRef(null);
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [formData, setFormData] = useState({
-        companyName: '',
-        contactName: '',
-        email: '',
-        phone: '',
-        status: 'new',
-        source: '',
-        estimatedValue: '',
-        notes: '',
-        score: 0
-    });
-    const [selectedLead, setSelectedLead] = useState(null);
-    const [showLinkModal, setShowLinkModal] = useState(false);
-    const [selectedPlan, setSelectedPlan] = useState('growth');
-    const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' or 'yearly'
-    const [generatingLink, setGeneratingLink] = useState(false);
-    const [generatedLink, setGeneratedLink] = useState('');
+const PAGE_SIZE = 10;
+const BOARD_LIMIT = 500; // board shows the whole pipeline, not one page
+const inr = n => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
-
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchLeads();
-    }, [currentPage, searchTerm]);
-
-    const fetchLeads = async () => {
-        try {
-            setLoading(true);
-            const response = await leadsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) });
-            // Backend returns { leads: [...], pagination: {...} }
-            const list = response?.leads || response?.data || [];
-            setLeads(Array.isArray(list) ? list : []);
-            if (response?.pagination) setPagination(response.pagination);
-        } catch (error) {
-            toast.error('Failed to load leads');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleFileUpload = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        setIsImporting(true);
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                try {
-                    const parsedLeads = results.data.map(row => ({
-                        company: row.Company || row.company,
-                        contactName: row.Contact || row.contactName,
-                        email: row.Email || row.email,
-                        phone: row.Phone || row.phone,
-                        status: 'new', // Default status
-                        source: 'CSV Import',
-                        estimatedValue: parseFloat(row.Value || row.estimatedValue) || 0,
-                        notes: row.Notes || row.notes,
-                        score: parseInt(row.Score || row.score) || 0
-                    })).filter(l => l.contactName); // Ensure required field
-
-                    if (parsedLeads.length === 0) {
-                        toast.error('No valid leads found in CSV');
-                        return;
-                    }
-
-                    const response = await leadsAPI.bulkCreate(parsedLeads);
-                    toast.success(response.message || `Successfully imported leads`);
-                    fetchLeads();
-                } catch (error) {
-                    toast.error('Failed to import leads');
-                } finally {
-                    setIsImporting(false);
-                    event.target.value = null; // Reset input
-                }
-            },
-            error: (error) => {
-                toast.error('Failed to parse CSV file');
-                setIsImporting(false);
-                event.target.value = null;
-            }
-        });
-    };
-
-    const handleDownloadTemplate = () => {
-        const headers = ['Company', 'Contact', 'Email', 'Phone', 'Value', 'Notes', 'Score'];
-        const sample = ['Acme Corp', 'John Doe', 'john@example.com', '555-0123', '5000', 'Potential big client', '80'];
-        const csvContent = [headers.join(','), sample.join(',')].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'leads_template.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const submitData = {
-                contactName: formData.contactName,
-                company: formData.companyName,
-                email: formData.email,
-                phone: formData.phone,
-                status: formData.status,
-                leadSource: formData.source,
-                estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
-                notes: formData.notes,
-                score: formData.score || 0
-            };
-
-            if (editingLead) {
-                await leadsAPI.update(editingLead.id, submitData);
-                toast.success('Lead updated successfully');
-            } else {
-                await leadsAPI.create(submitData);
-                toast.success('Lead created successfully');
-            }
-            setShowModal(false);
-            resetForm();
-            fetchLeads();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Operation failed');
-        }
-    };
-
-    const handleDelete = (id) => {
-        setConfirmState({
-            isOpen: true,
-            title: 'Delete Lead',
-            message: 'Are you sure you want to delete this lead? This action cannot be undone.',
-            variant: 'danger',
-            confirmText: 'Delete',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                try {
-                    await leadsAPI.delete(id);
-                    toast.success('Lead deleted successfully');
-                    fetchLeads();
-                } catch (error) {
-                    toast.error('Failed to delete lead');
-                }
-            },
-        });
-    };
-
-    const handleEdit = (lead) => {
-        setEditingLead(lead);
-        setFormData({
-            companyName: lead.company || lead.companyName || '',
-            contactName: lead.contactName || '',
-            email: lead.email || '',
-            phone: lead.phone || '',
-            status: lead.status || 'new',
-            source: lead.source || '',
-            estimatedValue: lead.estimatedValue || '',
-            notes: lead.notes || '',
-            score: lead.score || 0
-        });
-        setShowModal(true);
-    };
-
-    const resetForm = () => {
-        setEditingLead(null);
-        setFormData({
-            companyName: '',
-            contactName: '',
-            email: '',
-            phone: '',
-            status: 'new',
-            source: '',
-            estimatedValue: '',
-            notes: '',
-            score: 0
-        });
-    };
-
-    const getStatusColor = createStatusColorFn('lead');
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
-            </div>
-        );
-    }
-
+function ScoreBar({ score }) {
+    const value = Math.max(0, Math.min(100, Number(score) || 0));
+    const tone = value >= 80 ? 'bg-success' : value >= 50 ? 'bg-warning' : 'bg-danger';
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Leads Pipeline</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track your sales opportunities.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        accept=".csv"
-                        className="hidden"
-                    />
-                    <div className="flex bg-white dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                            title="List View"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`p-2 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-brand-50 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                            title="Kanban View"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>
-                        </button>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleDownloadTemplate}
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
-                            title="Download Template"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            <span className="hidden sm:inline">Template</span>
-                        </button>
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isImporting}
-                            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-2"
-                        >
-                            {isImporting ? (
-                                <div className="w-4 h-4 border-2 border-slate-400 border-t-brand-600 rounded-full animate-spin" />
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                            )}
-                            <span className="hidden sm:inline">Import CSV</span>
-                        </button>
-                        <button
-                            onClick={() => {
-                                resetForm();
-                                setShowModal(true);
-                            }}
-                            className="px-4 py-2 bg-brand-600 text-white font-semibold rounded-xl text-sm hover:bg-brand-700 transition-colors flex items-center gap-2"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                            <span className="hidden sm:inline">Add Lead</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Search leads..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-
-            {/* View Content */}
-            {viewMode === 'kanban' ? (
-                <LeadsKanban leads={leads} onUpdateStatus={(id, status) => {
-                    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
-                }} />
-            ) : (
-                <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                    <th className="px-6 py-4">Company / Contact</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Assigned To</th>
-                                    <th className="px-6 py-4">Value</th>
-                                    <th className="px-6 py-4">Heat Score</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {leads.map((lead) => (
-                                    <tr key={lead.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 font-bold text-sm">
-                                                    {(lead.company || lead.companyName || '?')[0]}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-slate-900 dark:text-white">{lead.company || lead.companyName}</div>
-                                                    <div className="text-sm text-slate-500 dark:text-slate-400">{lead.contactName}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(lead.status)} capitalize`}>
-                                                {lead.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {lead.assignedFirstName ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-semibold">
-                                                        {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
-                                                    </div>
-                                                    <span className="text-sm text-slate-700 dark:text-slate-300">{lead.assignedFirstName}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-400 text-sm">Unassigned</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
-                                            Rs.{Number(lead.estimatedValue || 0).toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-24 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full transition-all duration-500 ${lead.score >= 80 ? 'bg-emerald-500' :
-                                                            lead.score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                                                            }`}
-                                                        style={{ width: `${lead.score || 0}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{lead.score || 0}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigate(`/leads/${lead.id}`);
-                                                    }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                                    title="View Details"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEdit(lead);
-                                                    }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedLead(lead);
-                                                        setShowLinkModal(true);
-                                                        setGeneratedLink('');
-                                                    }}
-                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
-                                                    title="Generate Payment Link"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.826a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(lead.id);
-                                                    }}
-
-                                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {leads.length === 0 && (
-                                    <tr>
-                                        <td colSpan="5" className="text-center py-12 text-slate-400">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <svg className="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                                <p>No leads found. Create your first one!</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
-                </div>
-            )}
-
-            {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-transparent dark:border-slate-700">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{editingLead ? 'Edit Lead' : 'Add New Lead'}</h2>
-                            <button onClick={() => setShowModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Company Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.companyName}
-                                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        required
-                                        placeholder="e.g. Acme Corp"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Contact Name *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.contactName}
-                                        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        required
-                                        placeholder="e.g. John Doe"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Email</label>
-                                    <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="john@example.com"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                                    <div className="relative">
-                                        <select
-                                            value={formData.status}
-                                            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none appearance-none transition-all"
-                                        >
-                                            <option value="new">New</option>
-                                            <option value="contacted">Contacted</option>
-                                            <option value="qualified">Qualified</option>
-                                            <option value="won">Won</option>
-                                            <option value="lost">Lost</option>
-                                        </select>
-                                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500 dark:text-slate-400">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Heat Score (0-100)</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={formData.score}
-                                        onChange={(e) => setFormData({ ...formData, score: parseInt(e.target.value) || 0 })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Estimated Value (Rs.)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.estimatedValue}
-                                        onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all font-mono"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Source</label>
-                                    <input
-                                        type="text"
-                                        value={formData.source}
-                                        onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all"
-                                        placeholder="e.g. Website"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes</label>
-                                <textarea
-                                    value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all min-h-[100px]"
-                                    placeholder="Add any relevant details here..."
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowModal(false);
-                                        resetForm();
-                                    }}
-                                    className="flex-1 px-6 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-all shadow-sm"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 transition-all"
-                                >
-                                    {editingLead ? 'Update Lead' : 'Create Lead'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            {/* Payment Link Modal */}
-            {showLinkModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-md w-full shadow-2xl border border-transparent dark:border-slate-700">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Generate Payment Link</h2>
-                            <button onClick={() => setShowLinkModal(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Plan</label>
-                                <select
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 outline-none"
-                                    value={selectedPlan}
-                                    onChange={(e) => setSelectedPlan(e.target.value)}
-                                >
-                                    <option value="starter">Starter Plan ($0)</option>
-                                    <option value="growth">Growth Plan ($49/mo)</option>
-                                    <option value="business">Business Plan ($199/mo)</option>
-                                </select>
-                            </div>
-
-                            <div className="flex bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
-                                <button
-                                    onClick={() => setBillingCycle('monthly')}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Monthly
-                                </button>
-                                <button
-                                    onClick={() => setBillingCycle('yearly')}
-                                    className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                >
-                                    Yearly (Save 15%)
-                                </button>
-                            </div>
-
-                            {generatedLink ? (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Share this link with {selectedLead?.contactName}</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={generatedLink}
-                                            className="flex-1 px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(generatedLink);
-                                                toast.success('Link copied to clipboard');
-                                            }}
-                                            className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
-                                        >
-                                            Copy
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-slate-500 italic">This link will expire after 24 hours.</p>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={async () => {
-                                        setGeneratingLink(true);
-                                        try {
-                                            const planKey = billingCycle === 'yearly' ? `${selectedPlan}_yearly` : selectedPlan;
-                                            const response = await billingAPI.createPaymentLink({
-                                                planId: planKey,
-                                                successUrl: window.location.origin + '/pricing/success',
-                                                cancelUrl: window.location.origin + '/pricing/cancel',
-                                                metadata: {
-                                                    lead_id: selectedLead.id,
-                                                    entity_type: 'lead',
-                                                    billing_cycle: billingCycle
-                                                }
-                                            });
-                                            if (response.success) {
-                                                setGeneratedLink(response.url);
-                                                toast.success('Payment link generated!');
-                                            }
-                                        } catch (err) {
-                                            toast.error('Failed to generate link');
-                                        } finally {
-                                            setGeneratingLink(false);
-                                        }
-                                    }}
-                                    disabled={generatingLink}
-                                    className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 disabled:opacity-50 transition-all"
-                                >
-                                    {generatingLink ? 'Generating...' : 'Generate Magic Link'}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => setConfirmState({ isOpen: false })}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
-            />
-        </div>
-
+        <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="w-20 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                <span className={cx('block h-full rounded-full', tone)} style={{ width: `${value}%` }} />
+            </span>
+            <span className="font-mono tabular-nums text-xs w-6">{value}</span>
+        </span>
     );
 }
 
+function downloadTemplate() {
+    const csv = ['Company,Contact,Email,Phone,Value,Notes,Score', 'Acme Corp,John Doe,john@example.com,555-0123,5000,Potential big client,80'].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'leads_template.csv' });
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+export default function LeadsList() {
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const fileInputRef = useRef(null);
+    const [view, setView] = useState('list');
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+    const [formLead, setFormLead] = useState(null); // null = closed; {} = new; lead = edit
+    const [deleting, setDeleting] = useState(null);
+    const [linkLead, setLinkLead] = useState(null);
+
+    const params = view === 'kanban'
+        ? { page: 1, limit: BOARD_LIMIT, ...(search && { search }) }
+        : { page, limit: PAGE_SIZE, ...(search && { search }) };
+
+    const leadsQuery = useQuery({
+        queryKey: ['leads', params],
+        queryFn: () => leadsAPI.getAll(params),
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData, // keep rows on screen while the next page/search loads
+    });
+    const leads = leadsQuery.data?.leads || leadsQuery.data?.data || [];
+    const pagination = leadsQuery.data?.pagination;
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['leads'] });
+
+    const save = useMutation({
+        mutationFn: ({ id, form }) => (id ? leadsAPI.update(id, toLeadPayload(form)) : leadsAPI.create(toLeadPayload(form))),
+        onSuccess: (_, { id }) => { toast.success(id ? 'Lead updated' : 'Lead created'); setFormLead(null); invalidate(); },
+        onError: err => toast.error(err.response?.data?.error || 'Could not save the lead'),
+    });
+
+    const remove = useMutation({
+        mutationFn: id => leadsAPI.delete(id),
+        onSuccess: () => { toast.success('Lead deleted'); setDeleting(null); invalidate(); },
+        onError: () => toast.error('Failed to delete lead'),
+    });
+
+    const importCsv = useMutation({
+        mutationFn: rows => leadsAPI.bulkCreate(rows),
+        onSuccess: res => { toast.success(res?.message || 'Leads imported'); invalidate(); },
+        onError: () => toast.error('Failed to import leads'),
+    });
+
+    const handleFile = (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: ({ data }) => {
+                const rows = data.map(row => ({
+                    company: row.Company || row.company,
+                    contactName: row.Contact || row.contactName,
+                    email: row.Email || row.email,
+                    phone: row.Phone || row.phone,
+                    status: 'new',
+                    leadSource: 'CSV Import',
+                    estimatedValue: parseFloat(row.Value || row.estimatedValue) || 0,
+                    notes: row.Notes || row.notes,
+                    score: parseInt(row.Score || row.score, 10) || 0,
+                })).filter(l => l.contactName);
+                if (!rows.length) { toast.error('No valid leads found in CSV'); return; }
+                importCsv.mutate(rows);
+            },
+            error: () => toast.error('Failed to parse CSV file'),
+        });
+    };
+
+    const onSearch = term => { setSearch(term); setPage(1); };
+
+    return (
+        <div className="space-y-4">
+            <PageHeader
+                title="Leads Pipeline"
+                description="Manage and track your sales opportunities."
+                actions={
+                    <>
+                        <div role="radiogroup" aria-label="View" className="flex p-0.5 rounded-sm border border-border bg-surface">
+                            {[{ value: 'list', label: 'List view', icon: FiList }, { value: 'kanban', label: 'Board view', icon: FiColumns }].map(opt => {
+                                const Icon = opt.icon;
+                                return (
+                                    <button key={opt.value} type="button" role="radio" aria-checked={view === opt.value} aria-label={opt.label} title={opt.label}
+                                        onClick={() => setView(opt.value)}
+                                        className={cx('size-8 grid place-items-center rounded-sm', view === opt.value ? 'bg-accent-soft text-accent' : 'text-fg-muted hover:text-fg')}>
+                                        <Icon className="size-4" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
+                        <Button onClick={downloadTemplate} title="Download CSV template"><FiDownload className="size-4" /><span className="hidden sm:inline">Template</span></Button>
+                        <Button onClick={() => fileInputRef.current?.click()} loading={importCsv.isPending}>
+                            {!importCsv.isPending && <FiUpload className="size-4" />}<span className="hidden sm:inline">Import CSV</span>
+                        </Button>
+                        <Button variant="primary" onClick={() => setFormLead({})}><FiPlus className="size-4" /><span className="hidden sm:inline">Add Lead</span></Button>
+                    </>
+                }
+            />
+
+            <SearchInput value={search} onChange={onSearch} placeholder="Search leads" label="Search leads" className="w-full sm:w-72" />
+
+            {view === 'kanban' ? (
+                <QueryState query={leadsQuery} isEmpty={() => false} skeleton={<SkeletonRows rows={8} />}>
+                    {() => (
+                        <LeadsKanban
+                            leads={leads}
+                            onOpen={lead => navigate(`/leads/${lead.id}`)}
+                            onAdd={status => setFormLead({ status })}
+                        />
+                    )}
+                </QueryState>
+            ) : (
+                <Panel flush>
+                    <DataTable
+                        caption="Leads"
+                        loading={leadsQuery.isLoading}
+                        error={leadsQuery.error}
+                        onRetry={leadsQuery.refetch}
+                        rows={leads}
+                        onRowClick={lead => navigate(`/leads/${lead.id}`)}
+                        className={cx(leadsQuery.isPlaceholderData && 'opacity-60')}
+                        empty={
+                            <EmptyState
+                                title={search ? `No leads match “${search}”` : 'No leads yet'}
+                                description={search ? 'Try a different name, company or email.' : 'Add a lead or import a CSV to start your pipeline.'}
+                                action={!search && <Button variant="primary" size="sm" onClick={() => setFormLead({})}><FiPlus className="size-4" />Add Lead</Button>}
+                            />
+                        }
+                        columns={[
+                            {
+                                key: 'company', header: 'Company / Contact',
+                                render: lead => (
+                                    <span className="flex items-center gap-2.5">
+                                        <Avatar name={lead.company || lead.contactName} />
+                                        <span className="min-w-0">
+                                            <span className="block font-medium truncate">{lead.company || lead.companyName || '—'}</span>
+                                            <span className="block text-xs text-fg-muted truncate">{lead.contactName}</span>
+                                        </span>
+                                    </span>
+                                ),
+                            },
+                            { key: 'status', header: 'Status', render: lead => <StatusBadge entity="lead" status={lead.status} /> },
+                            {
+                                key: 'assigned', header: 'Assigned to',
+                                render: lead => (lead.assignedFirstName ? (
+                                    <span className="flex items-center gap-2">
+                                        <Avatar name={`${lead.assignedFirstName} ${lead.assignedLastName || ''}`} size="sm" />
+                                        {lead.assignedFirstName}
+                                    </span>
+                                ) : <span className="text-fg-subtle">Unassigned</span>),
+                            },
+                            { key: 'value', header: 'Value', align: 'right', mono: true, render: lead => inr(lead.estimatedValue) },
+                            { key: 'score', header: 'Heat score', render: lead => <ScoreBar score={lead.score} /> },
+                        ]}
+                        actions={lead => (
+                            <span className="inline-flex gap-0.5">
+                                <IconButton size="sm" label={`View ${lead.contactName}`} onClick={() => navigate(`/leads/${lead.id}`)}><FiEye className="size-4" /></IconButton>
+                                <IconButton size="sm" label={`Edit ${lead.contactName}`} onClick={() => setFormLead(lead)}><FiEdit2 className="size-4" /></IconButton>
+                                <IconButton size="sm" label="Generate payment link" onClick={() => setLinkLead(lead)}><FiLink className="size-4" /></IconButton>
+                                <IconButton size="sm" variant="danger" label={`Delete ${lead.contactName}`} onClick={() => setDeleting(lead)}><FiTrash2 className="size-4" /></IconButton>
+                            </span>
+                        )}
+                    />
+                    {pagination && pagination.pages > 1 && (
+                        <div className="border-t border-border">
+                            <Pagination currentPage={page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+                        </div>
+                    )}
+                </Panel>
+            )}
+
+            <LeadFormDialog
+                open={!!formLead}
+                lead={formLead}
+                onClose={() => setFormLead(null)}
+                saving={save.isPending}
+                onSubmit={form => save.mutate({ id: formLead?.id, form })}
+            />
+
+            <ConfirmDialog
+                open={!!deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={() => remove.mutate(deleting.id)}
+                loading={remove.isPending}
+                title="Delete lead?"
+                message={deleting && `This deletes ${deleting.contactName}${deleting.company ? ` (${deleting.company})` : ''}. This can't be undone.`}
+                confirmText="Delete lead"
+            />
+
+            <PaymentLinkDialog
+                open={!!linkLead}
+                onClose={() => setLinkLead(null)}
+                entity={linkLead && { type: 'lead', id: linkLead.id, name: linkLead.contactName }}
+            />
+        </div>
+    );
+}

@@ -1,87 +1,75 @@
-import { useState } from 'react';
+import { FiMail, FiPlus } from 'react-icons/fi';
+import { Avatar, cx } from '../../components/ui';
 
-const initialColumns = {
-    new: { id: 'new', title: 'New Leads', color: 'bg-blue-500' },
-    contacted: { id: 'contacted', title: 'In Discussion', color: 'bg-amber-500' },
-    qualified: { id: 'qualified', title: 'Qualified', color: 'bg-purple-500' },
-    won: { id: 'won', title: 'Closed Won', color: 'bg-emerald-500' },
-};
+const COLUMNS = [
+    { id: 'new', title: 'New Leads', dot: 'bg-accent' },
+    { id: 'contacted', title: 'In Discussion', dot: 'bg-warning' },
+    { id: 'qualified', title: 'Qualified', dot: 'bg-accent' },
+    { id: 'won', title: 'Closed Won', dot: 'bg-success' },
+];
 
-export default function LeadsKanban({ leads = [], onUpdateStatus }) {
-    // Group leads by status
-    const getLeadsByStatus = (status) => {
-        return leads.filter(lead => lead.status?.toLowerCase() === status);
-    };
+const inr = n => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const scoreTone = s => (s >= 80 ? 'text-success bg-success-soft' : s >= 50 ? 'text-warning bg-warning-soft' : 'text-danger bg-danger-soft');
 
+/** Pipeline board. Cards open the lead; "Add Deal" opens the form preset to that column. */
+export default function LeadsKanban({ leads = [], onOpen, onAdd }) {
     return (
-        <div className="flex overflow-x-auto gap-6 pb-6 h-[calc(100vh-250px)]">
-            {Object.values(initialColumns).map((col) => {
-                const colLeads = getLeadsByStatus(col.id);
-                const totalValue = colLeads.reduce((sum, lead) => sum + (parseFloat(lead.estimatedValue) || 0), 0);
-
+        <div className="flex overflow-x-auto gap-4 pb-4 h-[calc(100dvh-220px)] min-h-96">
+            {COLUMNS.map(col => {
+                const colLeads = leads.filter(l => l.status?.toLowerCase() === col.id);
+                const total = colLeads.reduce((sum, l) => sum + (parseFloat(l.estimatedValue) || 0), 0);
                 return (
-                    <div key={col.id} className="min-w-[320px] max-w-[320px] flex flex-col">
-                        {/* Column Header */}
-                        <div className="flex items-center justify-between mb-4 px-1">
-                            <div className="flex items-center gap-2">
-                                <span className={`w-3 h-3 rounded-full ${col.color}`}></span>
-                                <h3 className="font-bold text-slate-700 dark:text-slate-200">{col.title}</h3>
-                                <span className="bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{colLeads.length}</span>
-                            </div>
-                            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">Rs.{totalValue.toLocaleString()}</span>
-                        </div>
+                    <section key={col.id} aria-label={col.title} className="min-w-72 w-72 flex flex-col">
+                        <header className="flex items-center justify-between mb-2 px-1">
+                            <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
+                                <span aria-hidden="true" className={cx('size-2 rounded-full', col.dot)} />
+                                {col.title}
+                                <span className="font-mono tabular-nums text-2xs text-fg-subtle">{colLeads.length}</span>
+                            </h2>
+                            <span className="font-mono tabular-nums text-xs text-fg-subtle">{inr(total)}</span>
+                        </header>
 
-                        {/* Column Content */}
-                        <div className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2 md:p-3 overflow-y-auto custom-scrollbar border border-slate-200/50 dark:border-slate-700/50 space-y-3">
-                            {colLeads.map((lead) => (
-                                <div
+                        <div className="flex-1 overflow-y-auto custom-scrollbar rounded-md border border-border bg-surface-2 p-2 space-y-2">
+                            {colLeads.map(lead => (
+                                <button
                                     key={lead.id}
-                                    className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700 hover:shadow-md hover:border-brand-200 dark:hover:border-brand-700 transition-all cursor-pointer group"
+                                    type="button"
+                                    onClick={() => onOpen(lead)}
+                                    className="w-full text-left rounded-sm border border-border bg-surface p-3 hover:border-border-strong transition-colors"
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{lead.company}</span>
-                                        <div className="flex gap-1">
-                                            {lead.score > 0 && (
-                                                <div
-                                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${lead.score >= 80 ? 'bg-emerald-100 text-emerald-700' :
-                                                        lead.score >= 50 ? 'bg-amber-100 text-amber-700' :
-                                                            'bg-rose-100 text-rose-700'
-                                                        }`}
-                                                >
-                                                    {lead.score}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1 group-hover:text-brand-600 transition-colors">{lead.contactName}</h4>
-                                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                        <span className="truncate">{lead.email}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-                                        <span className="font-bold text-slate-700 dark:text-slate-200">Rs.{parseFloat(lead.estimatedValue || 0).toLocaleString()}</span>
-                                        <div className="flex -space-x-2">
-                                            <div className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[10px] font-bold text-brand-600 dark:text-brand-300">
-                                                {lead.contactName[0]}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <span className="flex items-start justify-between gap-2">
+                                        <span className="text-xs font-medium text-fg-subtle truncate">{lead.company || '—'}</span>
+                                        {lead.score > 0 && (
+                                            <span className={cx('shrink-0 rounded-sm px-1.5 font-mono tabular-nums text-2xs font-medium', scoreTone(lead.score))}>{lead.score}</span>
+                                        )}
+                                    </span>
+                                    <span className="block mt-1 text-sm font-medium text-fg">{lead.contactName}</span>
+                                    {lead.email && (
+                                        <span className="flex items-center gap-1.5 mt-1 text-xs text-fg-muted">
+                                            <FiMail aria-hidden="true" className="size-3 shrink-0" />
+                                            <span className="truncate">{lead.email}</span>
+                                        </span>
+                                    )}
+                                    <span className="flex items-center justify-between mt-3 pt-2 border-t border-border">
+                                        <span className="font-mono tabular-nums text-sm text-fg">{inr(lead.estimatedValue)}</span>
+                                        <Avatar name={lead.contactName} size="sm" />
+                                    </span>
+                                </button>
                             ))}
 
                             {colLeads.length === 0 && (
-                                <div className="h-24 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-                                    No leads
-                                </div>
+                                <p className="h-20 grid place-items-center rounded-sm border border-dashed border-border text-sm text-fg-subtle">No leads</p>
                             )}
 
-                            {/* Quick Add Button */}
-                            <button className="w-full py-2 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-600 text-sm font-medium">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                Add Deal
+                            <button
+                                type="button"
+                                onClick={() => onAdd(col.id)}
+                                className="w-full h-8 flex items-center justify-center gap-1.5 rounded-sm text-sm font-medium text-fg-muted hover:text-fg hover:bg-surface"
+                            >
+                                <FiPlus aria-hidden="true" className="size-4" />Add Deal
                             </button>
                         </div>
-                    </div>
+                    </section>
                 );
             })}
         </div>
