@@ -1,111 +1,102 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FiMail, FiUsers, FiSend, FiTrendingUp, FiMousePointer, FiBarChart2 } from '../../components/icons/FeatherIcons';
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { FiFileText, FiMail, FiPlus, FiSettings, FiUpload, FiZap } from 'react-icons/fi';
 import { nmAnalyticsAPI } from '../../api/nexmail';
+import { useChartTheme } from '../../components/charts/useChartTheme';
+import { Button, ErrorState, PageHeader, Panel, Skeleton, StatCard } from '../../components/ui';
+
+const ZERO = { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } };
+const settled = r => (r.status === 'fulfilled' && r.value?.data ? r.value.data : null);
+
+const QUICK = [
+    { label: 'New campaign', path: '/email-marketing/campaigns/new', Icon: FiMail },
+    { label: 'Import contacts', path: '/email-marketing/contacts', Icon: FiUpload },
+    { label: 'Build template', path: '/email-marketing/templates/new', Icon: FiFileText },
+    { label: 'New automation', path: '/email-marketing/automations/new', Icon: FiZap },
+    { label: 'SMTP setup', path: '/email-marketing/smtp', Icon: FiSettings },
+];
 
 export default function EmailMarketingDashboard() {
     const navigate = useNavigate();
-
-    const { data: dashData, isLoading: loading } = useQuery({
+    const t = useChartTheme();
+    const query = useQuery({
         queryKey: ['nexmail-dashboard'],
         queryFn: async () => {
-            const [dashRes, volumeRes, growthRes] = await Promise.allSettled([
-                nmAnalyticsAPI.getDashboard(),
-                nmAnalyticsAPI.getSendVolume(30),
-                nmAnalyticsAPI.getGrowth(90)
-            ]);
-            return {
-                stats: dashRes.status === 'fulfilled' && dashRes.value?.data ? dashRes.value.data : { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } },
-                sendVolume: volumeRes.status === 'fulfilled' && volumeRes.value?.data ? volumeRes.value.data : [],
-                growth: growthRes.status === 'fulfilled' && growthRes.value?.data ? growthRes.value.data : [],
-            };
+            const [dash, volume, growth] = await Promise.allSettled([nmAnalyticsAPI.getDashboard(), nmAnalyticsAPI.getSendVolume(30), nmAnalyticsAPI.getGrowth(90)]);
+            // The three are independent: one failing does not blank the page, but all three failing is an error
+            if (!settled(dash) && !settled(volume) && !settled(growth)) throw new Error('NexMail analytics are unavailable. Check that the NexMail service is running.');
+            return { stats: settled(dash) || ZERO, sendVolume: settled(volume) || [], growth: settled(growth) || [] };
         },
+        staleTime: 2 * 60 * 1000,
     });
 
-    const stats = dashData?.stats || { contacts: { total: 0, subscribed: 0 }, campaigns: { total: 0, sent: 0, active: 0 }, emails_30d: { total_sent: 0, open_rate: 0, click_rate: 0, total_bounced: 0 } };
-    const sendVolume = dashData?.sendVolume || [];
-    const growth = dashData?.growth || [];
+    if (query.isLoading) return <div className="max-w-7xl space-y-4"><Skeleton className="h-8 w-56" /><div className="grid grid-cols-2 lg:grid-cols-3 gap-3">{[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-24 rounded-md" />)}</div><Skeleton className="h-64 rounded-md" /></div>;
+    if (query.isError) return <ErrorState error={query.error} onRetry={query.refetch} />;
 
-    const cards = [
-        { title: 'Total Contacts', value: (stats.contacts?.total || 0).toLocaleString(), icon: <FiUsers />, color: 'indigo', path: '/email-marketing/contacts' },
-        { title: 'Campaigns Sent', value: stats.campaigns?.sent || 0, icon: <FiSend />, color: 'emerald', path: '/email-marketing/campaigns' },
-        { title: 'Emails Sent (30d)', value: (stats.emails_30d?.total_sent || 0).toLocaleString(), icon: <FiMail />, color: 'blue' },
-        { title: 'Avg Open Rate', value: `${stats.emails_30d?.open_rate || 0}%`, icon: <FiTrendingUp />, color: 'amber' },
-        { title: 'Avg Click Rate', value: `${stats.emails_30d?.click_rate || 0}%`, icon: <FiMousePointer />, color: 'purple' },
-        { title: 'Bounced', value: stats.emails_30d?.total_bounced || 0, icon: <FiBarChart2 />, color: 'rose' },
-    ];
-
-    const colorMap = {
-        indigo: 'bg-brand-50 dark:bg-brand-900/20 text-brand-600',
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600',
-        blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600',
-        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600',
-        purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600',
-        rose: 'bg-rose-50 dark:bg-rose-900/20 text-rose-600',
-    };
-
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
+    const { stats, sendVolume, growth } = query.data;
+    const e30 = stats.emails_30d || {};
+    const tick = { ...t.axisTick, fontSize: 10 };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">NexMail Dashboard</h1><p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Email marketing analytics</p></div>
-                <button onClick={() => navigate('/email-marketing/campaigns/new')} className="btn btn-primary flex items-center gap-2"><FiSend className="w-4 h-4" /> New Campaign</button>
+        <div className="max-w-7xl mx-auto space-y-4">
+            <PageHeader
+                title="NexMail"
+                description="Email marketing analytics"
+                actions={<Button variant="primary" onClick={() => navigate('/email-marketing/campaigns/new')}><FiPlus className="size-4" />New campaign</Button>}
+            />
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                <button type="button" onClick={() => navigate('/email-marketing/contacts')} className="text-left"><StatCard label="Contacts" value={(stats.contacts?.total || 0).toLocaleString('en-IN')} hint={`${(stats.contacts?.subscribed || 0).toLocaleString('en-IN')} subscribed`} /></button>
+                <button type="button" onClick={() => navigate('/email-marketing/campaigns')} className="text-left"><StatCard label="Campaigns sent" value={stats.campaigns?.sent || 0} hint={`${stats.campaigns?.total || 0} total`} /></button>
+                <StatCard label="Emails sent (30d)" value={(e30.total_sent || 0).toLocaleString('en-IN')} />
+                <StatCard label="Open rate" value={`${e30.open_rate || 0}%`} hint="Last 30 days" />
+                <StatCard label="Click rate" value={`${e30.click_rate || 0}%`} hint="Last 30 days" />
+                <StatCard label="Bounced" value={(e30.total_bounced || 0).toLocaleString('en-IN')} hint="Last 30 days" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cards.map(card => (
-                    <div key={card.title} onClick={() => card.path && navigate(card.path)} className={`bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 ${card.path ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}>
-                        <div className="flex items-center justify-between">
-                            <div><p className="text-xs text-slate-500 uppercase tracking-wide">{card.title}</p><p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{card.value}</p></div>
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${colorMap[card.color]}`}><div className="text-lg">{card.icon}</div></div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Send Volume (30 days)</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Panel title="Send volume" description="Last 30 days">
                     <ResponsiveContainer width="100%" height={240}>
-                        <AreaChart data={sendVolume}>
-                            <defs><linearGradient id="gs" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} /></linearGradient></defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={v => v?.slice?.(5) || v} /><YAxis tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 8 }} />
-                            <Area type="monotone" dataKey="sent" stroke="#6366f1" fill="url(#gs)" strokeWidth={2} name="Sent" />
-                            <Area type="monotone" dataKey="opened" stroke="#10b981" fill="none" strokeWidth={2} name="Opened" />
+                        <AreaChart data={sendVolume} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                            <CartesianGrid vertical={false} stroke={t.grid} />
+                            <XAxis dataKey="date" tick={tick} tickLine={false} axisLine={{ stroke: t.grid }} tickFormatter={v => v?.slice?.(5) || v} />
+                            <YAxis tick={tick} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <Tooltip {...t.tooltip} />
+                            <Legend iconType="circle" iconSize={9} {...t.legend} />
+                            <Area type="monotone" dataKey="sent" name="Sent" stroke={t.series[0]} fill={t.series[0]} fillOpacity={0.15} strokeWidth={2} />
+                            <Area type="monotone" dataKey="opened" name="Opened" stroke={t.series[2]} fill="none" strokeWidth={2} />
                         </AreaChart>
                     </ResponsiveContainer>
-                </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Subscriber Growth</h2>
+                </Panel>
+                <Panel title="Subscriber growth" description="Last 90 days">
                     <ResponsiveContainer width="100%" height={240}>
-                        <BarChart data={growth}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="date" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 8 }} />
-                            <Bar dataKey="subscribed" fill="#6366f1" radius={[4, 4, 0, 0]} name="Subscribed" />
-                            <Bar dataKey="unsubscribed" fill="#f43f5e" radius={[4, 4, 0, 0]} name="Unsubscribed" />
+                        <BarChart data={growth} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                            <CartesianGrid vertical={false} stroke={t.grid} />
+                            <XAxis dataKey="date" tick={tick} tickLine={false} axisLine={{ stroke: t.grid }} />
+                            <YAxis tick={tick} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <Tooltip {...t.tooltip} />
+                            <Legend iconType="circle" iconSize={9} {...t.legend} />
+                            <Bar dataKey="subscribed" name="Subscribed" fill={t.series[0]} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                            <Bar dataKey="unsubscribed" name="Unsubscribed" fill={t.series[1]} radius={[4, 4, 0, 0]} maxBarSize={28} />
                         </BarChart>
                     </ResponsiveContainer>
-                </div>
+                </Panel>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                    {[
-                        { label: 'New Campaign', path: '/email-marketing/campaigns/new', icon: '📨' },
-                        { label: 'Import Contacts', path: '/email-marketing/contacts', icon: '📋' },
-                        { label: 'Build Template', path: '/email-marketing/templates/new', icon: '🎨' },
-                        { label: 'New Automation', path: '/email-marketing/automations/new', icon: '⚡' },
-                        { label: 'SMTP Setup', path: '/email-marketing/smtp', icon: '⚙️' },
-                    ].map(a => (
-                        <button key={a.label} onClick={() => navigate(a.path)} className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors text-left">
-                            <span className="text-2xl">{a.icon}</span>
-                            <span className="text-sm font-medium text-slate-900 dark:text-white">{a.label}</span>
-                        </button>
-                    ))}
+            <Panel title="Quick actions">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                    {QUICK.map(item => {
+                        const Icon = item.Icon;
+                        return (
+                            <button key={item.label} type="button" onClick={() => navigate(item.path)}
+                                className="flex items-center gap-2.5 rounded-sm border border-border p-3 text-left text-sm font-medium text-fg hover:bg-surface-2">
+                                <Icon aria-hidden="true" className="size-4 text-fg-subtle" />{item.label}
+                            </button>
+                        );
+                    })}
                 </div>
-            </div>
+            </Panel>
         </div>
     );
 }

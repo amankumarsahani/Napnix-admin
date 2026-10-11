@@ -1,91 +1,83 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { FiLayout, FiPlus, FiSearch, FiCopy } from '../../components/icons/FeatherIcons';
+import { FiCopy, FiLayout, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { nmTemplatesAPI } from '../../api/nexmail';
+import { Badge, Button, ConfirmDialog, EmptyState, ErrorState, IconButton, PageHeader, Panel, SearchInput, Skeleton } from '../../components/ui';
+
+const STATUS_TONE = { active: 'success', archived: 'warning' };
 
 export default function Templates() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
+    const [deleting, setDeleting] = useState(null);
 
-    const { data: templates = [], isLoading: loading } = useQuery({
+    const query = useQuery({
         queryKey: ['nexmail-templates', { search }],
-        queryFn: async () => {
-            const res = await nmTemplatesAPI.getAll({ search: search || undefined });
-            return res.data || [];
-        },
+        queryFn: () => nmTemplatesAPI.getAll({ search: search || undefined }).then(r => r.data || []),
+        staleTime: 60 * 1000,
+    });
+    const templates = query.data || [];
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['nexmail-templates'] });
+
+    const remove = useMutation({
+        mutationFn: id => nmTemplatesAPI.delete(id),
+        onSuccess: () => { toast.success('Template deleted'); setDeleting(null); refresh(); },
+        onError: () => toast.error('Failed to delete'),
+    });
+    const clone = useMutation({
+        mutationFn: id => nmTemplatesAPI.clone(id),
+        onSuccess: r => { toast.success('Template cloned'); refresh(); navigate(`/email-marketing/templates/${r.templateId}/edit`); },
+        onError: () => toast.error('Failed to clone'),
     });
 
-    const handleDelete = async (id, e) => {
-        e.stopPropagation();
-        if (!confirm('Delete this template?')) return;
-        try {
-            await nmTemplatesAPI.delete(id);
-            toast.success('Template deleted');
-            queryClient.invalidateQueries({ queryKey: ['nexmail-templates'] });
-        } catch (e) {
-            toast.error('Failed to delete');
-        }
-    };
+    const addButton = <Button variant="primary" onClick={() => navigate('/email-marketing/templates/new')}><FiPlus className="size-4" />New template</Button>;
 
-    const handleClone = async (id, e) => {
-        e.stopPropagation();
-        try {
-            const res = await nmTemplatesAPI.clone(id);
-            toast.success('Template cloned');
-            navigate(`/email-marketing/templates/${res.templateId}/edit`);
-        } catch (e) {
-            toast.error('Failed to clone');
-        }
-    };
-
-    const statusColors = { draft: 'bg-slate-100 text-slate-600', active: 'bg-emerald-100 text-emerald-700', archived: 'bg-amber-100 text-amber-700' };
+    let body;
+    if (query.isLoading) body = <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-md" />)}</div>;
+    else if (query.isError) body = <ErrorState error={query.error} onRetry={query.refetch} />;
+    else if (!templates.length) body = <Panel><EmptyState title={search ? `No templates match “${search}”` : 'No templates yet'} action={!search && addButton} /></Panel>;
+    else {
+        body = (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {templates.map(t => (
+                    <Panel key={t.id}>
+                        <div className="flex items-start justify-between gap-2">
+                            <button type="button" onClick={() => navigate(`/email-marketing/templates/${t.id}/edit`)} className="flex min-w-0 items-center gap-3 text-left">
+                                <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-sm bg-surface-3 text-fg-subtle"><FiLayout className="size-5" /></span>
+                                <span className="min-w-0">
+                                    <span className="block truncate text-sm font-semibold text-fg hover:underline">{t.name}</span>
+                                    <span className="block text-xs text-fg-subtle">{t.category} · v{t.version}{t.updated_at ? ` · ${new Date(t.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</span>
+                                </span>
+                            </button>
+                            <Badge tone={STATUS_TONE[t.status] || 'neutral'} className="capitalize">{t.status}</Badge>
+                        </div>
+                        <div className="mt-4 flex justify-end gap-0.5">
+                            <IconButton size="sm" label={`Clone ${t.name}`} onClick={() => clone.mutate(t.id)} disabled={clone.isPending}><FiCopy className="size-4" /></IconButton>
+                            <IconButton size="sm" variant="danger" label={`Delete ${t.name}`} onClick={() => setDeleting(t)}><FiTrash2 className="size-4" /></IconButton>
+                        </div>
+                    </Panel>
+                ))}
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Email Templates</h1><p className="text-sm text-slate-500 mt-1">{templates.length} templates</p></div>
-                <button onClick={() => navigate('/email-marketing/templates/new')} className="btn btn-primary flex items-center gap-2"><FiPlus className="w-4 h-4" /> New Template</button>
-            </div>
-
-            <div className="relative max-w-md">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input type="text" placeholder="Search templates..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-            </div>
-
-            {loading ? (
-                <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
-            ) : templates.length === 0 ? (
-                <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <FiLayout className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white">{search ? 'No templates match your search' : 'No templates yet'}</h3>
-                    <p className="text-sm text-slate-500 mt-1 mb-4">Create your first email template</p>
-                    {!search && <button onClick={() => navigate('/email-marketing/templates/new')} className="btn btn-primary mx-auto">Create Template</button>}
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {templates.map(t => (
-                        <div key={t.id} onClick={() => navigate(`/email-marketing/templates/${t.id}/edit`)} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow cursor-pointer group">
-                            <div className="h-36 bg-slate-50 dark:bg-slate-700 flex items-center justify-center relative">
-                                <FiLayout className="w-8 h-8 text-slate-300" />
-                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={(e) => handleClone(t.id, e)} className="w-7 h-7 rounded bg-white dark:bg-slate-600 shadow text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-brand-50" title="Clone"><FiCopy className="w-3.5 h-3.5" /></button>
-                                    <button onClick={(e) => handleDelete(t.id, e)} className="w-7 h-7 rounded bg-white dark:bg-slate-600 shadow text-red-500 flex items-center justify-center hover:bg-red-50" title="Delete">&times;</button>
-                                </div>
-                            </div>
-                            <div className="p-4">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate">{t.name}</h3>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusColors[t.status] || statusColors.draft}`}>{t.status}</span>
-                                </div>
-                                <p className="text-xs text-slate-500">{t.category} &middot; v{t.version} &middot; {t.updated_at ? new Date(t.updated_at).toLocaleDateString() : ''}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+        <div className="space-y-4">
+            <PageHeader title="Email templates" description={query.data ? `${templates.length} templates` : undefined} actions={addButton} />
+            <SearchInput value={search} onChange={setSearch} placeholder="Search templates" label="Search templates" className="w-full sm:w-72" />
+            {body}
+            <ConfirmDialog
+                open={!!deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={() => remove.mutate(deleting.id)}
+                loading={remove.isPending}
+                title="Delete template?"
+                message={deleting && `This deletes “${deleting.name}”. This can’t be undone.`}
+                confirmText="Delete template"
+            />
         </div>
     );
 }

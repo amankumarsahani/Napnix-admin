@@ -1,182 +1,143 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { FiUsers, FiSearch, FiPlus, FiUpload } from '../../components/icons/FeatherIcons';
+import { FiPlus, FiUpload } from 'react-icons/fi';
 import { nmContactsAPI } from '../../api/nexmail';
 import Pagination from '../../components/common/Pagination';
+import { parseCsvObjects } from '../../utils/parseCsv';
+import {
+    Badge, Button, DataTable, Dialog, EmptyState, Field, Input, PageHeader, Panel, SearchInput, Tabs, Textarea, cx,
+} from '../../components/ui';
+
+const PAGE_SIZE = 25;
+const STATUS_TABS = [{ id: 'all', label: 'All' }, { id: 'subscribed', label: 'Subscribed' }, { id: 'unsubscribed', label: 'Unsubscribed' }, { id: 'bounced', label: 'Bounced' }];
+const STATUS_TONE = { subscribed: 'success', unsubscribed: 'neutral', bounced: 'danger', complained: 'warning', pending: 'warning' };
+const scoreTone = s => (s >= 70 ? 'success' : s >= 40 ? 'warning' : 'danger');
+const EMPTY = { email: '', first_name: '', last_name: '', phone: '', company: '' };
+const FIELDS = [['email', 'Email', 'email', 'john@example.com', true], ['first_name', 'First name', 'text', 'John'], ['last_name', 'Last name', 'text', 'Doe'], ['phone', 'Phone', 'tel', '+91 98765 43210'], ['company', 'Company', 'text', 'Acme Inc']];
+const apiErr = (err, fallback) => err?.response?.data?.error || fallback;
+
+function AddForm({ onSubmit }) {
+    const [form, setForm] = useState(EMPTY);
+    return (
+        <form id="contact-form" onSubmit={e => { e.preventDefault(); onSubmit(form); }} className="space-y-3">
+            {FIELDS.map(([key, label, type, ph, required], i) => (
+                <Field key={key} label={label} required={required}>
+                    <Input type={type} required={required} value={form[key]} placeholder={ph} data-autofocus={i === 0 ? true : undefined} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
+                </Field>
+            ))}
+        </form>
+    );
+}
 
 export default function Contacts() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
-    const [statusFilter, setStatusFilter] = useState('');
-    const [showImport, setShowImport] = useState(false);
-    const [showAdd, setShowAdd] = useState(false);
-    const [addForm, setAddForm] = useState({ email: '', first_name: '', last_name: '', phone: '', company: '' });
-    const [importData, setImportData] = useState('');
-    const limit = 25;
+    const [status, setStatus] = useState('all');
+    const [adding, setAdding] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const [csv, setCsv] = useState('');
 
-    const { data: contactsData, isLoading: loading } = useQuery({
-        queryKey: ['nexmail-contacts', { page, search, statusFilter }],
-        queryFn: async () => {
-            const res = await nmContactsAPI.getAll({ page, limit, search, status: statusFilter || undefined });
-            return { contacts: res.data || [], total: res.total || 0 };
-        },
+    const query = useQuery({
+        queryKey: ['nexmail-contacts', { page, search, status }],
+        queryFn: () => nmContactsAPI.getAll({ page, limit: PAGE_SIZE, search, status: status === 'all' ? undefined : status }),
+        placeholderData: keepPreviousData,
+        staleTime: 60 * 1000,
+    });
+    const contacts = query.data?.data || [];
+    const total = query.data?.total || 0;
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['nexmail-contacts'] });
+
+    const add = useMutation({
+        mutationFn: form => nmContactsAPI.create(form),
+        onSuccess: () => { toast.success('Contact added'); setAdding(false); refresh(); },
+        onError: err => toast.error(apiErr(err, 'Failed to add contact')),
     });
 
-    const contacts = contactsData?.contacts || [];
-    const total = contactsData?.total || 0;
+    // Parsed here so the dialog can show "N contacts found" and reject a file with no email column before sending
+    const parsed = csv.trim() ? parseCsvObjects(csv) : null;
+    const hasEmail = parsed?.keys.some(k => k === 'email' || k === 'e-mail');
+    const rows = parsed && hasEmail ? parsed.records.map(r => ({ ...r, email: r.email || r['e-mail'] })).filter(r => r.email) : [];
+    const doImport = useMutation({
+        mutationFn: () => nmContactsAPI.import({ contacts: rows }),
+        onSuccess: r => { toast.success(`Imported ${r.imported}, skipped ${r.skipped}`); setImporting(false); setCsv(''); refresh(); },
+        onError: err => toast.error(apiErr(err, 'Import failed')),
+    });
 
-    useEffect(() => { setPage(1); }, [search, statusFilter]);
-
-    const handleAdd = async () => {
-        if (!addForm.email) return toast.error('Email is required');
-        try {
-            await nmContactsAPI.create(addForm);
-            toast.success('Contact added');
-            setShowAdd(false);
-            setAddForm({ email: '', first_name: '', last_name: '', phone: '', company: '' });
-            queryClient.invalidateQueries({ queryKey: ['nexmail-contacts'] });
-        } catch (e) {
-            toast.error(e.response?.data?.error || 'Failed to add contact');
-        }
-    };
-
-    const handleImport = async () => {
-        try {
-            const lines = importData.trim().split('\n').filter(l => l.trim());
-            if (lines.length === 0) return toast.error('No data to import');
-
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const emailIdx = headers.findIndex(h => h === 'email' || h === 'e-mail');
-            if (emailIdx === -1) return toast.error('CSV must have an "email" column');
-
-            const parsed = lines.slice(1).map(line => {
-                const cols = line.split(',').map(c => c.trim());
-                const obj = {};
-                headers.forEach((h, i) => { obj[h] = cols[i] || ''; });
-                return obj;
-            }).filter(c => c.email);
-
-            const res = await nmContactsAPI.import({ contacts: parsed });
-            toast.success(`Imported: ${res.imported}, Skipped: ${res.skipped}`);
-            setShowImport(false);
-            setImportData('');
-            queryClient.invalidateQueries({ queryKey: ['nexmail-contacts'] });
-        } catch (e) {
-            toast.error(e.response?.data?.error || 'Import failed');
-        }
-    };
-
-    const scoreColor = (score) => {
-        if (score >= 70) return 'text-emerald-600 bg-emerald-50';
-        if (score >= 40) return 'text-amber-600 bg-amber-50';
-        return 'text-red-600 bg-red-50';
-    };
-
-    const statusBadge = (status) => {
-        const colors = { subscribed: 'bg-emerald-100 text-emerald-700', unsubscribed: 'bg-slate-100 text-slate-600', bounced: 'bg-red-100 text-red-700', complained: 'bg-orange-100 text-orange-700', pending: 'bg-amber-100 text-amber-700' };
-        return colors[status] || 'bg-slate-100 text-slate-600';
-    };
+    const actions = (
+        <>
+            <Button onClick={() => setImporting(true)}><FiUpload className="size-4" />Import</Button>
+            <Button variant="primary" onClick={() => setAdding(true)}><FiPlus className="size-4" />Add contact</Button>
+        </>
+    );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Contacts</h1><p className="text-sm text-slate-500 mt-1">{total.toLocaleString()} total contacts</p></div>
-                <div className="flex gap-2">
-                    <button onClick={() => setShowImport(true)} className="btn btn-secondary flex items-center gap-2"><FiUpload className="w-4 h-4" /> Import</button>
-                    <button onClick={() => setShowAdd(true)} className="btn btn-primary flex items-center gap-2"><FiPlus className="w-4 h-4" /> Add</button>
-                </div>
-            </div>
+        <div className="space-y-4">
+            <PageHeader title="Contacts" description={query.data ? `${total.toLocaleString('en-IN')} contacts` : undefined} actions={actions} />
+            <Tabs label="Contact status" tabs={STATUS_TABS} value={status} onChange={s => { setStatus(s); setPage(1); }} />
+            <SearchInput value={search} onChange={t => { setSearch(t); setPage(1); }} placeholder="Search email, name, company" label="Search contacts" className="w-full sm:w-80" />
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 flex-wrap">
-                    <div className="relative flex-1 min-w-[200px]">
-                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                        <input type="text" placeholder="Search by email, name, company..." value={search} onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                    </div>
-                    <div className="flex gap-1">
-                        {['', 'subscribed', 'unsubscribed', 'bounced'].map(s => (
-                            <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1.5 text-xs rounded-full font-medium ${statusFilter === s ? 'bg-brand-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
-                                {s || 'All'}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {loading ? (
-                    <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
-                ) : contacts.length === 0 ? (
-                    <div className="text-center py-20">
-                        <FiUsers className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-slate-900 dark:text-white">{search ? 'No contacts match your search' : 'No contacts yet'}</h3>
-                        <p className="text-sm text-slate-500 mt-1 mb-4">Import from CSV or add manually</p>
-                        {!search && <button onClick={() => setShowImport(true)} className="btn btn-primary mx-auto">Import Contacts</button>}
-                    </div>
-                ) : (
-                    <>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead><tr className="border-b border-slate-200 dark:border-slate-700">
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Contact</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Status</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Score</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Source</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Emails</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Opens</th>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Added</th>
-                                </tr></thead>
-                                <tbody>
-                                    {contacts.map(c => (
-                                        <tr key={c.id} onClick={() => navigate(`/email-marketing/contacts/${c.id}`)} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer">
-                                            <td className="py-3 px-4">
-                                                <p className="text-sm font-medium text-slate-900 dark:text-white">{c.email}</p>
-                                                <p className="text-xs text-slate-500">{[c.first_name, c.last_name].filter(Boolean).join(' ')}{c.company ? ` · ${c.company}` : ''}</p>
-                                            </td>
-                                            <td className="py-3 px-4"><span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge(c.status)}`}>{c.status}</span></td>
-                                            <td className="py-3 px-4"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${scoreColor(c.email_score)}`}>{c.email_score}</span></td>
-                                            <td className="py-3 px-4 text-xs text-slate-500">{c.source?.replace('_', ' ')}</td>
-                                            <td className="py-3 px-4 text-sm text-slate-600">{c.email_count || 0}</td>
-                                            <td className="py-3 px-4 text-sm text-slate-600">{c.open_count || 0}</td>
-                                            <td className="py-3 px-4 text-xs text-slate-500">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        {total > limit && <div className="p-4 border-t border-slate-200 dark:border-slate-700"><Pagination currentPage={page} totalItems={total} itemsPerPage={limit} onPageChange={setPage} /></div>}
-                    </>
+            <Panel flush>
+                <DataTable
+                    caption="Contacts"
+                    loading={query.isLoading}
+                    error={query.error}
+                    onRetry={query.refetch}
+                    rows={contacts}
+                    onRowClick={c => navigate(`/email-marketing/contacts/${c.id}`)}
+                    className={cx(query.isPlaceholderData && 'opacity-60')}
+                    empty={<EmptyState title={search ? `No contacts match “${search}”` : 'No contacts yet'} description={search ? undefined : 'Import a CSV or add contacts one by one.'} action={!search && <Button variant="primary" size="sm" onClick={() => setImporting(true)}>Import contacts</Button>} />}
+                    columns={[
+                        { key: 'contact', header: 'Contact', render: c => (<span className="block min-w-0 max-w-xs"><span className="block truncate font-medium">{c.email}</span><span className="block truncate text-xs text-fg-subtle">{[c.first_name, c.last_name].filter(Boolean).join(' ')}{c.company ? ` · ${c.company}` : ''}</span></span>) },
+                        { key: 'status', header: 'Status', render: c => <Badge tone={STATUS_TONE[c.status] || 'neutral'} className="capitalize">{c.status}</Badge> },
+                        { key: 'score', header: 'Score', render: c => <Badge tone={scoreTone(c.email_score)}>{c.email_score}</Badge> },
+                        { key: 'source', header: 'Source', className: 'capitalize text-fg-muted', render: c => c.source?.replace(/_/g, ' ') || '—' },
+                        { key: 'emails', header: 'Emails', align: 'right', mono: true, render: c => c.email_count || 0 },
+                        { key: 'opens', header: 'Opens', align: 'right', mono: true, render: c => c.open_count || 0 },
+                        { key: 'added', header: 'Added', className: 'whitespace-nowrap text-fg-muted', render: c => (c.created_at ? new Date(c.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—') },
+                    ]}
+                />
+                {total > PAGE_SIZE && (
+                    <div className="border-t border-border"><Pagination currentPage={page} totalPages={Math.ceil(total / PAGE_SIZE)} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} /></div>
                 )}
-            </div>
+            </Panel>
 
-            {showAdd && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add Contact</h2>
-                        <div className="space-y-3">
-                            {[{ k: 'email', label: 'Email *', type: 'email', ph: 'john@example.com' }, { k: 'first_name', label: 'First Name', ph: 'John' }, { k: 'last_name', label: 'Last Name', ph: 'Doe' }, { k: 'phone', label: 'Phone', ph: '+1234567890' }, { k: 'company', label: 'Company', ph: 'Acme Inc' }].map(f => (
-                                <div key={f.k}><label className="block text-xs font-medium text-slate-500 mb-1">{f.label}</label><input type={f.type || 'text'} value={addForm[f.k]} onChange={e => setAddForm({ ...addForm, [f.k]: e.target.value })} placeholder={f.ph} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" /></div>
-                            ))}
-                        </div>
-                        <div className="flex gap-3 mt-6"><button onClick={() => setShowAdd(false)} className="btn btn-secondary flex-1">Cancel</button><button onClick={handleAdd} className="btn btn-primary flex-1">Add Contact</button></div>
-                    </div>
-                </div>
-            )}
+            <Dialog
+                open={adding}
+                onClose={() => setAdding(false)}
+                title="Add contact"
+                size="sm"
+                footer={<><Button onClick={() => setAdding(false)} disabled={add.isPending}>Cancel</Button><Button variant="primary" type="submit" form="contact-form" loading={add.isPending}>Add contact</Button></>}
+            >
+                {adding && <AddForm onSubmit={form => add.mutate(form)} />}
+            </Dialog>
 
-            {showImport && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowImport(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-xl w-full" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Import Contacts</h2>
-                        <p className="text-xs text-slate-500 mb-4">Paste CSV data below. First row must be headers. Required: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">email</code> column.</p>
-                        <textarea value={importData} onChange={e => setImportData(e.target.value)} rows={10} placeholder={"email,first_name,last_name,company\njohn@example.com,John,Doe,Acme\njane@example.com,Jane,Smith,Globex"}
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y" />
-                        <div className="flex gap-3 mt-4"><button onClick={() => setShowImport(false)} className="btn btn-secondary flex-1">Cancel</button><button onClick={handleImport} className="btn btn-primary flex-1">Import</button></div>
-                    </div>
-                </div>
-            )}
+            <Dialog
+                open={importing}
+                onClose={() => setImporting(false)}
+                title="Import contacts"
+                description="Paste CSV with a header row. The email column is required."
+                footer={
+                    <>
+                        <Button onClick={() => setImporting(false)} disabled={doImport.isPending}>Cancel</Button>
+                        <Button variant="primary" onClick={() => doImport.mutate()} loading={doImport.isPending} disabled={!rows.length}>
+                            {rows.length ? `Import ${rows.length} contact${rows.length === 1 ? '' : 's'}` : 'Import'}
+                        </Button>
+                    </>
+                }
+            >
+                <Field
+                    label="CSV data"
+                    error={parsed && !hasEmail ? 'No email column found in the header row' : undefined}
+                    hint={parsed && hasEmail ? `${rows.length} rows with an email address` : 'Quoted fields and commas inside quotes are supported'}
+                >
+                    <Textarea rows={10} value={csv} onChange={e => setCsv(e.target.value)} spellCheck={false} data-autofocus className="font-mono text-xs"
+                        placeholder={'email,first_name,last_name,company\njohn@example.com,John,Doe,Acme\njane@example.com,Jane,Smith,"Globex, Inc"'} />
+                </Field>
+            </Dialog>
         </div>
     );
 }

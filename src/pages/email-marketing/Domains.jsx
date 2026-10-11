@@ -1,79 +1,156 @@
 import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { FiCheckCircle, FiCopy, FiPlus, FiRefreshCw, FiTrash2 } from 'react-icons/fi';
+import { nmDomainsAPI } from '../../api/nexmail';
+import {
+    Badge, Button, ConfirmDialog, Dialog, EmptyState, ErrorState, Field, IconButton, Input, PageHeader, Panel, Skeleton,
+} from '../../components/ui';
+
+// This page used to be a mock: Add, Re-verify and Remove only showed success toasts and changed nothing.
+// It now talks to the real sending-identity API (SES Easy DKIM + custom MAIL FROM).
+const STATUS_TONE = { verified: 'success', pending: 'warning', failed: 'danger' };
+const apiErr = (err, fallback) => err?.response?.data?.error || fallback;
+
+function CopyCell({ value }) {
+    return (
+        <span className="inline-flex max-w-full items-center gap-1">
+            <code className="truncate font-mono text-xs text-fg">{value}</code>
+            <IconButton size="sm" label={`Copy ${value}`} onClick={() => { navigator.clipboard.writeText(value); toast.success('Copied'); }}><FiCopy className="size-3.5" /></IconButton>
+        </span>
+    );
+}
+
+function DnsRecords({ records }) {
+    if (!records?.length) return <p className="text-sm text-fg-subtle">No DNS records on file. Remove and re-add the domain to generate them.</p>;
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <caption className="sr-only">DNS records to publish</caption>
+                <thead>
+                    <tr className="border-b border-border text-left text-xs text-fg-muted">
+                        <th scope="col" className="py-1.5 pr-3 font-medium">Purpose</th>
+                        <th scope="col" className="py-1.5 pr-3 font-medium">Type</th>
+                        <th scope="col" className="py-1.5 pr-3 font-medium">Host</th>
+                        <th scope="col" className="py-1.5 font-medium">Value</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                    {records.map(r => (
+                        <tr key={`${r.key || r.purpose}-${r.host}`}>
+                            <td className="py-2 pr-3 text-fg-muted">{r.purpose}{r.required === false && <span className="ml-1 text-2xs text-fg-subtle">(optional)</span>}</td>
+                            <td className="py-2 pr-3 font-mono text-xs">{r.type}</td>
+                            <td className="max-w-56 py-2 pr-3"><CopyCell value={r.host} /></td>
+                            <td className="max-w-72 py-2"><CopyCell value={r.value} /></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <p className="mt-2 text-xs text-fg-subtle">CNAME records must be DNS-only (not proxied). DKIM can take a few minutes up to 72 hours to verify.</p>
+        </div>
+    );
+}
+
+function DomainCard({ d, onVerify, verifying, onRemove }) {
+    return (
+        <Panel
+            title={d.domain}
+            description={d.last_checked_at ? `Last checked ${new Date(d.last_checked_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : undefined}
+            actions={
+                <span className="flex items-center gap-2">
+                    <Badge tone={d.verified_for_sending ? 'success' : STATUS_TONE[d.status] || 'warning'} className="capitalize">
+                        {d.verified_for_sending ? 'Verified for sending' : d.status}
+                    </Badge>
+                    <Button size="sm" onClick={() => onVerify(d)} loading={verifying}><FiRefreshCw className="size-4" />Verify</Button>
+                    <IconButton size="sm" variant="danger" label={`Remove ${d.domain}`} onClick={() => onRemove(d)}><FiTrash2 className="size-4" /></IconButton>
+                </span>
+            }
+        >
+            <div className="space-y-3">
+                <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                    {[['DKIM', d.dkim_status], ['MAIL FROM', d.mail_from_status]].map(([label, status]) => (
+                        <li key={label} className="flex items-center gap-1.5 text-fg-muted">
+                            <FiCheckCircle aria-hidden="true" className={status === 'verified' || status === 'success' ? 'size-4 text-success' : 'size-4 text-fg-subtle'} />
+                            {label}: <span className="capitalize text-fg">{status || 'pending'}</span>
+                        </li>
+                    ))}
+                </ul>
+                {d.last_error && <p role="alert" className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">{d.last_error}</p>}
+                {!d.verified_for_sending && <DnsRecords records={d.dns_records} />}
+            </div>
+        </Panel>
+    );
+}
 
 export default function Domains() {
-    const [domains, setDomains] = useState([]);
+    const queryClient = useQueryClient();
+    const [adding, setAdding] = useState(false);
     const [newDomain, setNewDomain] = useState('');
-    const [showAdd, setShowAdd] = useState(false);
+    const [removing, setRemoving] = useState(null);
 
-    const statusColors = { pending: 'bg-amber-100 text-amber-700', verified: 'bg-emerald-100 text-emerald-700', failed: 'bg-red-100 text-red-700' };
-    const checkIcon = (verified) => verified ? <span className="text-emerald-500">&#10003;</span> : <span className="text-red-400">&#10007;</span>;
+    const query = useQuery({ queryKey: ['nexmail-domains'], queryFn: () => nmDomainsAPI.getAll(), staleTime: 60 * 1000 });
+    const domains = query.data?.data || [];
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['nexmail-domains'] });
+
+    const add = useMutation({
+        mutationFn: domain => nmDomainsAPI.create({ domain }),
+        onSuccess: r => { toast.success(r.message || 'Domain added. Publish the DNS records, then verify.', { duration: 6000 }); setAdding(false); setNewDomain(''); refresh(); },
+        onError: err => toast.error(apiErr(err, 'Failed to add domain')),
+    });
+    const verify = useMutation({
+        mutationFn: d => nmDomainsAPI.verify(d.id),
+        onSuccess: r => { (r.data?.verified_for_sending ? toast.success : toast)(r.message || 'Checked'); refresh(); },
+        onError: err => toast.error(apiErr(err, 'Verification failed')),
+    });
+    const remove = useMutation({
+        mutationFn: d => nmDomainsAPI.delete(d.id),
+        onSuccess: () => { toast.success('Domain removed'); setRemoving(null); refresh(); },
+        onError: err => { toast.error(apiErr(err, 'Failed to remove domain')); setRemoving(null); },
+    });
+
+    const addButton = <Button variant="primary" onClick={() => setAdding(true)}><FiPlus className="size-4" />Add domain</Button>;
+    let body;
+    if (query.isLoading) body = <Skeleton className="h-40 rounded-md" />;
+    else if (query.isError) body = <ErrorState error={query.error} onRetry={query.refetch} />;
+    else if (!domains.length) {
+        body = <Panel><EmptyState title="No sending domains" description="Add your domain to publish SPF/DKIM/DMARC records and send from your own address." action={addButton} /></Panel>;
+    } else {
+        body = <div className="space-y-4">{domains.map(d => <DomainCard key={d.id} d={d} onVerify={verify.mutate} verifying={verify.isPending && verify.variables?.id === d.id} onRemove={setRemoving} />)}</div>;
+    }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sending Domains</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Verify domains for better deliverability (SPF, DKIM, DMARC)</p>
-                </div>
-                <button onClick={() => setShowAdd(true)} className="btn btn-primary">Add Domain</button>
-            </div>
+        <div className="max-w-5xl space-y-4">
+            <PageHeader title="Sending domains" description="Verify a domain for better deliverability (DKIM, MAIL FROM, DMARC)" actions={addButton} />
+            {body}
 
-            {domains.length === 0 ? (
-                <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div className="w-16 h-16 rounded-full bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mx-auto mb-4 text-2xl">🔐</div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white">No domains configured</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4 max-w-md mx-auto">Add your sending domain to set up SPF, DKIM, and DMARC records for improved email deliverability and sender reputation.</p>
-                    <button onClick={() => setShowAdd(true)} className="btn btn-primary">Add Domain</button>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {domains.map(d => (
-                        <div key={d.id} className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{d.domain}</h3>
-                                    <span className={`text-xs px-2 py-1 rounded-full ${statusColors[d.status]}`}>{d.status}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => toast.success('Verification started')} className="btn btn-secondary text-xs">Re-verify</button>
-                                    <button onClick={() => toast.success('Domain removed')} className="text-xs text-red-500 hover:text-red-700">Remove</button>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div className="flex items-center gap-2">{checkIcon(d.spf_verified)}<span className="text-sm text-slate-700 dark:text-slate-300">SPF Record</span></div>
-                                <div className="flex items-center gap-2">{checkIcon(d.dkim_verified)}<span className="text-sm text-slate-700 dark:text-slate-300">DKIM Record</span></div>
-                                <div className="flex items-center gap-2">{checkIcon(d.dmarc_verified)}<span className="text-sm text-slate-700 dark:text-slate-300">DMARC Record</span></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <Dialog
+                open={adding}
+                onClose={() => setAdding(false)}
+                title="Add sending domain"
+                size="sm"
+                footer={
+                    <>
+                        <Button onClick={() => setAdding(false)} disabled={add.isPending}>Cancel</Button>
+                        <Button variant="primary" type="submit" form="domain-add-form" loading={add.isPending}>Add domain</Button>
+                    </>
+                }
+            >
+                <form id="domain-add-form" onSubmit={e => { e.preventDefault(); add.mutate(newDomain.trim().toLowerCase()); }} className="space-y-3">
+                    <Field label="Domain" required hint="After adding, you publish the DNS records shown for it, then press Verify">
+                        <Input required value={newDomain} onChange={e => setNewDomain(e.target.value)} placeholder="yourdomain.com" className="font-mono" data-autofocus />
+                    </Field>
+                </form>
+            </Dialog>
 
-            {showAdd && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-lg w-full" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Add Sending Domain</h2>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Domain</label>
-                            <input type="text" value={newDomain} onChange={e => setNewDomain(e.target.value)} placeholder="yourdomain.com"
-                                className="w-full px-3 py-2 border rounded-lg bg-slate-50 dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-brand-500 focus:outline-none" />
-                        </div>
-                        <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                            <p className="text-xs text-amber-800 dark:text-amber-300 font-medium mb-2">After adding, you'll need to create DNS records:</p>
-                            <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1 list-disc list-inside">
-                                <li>SPF TXT record on your domain</li>
-                                <li>DKIM TXT record (nexmail._domainkey)</li>
-                                <li>DMARC TXT record (_dmarc)</li>
-                            </ul>
-                        </div>
-                        <div className="flex gap-3 mt-6">
-                            <button onClick={() => setShowAdd(false)} className="btn btn-secondary flex-1">Cancel</button>
-                            <button onClick={() => { toast.success('Domain added! Configure DNS records.'); setShowAdd(false); setNewDomain(''); }} className="btn btn-primary flex-1">Add Domain</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmDialog
+                open={!!removing}
+                onClose={() => setRemoving(null)}
+                onConfirm={() => remove.mutate(removing)}
+                loading={remove.isPending}
+                title="Remove domain?"
+                message={removing && `${removing.domain} stops being a verified sending identity, so you can no longer send from it. This can’t be undone.`}
+                confirmText="Remove domain"
+            />
         </div>
     );
 }

@@ -17,6 +17,7 @@ const STATUS_COLORS = {
   ticketPriority: { low: TONE.neutral, medium: TONE.info, high: TONE.warning, urgent: TONE.danger },
   project: { planning: TONE.info, 'in-progress': TONE.warning, completed: TONE.success, 'on-hold': TONE.neutral },
   execution: { pending: TONE.neutral, running: TONE.info, waiting: TONE.warning, completed: TONE.success, failed: TONE.danger, cancelled: TONE.neutral, skipped: TONE.neutral },
+  emailCampaign: { draft: TONE.neutral, scheduled: TONE.info, queued: TONE.warning, sending: TONE.info, sent: TONE.success, paused: TONE.warning, failed: TONE.danger, cancelled: TONE.neutral },
   campaign: {
     draft: TONE.neutral, scheduled: TONE.info, sending: TONE.warning,
     completed: TONE.success, paused: TONE.warning, failed: TONE.danger,
