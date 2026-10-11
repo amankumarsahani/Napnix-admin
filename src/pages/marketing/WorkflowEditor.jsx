@@ -203,6 +203,15 @@ const ActionNode = ({ data, selected }) => (
             position={Position.Bottom}
             className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-slate-800"
         />
+        {data.config?.on_error === 'branch' && (
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="error"
+                title="On error"
+                className="w-3 h-3 !bg-red-500 !border-2 !border-white dark:!border-slate-800"
+            />
+        )}
     </div>
 );
 
@@ -311,6 +320,7 @@ const NODE_PALETTE = {
         { id: 'inquiry_status_updated', label: 'Inquiry Status Updated', type: 'trigger' },
         { id: 'scheduled', label: 'Scheduled', type: 'trigger' },
         { id: 'manual', label: 'Manual Trigger', type: 'trigger' },
+        { id: 'webhook_received', label: 'Incoming Webhook', type: 'trigger' },
         { id: 'stripe_payment_received', label: 'Stripe Payment Received', type: 'trigger' },
         { id: 'stripe_subscription_created', label: 'Stripe Subscription Created', type: 'trigger' },
         { id: 'stripe_subscription_cancelled', label: 'Stripe Subscription Cancelled', type: 'trigger' },
@@ -329,6 +339,7 @@ const NODE_PALETTE = {
         { id: 'send_notification', label: 'Send Notification', type: 'action', actionType: 'send_notification' },
         { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
         { id: 'http_request', label: 'HTTP Request', type: 'action', actionType: 'http_request' },
+        { id: 'loop_items', label: 'Loop Over Items', type: 'action', actionType: 'loop_items' },
         { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' },
         { id: 'ai_agent', label: 'AI Agent (with tools)', type: 'action', actionType: 'ai_agent' }
     ],
@@ -1347,6 +1358,39 @@ const WorkflowEditor = () => {
                                     )}
                                 </>
                             )}
+
+                        {/* Trigger-specific config: Incoming Webhook */}
+                        {selectedNode.type === 'trigger' && selectedNode.data.triggerType === 'webhook_received' && (
+                            <>
+                                <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600">
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Incoming Webhook</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Any app can start this workflow by POSTing JSON to the URL below. Its fields become variables, e.g. {'{{email}}'}.
+                                    </p>
+                                </div>
+                                {localConfig?.webhook_secret ? (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook URL</label>
+                                        {isNew ? (
+                                            <p className="text-xs text-amber-600">Save the workflow first; the URL includes its ID.</p>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <input readOnly value={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`} className="flex-1 min-w-0 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono" />
+                                                <button type="button" onClick={() => { navigator.clipboard.writeText(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`); toast.success('Webhook URL copied'); }} className="px-3 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200">Copy</button>
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-slate-500 mt-1">Treat this URL like a password. The workflow must be active.</p>
+                                    </div>
+                                ) : null}
+                                <button
+                                    type="button"
+                                    onClick={() => setLocalConfig({ ...localConfig, webhook_secret: crypto.randomUUID().replace(/-/g, '') })}
+                                    className="w-full px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                >
+                                    {localConfig?.webhook_secret ? 'Regenerate secret (old URL stops working)' : 'Generate webhook URL'}
+                                </button>
+                            </>
+                        )}
 
                         {/* Trigger-specific config: Manual */}
                         {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'manual' || selectedNode.data.label === 'Manual Trigger') && (
@@ -3007,9 +3051,56 @@ const WorkflowEditor = () => {
                             </>
                         )}
 
+                        {/* Loop Over Items */}
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'loop_items' && (
+                            <>
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                                    <span className="font-semibold text-sm text-indigo-700 dark:text-indigo-300">Loop Over Items</span>
+                                    <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                                        Runs every node connected after this one once per item. Inside the loop use {'{{item}}'}, {'{{item.title}}'}, {'{{item_index}}'}.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Items</label>
+                                    <input type="text" value={localConfig?.items || ''} onChange={(e) => setLocalConfig({ ...localConfig, items: e.target.value })} placeholder="{{keyword_suggestions}}" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm font-mono" />
+                                    <p className="text-xs text-slate-500 mt-1">A list from an earlier node, or one value per line.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Items</label>
+                                    <input type="number" min={1} max={200} value={localConfig?.max_items || 50} onChange={(e) => setLocalConfig({ ...localConfig, max_items: parseInt(e.target.value) || 50 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                </div>
+                            </>
+                        )}
+
+                        {/* Node settings shared by every action: retry + error handling */}
+                        {(selectedNode.type === 'action' || selectedNode.type === 'whatsapp') && (
+                            <div className="pt-3 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">If this step fails</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Retries</label>
+                                        <input type="number" min={0} max={5} value={localConfig?.retry_count || 0} onChange={(e) => setLocalConfig({ ...localConfig, retry_count: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Wait (sec)</label>
+                                        <input type="number" min={1} max={60} value={localConfig?.retry_delay_seconds || 5} onChange={(e) => setLocalConfig({ ...localConfig, retry_delay_seconds: parseInt(e.target.value) || 5 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">After retries run out</label>
+                                    <select value={localConfig?.on_error || 'stop'} onChange={(e) => setLocalConfig({ ...localConfig, on_error: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                        <option value="stop">Stop the workflow</option>
+                                        <option value="continue">Continue to next steps</option>
+                                        <option value="branch">Follow the red "error" connection</option>
+                                    </select>
+                                    <p className="text-xs text-slate-500 mt-1">The error message is available as {'{{last_error.message}}'}.</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Generic / No Settings Fallback */}
                         {!['trigger', 'action', 'condition', 'delay', 'whatsapp'].includes(selectedNode.type) ||
-                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url', 'keyword_research', 'gsc_opportunities', 'http_request', 'ai_agent'].includes(selectedNode.data.actionType)) ? (
+                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url', 'keyword_research', 'gsc_opportunities', 'http_request', 'ai_agent', 'loop_items'].includes(selectedNode.data.actionType)) ? (
                             <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
                                 <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
                                 <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
