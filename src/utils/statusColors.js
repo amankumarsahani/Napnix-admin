@@ -10,7 +10,7 @@ export const TONE = {
 
 const STATUS_COLORS = {
   client: { active: TONE.success, prospect: TONE.info, inactive: TONE.neutral },
-  lead: { new: TONE.info, contacted: TONE.warning, qualified: TONE.info, won: TONE.success, lost: TONE.danger },
+  lead: { new: TONE.info, contacted: TONE.warning, qualified: TONE.info, negotiation: TONE.warning, won: TONE.success, lost: TONE.danger },
   tenant: { active: TONE.success, trial: TONE.info, suspended: TONE.warning, past_due: TONE.danger, cancelled: TONE.neutral },
   project: { planning: TONE.info, 'in-progress': TONE.warning, completed: TONE.success, 'on-hold': TONE.neutral },
   campaign: {

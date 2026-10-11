@@ -2,7 +2,7 @@
 export const EMPTY_LEAD = { companyName: '', contactName: '', email: '', phone: '', status: 'new', source: '', estimatedValue: '', notes: '', score: 0 };
 
 export const LEAD_STATUSES = [
-    ['new', 'New'], ['contacted', 'Contacted'], ['qualified', 'Qualified'], ['won', 'Won'], ['lost', 'Lost'],
+    ['new', 'New'], ['contacted', 'Contacted'], ['qualified', 'Qualified'], ['negotiation', 'Negotiation'], ['won', 'Won'], ['lost', 'Lost'],
 ];
 
 /** Lead fields as the form edits them. The API column for source is leadSource. */

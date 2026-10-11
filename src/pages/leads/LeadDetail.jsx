@@ -1,453 +1,205 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import apiClient from '../../api/axios';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import EmailComposer from '../../components/common/EmailComposer';
-import { useAuth } from '../../contexts/AuthContext';
+import { FiEdit2, FiMail, FiMapPin, FiPhone } from 'react-icons/fi';
+import apiClient from '../../api/axios';
 import { leadsAPI } from '../../api';
+import EmailComposer from '../../components/common/EmailComposer';
+import ActivityTimeline from '../../components/activity/ActivityTimeline';
+import { activityQueryKey } from '../../components/activity/activityKeys';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+    Avatar, Badge, Button, ErrorState, Field, PageHeader, Panel, Select, Skeleton, StatusBadge, cx,
+} from '../../components/ui';
+import LeadFormDialog from './LeadFormDialog';
+import { LEAD_STATUSES, toLeadPayload } from './leadFields';
 
-// Activity type configurations
-const ACTIVITY_TYPES = {
-    note: { label: 'Note', icon: '📝', color: 'bg-blue-500' },
-    call: { label: 'Call', icon: '📞', color: 'bg-emerald-500' },
-    email: { label: 'Email', icon: '✉️', color: 'bg-purple-500' },
-    meeting: { label: 'Meeting', icon: '👥', color: 'bg-amber-500' },
-    status_change: { label: 'Status Change', icon: '🔄', color: 'bg-slate-500' },
-};
+const inr = n => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const formatDate = value => (value
+    ? new Date(value).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : '—');
 
-const STATUS_COLORS = {
-    new: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400',
-    contacted: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400',
-    qualified: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400',
-    negotiation: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400',
-    won: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400',
-    lost: 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400',
-};
-
-const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-};
-
-const getRelativeTime = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-};
+function Row({ label, children }) {
+    return (
+        <div className="flex justify-between gap-4 py-1.5 text-sm">
+            <dt className="text-fg-muted">{label}</dt>
+            <dd className="text-fg text-right">{children}</dd>
+        </div>
+    );
+}
 
 export default function LeadDetail() {
     const { id } = useParams();
-    const navigate = useNavigate();
     const { user } = useAuth();
-    const [lead, setLead] = useState(null);
-    const [activities, setActivities] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('timeline');
-
-    // Activity form
-    const [newNote, setNewNote] = useState('');
-    const [activityType, setActivityType] = useState('note');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showEmailComposer, setShowEmailComposer] = useState(false);
-
-    // Assignment
-    const [assignableUsers, setAssignableUsers] = useState([]);
-    const [isAssigning, setIsAssigning] = useState(false);
-
     const isAdmin = user?.role === 'admin';
+    const queryClient = useQueryClient();
+    const [emailOpen, setEmailOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
-    useEffect(() => {
-        fetchLead();
-        fetchActivities();
-        if (isAdmin) {
-            fetchAssignableUsers();
-        }
-    }, [id, isAdmin]);
+    const leadQuery = useQuery({
+        queryKey: ['lead', id],
+        queryFn: async () => (await apiClient.get(`/leads/${id}`)).data.lead,
+        staleTime: 2 * 60 * 1000,
+    });
+    const usersQuery = useQuery({
+        queryKey: ['lead-assignable-users'],
+        queryFn: async () => (await leadsAPI.getAssignableUsers()).data || [],
+        staleTime: 10 * 60 * 1000,
+        enabled: isAdmin,
+    });
 
-    const fetchAssignableUsers = async () => {
-        try {
-            const response = await leadsAPI.getAssignableUsers();
-            setAssignableUsers(response.data || []);
-        } catch (error) {
-            // silently ignore
-        }
+    const refresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['lead', id] });
+        queryClient.invalidateQueries({ queryKey: ['leads'] });
+        queryClient.invalidateQueries({ queryKey: activityQueryKey('lead', id) });
     };
 
-    const handleAssign = async (assignedTo) => {
-        if (!assignedTo) return;
-        setIsAssigning(true);
-        try {
-            await leadsAPI.assign(id, assignedTo);
-            toast.success('Lead reassigned successfully');
-            fetchLead();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to reassign lead');
-        } finally {
-            setIsAssigning(false);
-        }
-    };
+    const update = useMutation({
+        mutationFn: payload => apiClient.put(`/leads/${id}`, payload),
+        onSuccess: (_, payload) => { toast.success(payload.status && Object.keys(payload).length === 1 ? 'Status updated' : 'Lead updated'); setEditOpen(false); refresh(); },
+        onError: err => toast.error(err.response?.data?.error || 'Could not update the lead'),
+    });
+    const assign = useMutation({
+        mutationFn: assignedTo => leadsAPI.assign(id, assignedTo),
+        onSuccess: () => { toast.success('Lead reassigned'); refresh(); },
+        onError: err => toast.error(err.response?.data?.error || 'Failed to reassign lead'),
+    });
 
-    const fetchLead = async () => {
-        try {
-            const res = await apiClient.get(`/leads/${id}`);
-            setLead(res.data.lead);
-        } catch (error) {
-            toast.error('Failed to load lead details');
-            navigate('/leads');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchActivities = async () => {
-        try {
-            const res = await apiClient.get(`/activities/lead/${id}`);
-            if (res.data.success) {
-                setActivities(res.data.data || []);
-            }
-        } catch (error) {
-            // silently ignore
-        }
-    };
-
-    const handleAddActivity = async (e) => {
-        e.preventDefault();
-        if (!newNote.trim()) return;
-
-        setIsSubmitting(true);
-        try {
-            await apiClient.post('/activities', {
-                entityType: 'lead',
-                entityId: id,
-                type: activityType,
-                summary: `${ACTIVITY_TYPES[activityType].label} logged`,
-                details: newNote
-            });
-
-            toast.success('Activity added');
-            setNewNote('');
-            fetchActivities();
-        } catch (error) {
-            toast.error('Failed to add activity');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleStatusChange = async (newStatus) => {
-        try {
-            await apiClient.put(`/leads/${id}`, { status: newStatus });
-            toast.success('Status updated');
-            fetchLead();
-            fetchActivities();
-        } catch (error) {
-            toast.error('Failed to update status');
-        }
-    };
-
-    if (loading) {
+    if (leadQuery.isLoading) {
         return (
-            <div className="max-w-6xl mx-auto px-6 py-8">
-                <div className="animate-pulse space-y-6">
-                    <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4"></div>
-                    <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            <div className="max-w-6xl mx-auto space-y-4">
+                <Skeleton className="h-8 w-64" />
+                <div className="grid lg:grid-cols-3 gap-4">
+                    <Skeleton className="h-72 rounded-md" />
+                    <Skeleton className="h-72 rounded-md lg:col-span-2" />
                 </div>
             </div>
         );
     }
+    if (leadQuery.isError || !leadQuery.data) {
+        return <ErrorState error={leadQuery.error || new Error('Lead not found')} onRetry={leadQuery.refetch} />;
+    }
 
-    if (!lead) return null;
+    const lead = leadQuery.data;
 
     return (
-        <div className="max-w-6xl mx-auto px-6 py-8">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-6">
-                <Link to="/leads" className="hover:text-brand-600">Leads</Link>
-                <span>/</span>
-                <span className="text-slate-900 dark:text-white font-medium">{lead.contactName}</span>
-            </div>
-
-            {/* Header */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6 mb-6">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{lead.contactName}</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">{lead.company || 'No company'}</p>
-                        <div className="flex items-center gap-3 mt-4">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${STATUS_COLORS[lead.status] || 'bg-slate-100 text-slate-700'}`}>
-                                {lead.status}
-                            </span>
-                            {lead.estimatedValue && (
-                                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                                    Rs.{parseFloat(lead.estimatedValue).toLocaleString()}
-                                </span>
-                            )}
-                            {lead.score !== null && (
-                                <span className="px-2 py-1 bg-amber-50 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium">
-                                    Score: {lead.score}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowEmailComposer(true)}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-xl font-medium hover:bg-brand-700 flex items-center gap-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                            Send Email
-                        </button>
-                        <button
-                            onClick={() => navigate('/leads')}
-                            className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                        >
-                            ← Back
-                        </button>
-                    </div>
+        <div className="max-w-6xl mx-auto">
+            <PageHeader
+                back={{ to: '/leads', label: 'Leads' }}
+                title={lead.contactName}
+                description={lead.company || 'No company'}
+                actions={
+                    <>
+                        <Button onClick={() => setEditOpen(true)}><FiEdit2 className="size-4" />Edit</Button>
+                        <Button variant="primary" onClick={() => setEmailOpen(true)} disabled={!lead.email} title={lead.email ? undefined : 'This lead has no email address'}>
+                            <FiMail className="size-4" />Send email
+                        </Button>
+                    </>
+                }
+            >
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <StatusBadge entity="lead" status={lead.status} />
+                    {lead.estimatedValue != null && <Badge tone="success"><span className="font-mono">{inr(lead.estimatedValue)}</span></Badge>}
+                    {lead.score != null && <Badge>Score <span className="font-mono">{lead.score}</span></Badge>}
                 </div>
-            </div>
+            </PageHeader>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Info & Actions */}
-                <div className="space-y-6">
-                    {/* Contact Info */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Contact Information</h3>
-                        <div className="space-y-3">
-                            {lead.email && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-slate-400">✉️</span>
-                                    <a href={`mailto:${lead.email}`} className="text-brand-600 hover:underline">{lead.email}</a>
-                                </div>
-                            )}
-                            {lead.phone && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-slate-400">📞</span>
-                                    <a href={`tel:${lead.phone}`} className="text-brand-600 hover:underline">{lead.phone}</a>
-                                </div>
-                            )}
-                            {lead.leadSource && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-slate-400">📍</span>
-                                    <span className="text-slate-600 dark:text-slate-300">{lead.leadSource}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="space-y-4">
+                    <Panel title="Contact">
+                        <ul className="space-y-2 text-sm">
+                            {lead.email && <li className="flex items-center gap-2.5"><FiMail aria-hidden="true" className="size-4 text-fg-subtle" /><a href={`mailto:${lead.email}`} className="text-accent hover:underline truncate">{lead.email}</a></li>}
+                            {lead.phone && <li className="flex items-center gap-2.5"><FiPhone aria-hidden="true" className="size-4 text-fg-subtle" /><a href={`tel:${lead.phone}`} className="text-accent hover:underline">{lead.phone}</a></li>}
+                            {lead.leadSource && <li className="flex items-center gap-2.5"><FiMapPin aria-hidden="true" className="size-4 text-fg-subtle" /><span className="text-fg-muted">{lead.leadSource}</span></li>}
+                            {!lead.email && !lead.phone && !lead.leadSource && <li className="text-fg-subtle">No contact details yet.</li>}
+                        </ul>
+                    </Panel>
 
-                    {/* Status Update */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Update Status</h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            {['new', 'contacted', 'qualified', 'negotiation', 'won', 'lost'].map(status => (
+                    <Panel title="Status">
+                        <div role="radiogroup" aria-label="Lead status" className="grid grid-cols-2 gap-1.5">
+                            {LEAD_STATUSES.map(([value, label]) => (
                                 <button
-                                    key={status}
-                                    onClick={() => handleStatusChange(status)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all ${lead.status === status
-                                        ? 'bg-brand-600 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                        }`}
+                                    key={value}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={lead.status === value}
+                                    disabled={update.isPending}
+                                    onClick={() => lead.status !== value && update.mutate({ status: value })}
+                                    className={cx(
+                                        'h-8 rounded-sm border text-sm font-medium disabled:opacity-60',
+                                        lead.status === value ? 'border-accent bg-accent-soft text-accent' : 'border-border text-fg-muted hover:text-fg hover:bg-surface-2'
+                                    )}
                                 >
-                                    {status}
+                                    {label}
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </Panel>
 
-                    {/* Assigned To */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Assigned To</h3>
-
+                    <Panel title="Assigned to">
                         {lead.assignedFirstName ? (
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 dark:text-brand-400 flex items-center justify-center font-semibold">
-                                    {lead.assignedFirstName[0]}{lead.assignedLastName?.[0] || ''}
-                                </div>
-                                <div>
-                                    <p className="font-medium text-slate-900 dark:text-white">{lead.assignedFirstName} {lead.assignedLastName}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{lead.assignedEmail}</p>
+                            <div className="flex items-center gap-3">
+                                <Avatar name={`${lead.assignedFirstName} ${lead.assignedLastName || ''}`} />
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-fg">{lead.assignedFirstName} {lead.assignedLastName}</p>
+                                    <p className="text-xs text-fg-subtle truncate">{lead.assignedEmail}</p>
                                 </div>
                             </div>
-                        ) : (
-                            <p className="text-slate-500 dark:text-slate-400 mb-4">No one assigned</p>
-                        )}
+                        ) : <p className="text-sm text-fg-subtle">No one assigned</p>}
 
-                        {/* Reassign dropdown (admin only) */}
                         {isAdmin && (
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
-                                <label className="block text-sm text-slate-600 dark:text-slate-400 mb-2">Reassign to:</label>
-                                <select
-                                    onChange={(e) => handleAssign(e.target.value)}
-                                    disabled={isAssigning}
-                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none disabled:opacity-50"
-                                    defaultValue=""
+                            <Field label="Reassign to" className="mt-4 pt-3 border-t border-border" hint={assign.isPending ? 'Reassigning…' : undefined}>
+                                <Select
+                                    value=""
+                                    disabled={assign.isPending || usersQuery.isLoading}
+                                    onChange={e => e.target.value && assign.mutate(e.target.value)}
                                 >
-                                    <option value="" disabled>Select a team member...</option>
-                                    {assignableUsers.map(u => (
+                                    <option value="" disabled>{usersQuery.isError ? 'Could not load team' : 'Select a team member…'}</option>
+                                    {(usersQuery.data || []).map(u => (
                                         <option key={u.id} value={u.id} disabled={u.id === lead.assignedTo}>
                                             {u.firstName} {u.lastName} ({u.role})
                                         </option>
                                     ))}
-                                </select>
-                                {isAssigning && (
-                                    <p className="text-xs text-brand-600 mt-2">Reassigning...</p>
-                                )}
-                            </div>
+                                </Select>
+                            </Field>
                         )}
-                    </div>
+                    </Panel>
 
-                    {/* Notes */}
                     {lead.notes && (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Notes</h3>
-                            <p className="text-slate-600 dark:text-slate-300 text-sm whitespace-pre-wrap">{lead.notes}</p>
-                        </div>
+                        <Panel title="Notes">
+                            <p className="text-sm text-fg-muted whitespace-pre-wrap">{lead.notes}</p>
+                        </Panel>
                     )}
 
-                    {/* Meta */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
-                        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Details</h3>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-500 dark:text-slate-400">Created</span>
-                                <span className="text-slate-900 dark:text-white">{formatDate(lead.createdAt)}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500 dark:text-slate-400">Updated</span>
-                                <span className="text-slate-900 dark:text-white">{formatDate(lead.updatedAt)}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <Panel title="Details">
+                        <dl>
+                            <Row label="Created">{formatDate(lead.createdAt)}</Row>
+                            <Row label="Updated">{formatDate(lead.updatedAt)}</Row>
+                        </dl>
+                    </Panel>
                 </div>
 
-                {/* Right: Timeline */}
                 <div className="lg:col-span-2">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                        {/* Tabs */}
-                        <div className="flex border-b border-slate-100 dark:border-slate-700">
-                            <button
-                                onClick={() => setActiveTab('timeline')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'timeline'
-                                    ? 'text-brand-600 border-b-2 border-brand-600'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                    }`}
-                            >
-                                Timeline ({activities.length})
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('add')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-colors ${activeTab === 'add'
-                                    ? 'text-brand-600 border-b-2 border-brand-600'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                    }`}
-                            >
-                                + Add Activity
-                            </button>
-                        </div>
-
-                        <div className="p-6">
-                            {activeTab === 'add' && (
-                                <form onSubmit={handleAddActivity} className="space-y-4">
-                                    <div className="flex gap-2 flex-wrap">
-                                        {Object.entries(ACTIVITY_TYPES).filter(([key]) => key !== 'status_change').map(([key, val]) => (
-                                            <button
-                                                key={key}
-                                                type="button"
-                                                onClick={() => setActivityType(key)}
-                                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activityType === key
-                                                    ? 'bg-brand-600 text-white'
-                                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                                    }`}
-                                            >
-                                                {val.icon} {val.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <textarea
-                                        value={newNote}
-                                        onChange={(e) => setNewNote(e.target.value)}
-                                        placeholder="Add details about this activity..."
-                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none resize-none h-32 placeholder:text-slate-400"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={isSubmitting || !newNote.trim()}
-                                        className="w-full py-3 bg-brand-600 text-white rounded-xl font-semibold hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {isSubmitting ? 'Adding...' : 'Add Activity'}
-                                    </button>
-                                </form>
-                            )}
-
-                            {activeTab === 'timeline' && (
-                                <div className="space-y-0">
-                                    {activities.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <div className="text-4xl mb-3">📭</div>
-                                            <p className="text-slate-500 dark:text-slate-400">No activities yet</p>
-                                            <button
-                                                onClick={() => setActiveTab('add')}
-                                                className="mt-4 text-brand-600 font-medium hover:underline"
-                                            >
-                                                Add the first activity
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="relative">
-                                            {/* Timeline line */}
-                                            <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-600"></div>
-
-                                            {activities.map((activity, index) => {
-                                                const config = ACTIVITY_TYPES[activity.type] || ACTIVITY_TYPES.note;
-                                                return (
-                                                    <div key={activity.id} className="relative pl-14 pb-6">
-                                                        {/* Timeline dot */}
-                                                        <div className={`absolute left-3 w-5 h-5 rounded-full ${config.color} flex items-center justify-center text-white text-xs`}>
-                                                            {config.icon}
-                                                        </div>
-
-                                                        <div className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
-                                                            <div className="flex items-start justify-between mb-2">
-                                                                <span className="font-medium text-slate-900 dark:text-white">{activity.summary}</span>
-                                                                <span className="text-xs text-slate-400">{getRelativeTime(activity.createdAt)}</span>
-                                                            </div>
-                                                            {activity.details && (
-                                                                <p className="text-sm text-slate-600 dark:text-slate-300">{activity.details}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <ActivityTimeline entityType="lead" entityId={id} />
                 </div>
             </div>
 
-            {/* Email Composer Modal */}
             <EmailComposer
-                isOpen={showEmailComposer}
-                onClose={() => setShowEmailComposer(false)}
+                isOpen={emailOpen}
+                onClose={() => setEmailOpen(false)}
                 recipient={{ name: lead.contactName, email: lead.email, company: lead.company }}
                 entityType="lead"
                 entityId={id}
-                onEmailSent={() => fetchActivities()}
+                onEmailSent={() => queryClient.invalidateQueries({ queryKey: activityQueryKey('lead', id) })}
+            />
+
+            <LeadFormDialog
+                open={editOpen}
+                lead={lead}
+                onClose={() => setEditOpen(false)}
+                saving={update.isPending}
+                onSubmit={form => update.mutate(toLeadPayload(form))}
             />
         </div>
     );
