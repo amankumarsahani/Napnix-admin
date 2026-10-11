@@ -328,9 +328,13 @@ const NODE_PALETTE = {
         { id: 'assign_inquiry', label: 'Assign Inquiry', type: 'action', actionType: 'assign_inquiry' },
         { id: 'send_notification', label: 'Send Notification', type: 'action', actionType: 'send_notification' },
         { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
-        { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' }
+        { id: 'http_request', label: 'HTTP Request', type: 'action', actionType: 'http_request' },
+        { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' },
+        { id: 'ai_agent', label: 'AI Agent (with tools)', type: 'action', actionType: 'ai_agent' }
     ],
     aiBlog: [
+        { id: 'keyword_research', label: 'Keyword Research (Google)', type: 'action', actionType: 'keyword_research' },
+        { id: 'gsc_opportunities', label: 'Search Console Opportunities', type: 'action', actionType: 'gsc_opportunities' },
         { id: 'ai_pick_topic', label: 'AI Pick Topic', type: 'action', actionType: 'ai_pick_topic' },
         { id: 'ai_write_blog', label: 'AI Write Blog', type: 'action', actionType: 'ai_write_blog' },
         { id: 'ai_fetch_image', label: 'Fetch Image (Unsplash)', type: 'action', actionType: 'ai_fetch_image' },
@@ -2149,9 +2153,24 @@ const WorkflowEditor = () => {
                                         type="text"
                                         value={localConfig?.niche || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, niche: e.target.value })}
-                                        placeholder="e.g. Technology, CRM, Marketing"
+                                        placeholder="Default: CRM, lead follow-up and sales process for Indian service businesses"
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                     />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Brand Context / Instructions
+                                    </label>
+                                    <textarea
+                                        rows={6}
+                                        value={localConfig?.brand_context || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })}
+                                        placeholder="Real facts about Napnix the writer may use (products, audience, real customer stories) plus any extra instructions. Leave empty to use the default Napnix context."
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                    <p className="text-[11px] text-slate-500 mt-1">
+                                        Passed to AI Write Blog too. The AI only states facts written here; it never invents stats, quotes or clients.
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -2218,10 +2237,11 @@ const WorkflowEditor = () => {
                                             Tone
                                         </label>
                                         <select
-                                            value={localConfig?.tone || 'professional'}
+                                            value={localConfig?.tone || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, tone: e.target.value })}
                                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
                                         >
+                                            <option value="">Auto (rotate styles)</option>
                                             <option value="professional">Professional</option>
                                             <option value="casual">Casual</option>
                                             <option value="technical">Technical</option>
@@ -2351,6 +2371,198 @@ const WorkflowEditor = () => {
                                 <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
                                     <strong>Uses:</strong> blog_title, blog_excerpt, blog_content, blog_image<br />
                                     <strong>Outputs:</strong> blog_posted, blog_id, blog_slug
+                                </div>
+                            </>
+                        )}
+
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'ai_agent' && (
+                            <>
+                                <div className="p-3 bg-violet-50 dark:bg-violet-900/30 rounded-lg border border-violet-100 dark:border-violet-800">
+                                    <span className="font-semibold text-sm text-violet-700 dark:text-violet-300">AI Agent</span>
+                                    <p className="text-xs text-violet-600 dark:text-violet-400">
+                                        Give it a goal. It decides which tools to call, reads the results and repeats until done. Blog posts are only ever saved as drafts.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Goal</label>
+                                    <textarea rows={5} value={localConfig?.goal || ''} onChange={(e) => setLocalConfig({ ...localConfig, goal: e.target.value })} placeholder="Find one keyword clinic owners search that we rank 8-20 for or don't cover yet, check our existing posts to avoid duplicates, then write one draft targeting it." className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tools</label>
+                                    {[
+                                        ['keyword_research', 'Keyword research (Google Autocomplete)'],
+                                        ['gsc_opportunities', 'Search Console opportunities'],
+                                        ['list_blog_posts', 'List our blog posts'],
+                                        ['write_blog_draft', 'Write blog draft'],
+                                        ['http_get', 'HTTP GET (allowlisted hosts only)'],
+                                    ].map(([id, label]) => {
+                                        const tools = localConfig?.tools || ['keyword_research', 'gsc_opportunities', 'list_blog_posts', 'write_blog_draft'];
+                                        return (
+                                            <label key={id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={tools.includes(id)}
+                                                    onChange={(e) => setLocalConfig({ ...localConfig, tools: e.target.checked ? [...tools, id] : tools.filter(t => t !== id) })}
+                                                />
+                                                {label}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                {(localConfig?.tools || []).includes('http_get') && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed Hosts</label>
+                                        <input type="text" value={localConfig?.allowed_hosts || ''} onChange={(e) => setLocalConfig({ ...localConfig, allowed_hosts: e.target.value })} placeholder="api.napnix.in, napnix.in" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <p className="text-xs text-slate-500 mt-1">Fetched pages can contain instructions aimed at the agent; only list sites you trust.</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Context (for drafts)</label>
+                                    <textarea rows={4} value={localConfig?.brand_context || ''} onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })} placeholder="Leave empty to use the default Napnix context." className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Steps</label>
+                                        <input type="number" min={1} max={15} value={localConfig?.max_steps || 6} onChange={(e) => setLocalConfig({ ...localConfig, max_steps: parseInt(e.target.value) || 6 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Drafts</label>
+                                        <input type="number" min={1} max={5} value={localConfig?.max_drafts || 1} onChange={(e) => setLocalConfig({ ...localConfig, max_drafts: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Save As</label>
+                                        <input type="text" value={localConfig?.output_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, output_variable: e.target.value })} placeholder="agent_result" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">AI Model (optional)</label>
+                                    <input type="text" value={localConfig?.model || ''} onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })} placeholder="Default model with provider fallback" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Outputs:</strong> {'{{agent_result}}'} (final answer), {'{{agent_result_steps}}'} (every tool call and result, also in the run log)
+                                </div>
+                            </>
+                        )}
+
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'http_request' && (
+                            <>
+                                <div className="p-3 bg-cyan-50 dark:bg-cyan-900/30 rounded-lg border border-cyan-100 dark:border-cyan-800">
+                                    <span className="font-semibold text-sm text-cyan-700 dark:text-cyan-300">HTTP Request</span>
+                                    <p className="text-xs text-cyan-600 dark:text-cyan-400">
+                                        Call any API. Every field accepts {'{{variables}}'} from earlier nodes, e.g. {'{{email}}'} or {'{{api.items.0.title}}'}.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Method</label>
+                                        <select value={localConfig?.method || 'GET'} onChange={(e) => setLocalConfig({ ...localConfig, method: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                            {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => <option key={m} value={m}>{m}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">URL</label>
+                                        <input type="text" value={localConfig?.url || ''} onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })} placeholder="https://api.example.com/items?q={{company}}" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Headers (one per line)</label>
+                                    <textarea rows={3} value={typeof localConfig?.headers === 'string' ? localConfig.headers : ''} onChange={(e) => setLocalConfig({ ...localConfig, headers: e.target.value })} placeholder="Authorization: Bearer YOUR_TOKEN" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                    <p className="text-xs text-amber-600 mt-1">Stored in the workflow config as plain text. Use a scoped, revocable token.</p>
+                                </div>
+                                {(localConfig?.method || 'GET') !== 'GET' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Body</label>
+                                        <select value={localConfig?.body_mode || 'custom'} onChange={(e) => setLocalConfig({ ...localConfig, body_mode: e.target.value })} className="w-full mb-2 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                            <option value="custom">Custom body</option>
+                                            <option value="context">Send all workflow data as JSON</option>
+                                        </select>
+                                        {(localConfig?.body_mode || 'custom') === 'custom' && (
+                                            <textarea rows={5} value={localConfig?.body || ''} onChange={(e) => setLocalConfig({ ...localConfig, body: e.target.value })} placeholder={'{"email": "{{email}}", "name": "{{name}}"}'} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                        )}
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Save Response As</label>
+                                        <input type="text" value={localConfig?.response_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, response_variable: e.target.value })} placeholder="http_response" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Timeout (sec)</label>
+                                        <input type="number" value={localConfig?.timeout_seconds || 30} onChange={(e) => setLocalConfig({ ...localConfig, timeout_seconds: parseInt(e.target.value) || 30 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                    <input type="checkbox" checked={localConfig?.fail_on_error !== false} onChange={(e) => setLocalConfig({ ...localConfig, fail_on_error: e.target.checked })} />
+                                    Stop workflow on non-2xx response
+                                </label>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Outputs:</strong> {'{{<name>}}'} (parsed JSON or text), {'{{<name>_status}}'}
+                                </div>
+                            </>
+                        )}
+
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'keyword_research' && (
+                            <>
+                                <div className="p-3 bg-cyan-50 dark:bg-cyan-900/30 rounded-lg border border-cyan-100 dark:border-cyan-800">
+                                    <span className="font-semibold text-sm text-cyan-700 dark:text-cyan-300">Keyword Research</span>
+                                    <p className="text-xs text-cyan-600 dark:text-cyan-400">
+                                        Pulls real Google Autocomplete searches for your seed keywords. Free, no API key.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Seed Keywords (one per line)</label>
+                                    <textarea
+                                        rows={5}
+                                        value={localConfig?.seeds || ''}
+                                        onChange={(e) => setLocalConfig({ ...localConfig, seeds: e.target.value })}
+                                        placeholder={'crm for clinic\nlead follow up\nrestaurant billing software'}
+                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Country</label>
+                                        <input type="text" value={localConfig?.country || 'in'} onChange={(e) => setLocalConfig({ ...localConfig, country: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Ideas</label>
+                                        <input type="number" value={localConfig?.limit || 40} onChange={(e) => setLocalConfig({ ...localConfig, limit: parseInt(e.target.value) || 40 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Outputs:</strong> keyword_suggestions[], seo_keyword_ideas[] (used by AI Pick Topic)
+                                </div>
+                            </>
+                        )}
+
+                        {selectedNode.type === 'action' && selectedNode.data.actionType === 'gsc_opportunities' && (
+                            <>
+                                <div className="p-3 bg-cyan-50 dark:bg-cyan-900/30 rounded-lg border border-cyan-100 dark:border-cyan-800">
+                                    <span className="font-semibold text-sm text-cyan-700 dark:text-cyan-300">Search Console Opportunities</span>
+                                    <p className="text-xs text-cyan-600 dark:text-cyan-400">
+                                        Queries Google already shows your site for at positions 4 to 20. Uses the global Google service account; add its email as a user on the Search Console property.
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Property</label>
+                                    <input type="text" value={localConfig?.property || ''} onChange={(e) => setLocalConfig({ ...localConfig, property: e.target.value })} placeholder="Default: sc-domain:<website host>" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Days</label>
+                                        <input type="number" value={localConfig?.days || 28} onChange={(e) => setLocalConfig({ ...localConfig, days: parseInt(e.target.value) || 28 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min Impr.</label>
+                                        <input type="number" value={localConfig?.min_impressions || 5} onChange={(e) => setLocalConfig({ ...localConfig, min_impressions: parseInt(e.target.value) || 5 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Pos.</label>
+                                        <input type="number" value={localConfig?.max_position || 20} onChange={(e) => setLocalConfig({ ...localConfig, max_position: parseInt(e.target.value) || 20 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    </div>
+                                </div>
+                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                    <strong>Outputs:</strong> gsc_opportunities[] (query, page, impressions, position), seo_keyword_ideas[]
                                 </div>
                             </>
                         )}
@@ -2784,7 +2996,7 @@ const WorkflowEditor = () => {
 
                         {/* Generic / No Settings Fallback */}
                         {!['trigger', 'action', 'condition', 'delay', 'whatsapp'].includes(selectedNode.type) ||
-                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url'].includes(selectedNode.data.actionType)) ? (
+                            (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url', 'keyword_research', 'gsc_opportunities', 'http_request', 'ai_agent'].includes(selectedNode.data.actionType)) ? (
                             <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
                                 <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
                                 <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
