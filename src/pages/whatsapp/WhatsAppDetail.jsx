@@ -6,7 +6,7 @@ import { whatsappApi } from '../../api/whatsapp';
 
 const STATUS_CONFIG = {
     connected:    { dot: 'bg-emerald-400', badge: 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20', label: 'Connected' },
-    disconnected: { dot: 'bg-slate-400', badge: 'bg-slate-500/10 text-slate-400 ring-1 ring-slate-500/20', label: 'Disconnected' },
+    disconnected: { dot: 'bg-slate-400', badge: 'bg-slate-500/10 text-fg-subtle ring-1 ring-slate-500/20', label: 'Disconnected' },
     pending_qr:   { dot: 'bg-amber-400 animate-pulse', badge: 'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20', label: 'Awaiting Scan' },
     reconnecting: { dot: 'bg-blue-400 animate-pulse', badge: 'bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20', label: 'Reconnecting' },
 };
@@ -24,10 +24,10 @@ function formatTime(ts) {
 
 function Avatar({ name, size = 9 }) {
     const initials = (name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-    const colors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-pink-500'];
+    const colors = ['bg-accent', 'bg-blue-500', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-pink-500'];
     const color = colors[(name || '?').charCodeAt(0) % colors.length];
     return (
-        <div className={`w-${size} h-${size} rounded-full ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+        <div style={{ width: size * 4, height: size * 4 }} className={`rounded-full ${color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
             {initials}
         </div>
     );
@@ -43,14 +43,14 @@ function ConversationList({ accountId, selectedId, onSelect }) {
 
     if (isLoading) return (
         <div className="flex flex-col gap-2 p-3">
-            {[1,2,3,4].map(i => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />)}
+            {[1,2,3,4].map(i => <div key={i} className="h-16 bg-surface-3 rounded-md animate-pulse" />)}
         </div>
     );
 
     if (!convs.length) return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400">
+        <div className="flex flex-col items-center justify-center h-full text-center p-6 text-fg-subtle">
             <div className="text-3xl mb-3">💬</div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No conversations yet</p>
+            <p className="text-sm font-medium text-fg-muted">No conversations yet</p>
             <p className="text-xs mt-1">Messages will appear here</p>
         </div>
     );
@@ -59,19 +59,19 @@ function ConversationList({ accountId, selectedId, onSelect }) {
         <div className="overflow-y-auto flex-1">
             {convs.map(c => (
                 <button key={c.id} onClick={() => onSelect(c)}
-                    className={`w-full flex items-start gap-3 px-4 py-3.5 text-left transition-colors border-b border-slate-100 dark:border-slate-800 ${selectedId === c.id ? 'bg-violet-50 dark:bg-violet-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                    className={`w-full flex items-start gap-3 px-4 py-3.5 text-left transition-colors border-b border-border ${selectedId === c.id ? 'bg-accent-soft' : 'hover:bg-surface-2'}`}>
                     <Avatar name={c.contact_name || c.contact_phone} />
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                            <p className="text-sm font-semibold text-fg truncate">
                                 {c.contact_name || c.contact_phone || c.contact_jid}
                             </p>
-                            <span className="text-[10px] text-slate-400 shrink-0 ml-2">{formatTime(c.last_message_at)}</span>
+                            <span className="text-[10px] text-fg-subtle shrink-0 ml-2">{formatTime(c.last_message_at)}</span>
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
-                            <p className="text-xs text-slate-400 truncate">{c.last_message || 'No messages'}</p>
+                            <p className="text-xs text-fg-subtle truncate">{c.last_message || 'No messages'}</p>
                             {c.unread_count > 0 && (
-                                <span className="ml-2 bg-violet-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shrink-0">
+                                <span className="ml-2 bg-accent text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shrink-0">
                                     {c.unread_count > 9 ? '9+' : c.unread_count}
                                 </span>
                             )}
@@ -99,8 +99,8 @@ function MessageThread({ conversation, account }) {
         mutationFn: (msg) => whatsappApi.sendMessage(conversation.id, msg),
         onSuccess: () => {
             setText('');
-            queryClient.invalidateQueries(['whatsapp-msgs', conversation.id]);
-            queryClient.invalidateQueries(['whatsapp-convs', account.id]);
+            queryClient.invalidateQueries({ queryKey: ['whatsapp-msgs', conversation.id] });
+            queryClient.invalidateQueries({ queryKey: ['whatsapp-convs', account.id] });
         },
         onError: (err) => toast.error(err.response?.data?.error || 'Failed to send'),
     });
@@ -118,13 +118,13 @@ function MessageThread({ conversation, account }) {
     return (
         <div className="flex flex-col h-full">
             {/* Thread header */}
-            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+            <div className="px-5 py-4 border-b border-border flex items-center gap-3">
                 <Avatar name={conversation.contact_name || conversation.contact_phone} size={9} />
                 <div>
-                    <p className="font-semibold text-slate-900 dark:text-white text-sm">
+                    <p className="font-semibold text-fg text-sm">
                         {conversation.contact_name || conversation.contact_phone || conversation.contact_jid}
                     </p>
-                    <p className="text-xs text-slate-400">{conversation.contact_phone || conversation.contact_jid?.replace('@s.whatsapp.net', '')}</p>
+                    <p className="text-xs text-fg-subtle">{conversation.contact_phone || conversation.contact_jid?.replace('@s.whatsapp.net', '')}</p>
                 </div>
             </div>
 
@@ -132,24 +132,24 @@ function MessageThread({ conversation, account }) {
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
                 {isLoading ? (
                     <div className="flex justify-center py-8">
-                        <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="text-center text-slate-400 py-12 text-sm">No messages yet</div>
+                    <div className="text-center text-fg-subtle py-12 text-sm">No messages yet</div>
                 ) : messages.map(msg => (
                     <div key={msg.id} className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[72%] rounded-2xl px-4 py-2.5 ${
+                        <div className={`max-w-[72%] rounded-md px-4 py-2.5 ${
                             msg.direction === 'outbound'
-                                ? 'bg-violet-600 text-white rounded-br-sm'
-                                : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-bl-sm'
+                                ? 'bg-accent text-white rounded-br-sm'
+                                : 'bg-surface text-fg border border-border rounded-bl-sm'
                         }`}>
                             <p className="text-sm leading-relaxed break-words">{msg.body || `[${msg.media_type}]`}</p>
                             <div className={`flex items-center gap-1 mt-1 ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
-                                <span className={`text-[10px] ${msg.direction === 'outbound' ? 'text-violet-200' : 'text-slate-400'}`}>
+                                <span className={`text-[10px] ${msg.direction === 'outbound' ? 'text-white/70' : 'text-fg-subtle'}`}>
                                     {formatTime(msg.sent_at)}
                                 </span>
                                 {msg.direction === 'outbound' && (
-                                    <svg className={`w-3 h-3 ${msg.status === 'read' ? 'text-blue-300' : 'text-violet-300'}`} fill="currentColor" viewBox="0 0 24 24">
+                                    <svg className={`w-3 h-3 ${msg.status === 'read' ? 'text-blue-300' : 'text-white/70'}`} fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M18 7l-8 8-4-4-1.5 1.5L10 18 19.5 8.5z"/>
                                     </svg>
                                 )}
@@ -161,8 +161,8 @@ function MessageThread({ conversation, account }) {
             </div>
 
             {/* Input */}
-            <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-end gap-3 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 py-3">
+            <div className="px-4 py-4 border-t border-border">
+                <div className="flex items-end gap-3 bg-surface-2 rounded-md px-4 py-3">
                     <textarea
                         value={text}
                         onChange={e => setText(e.target.value)}
@@ -170,11 +170,11 @@ function MessageThread({ conversation, account }) {
                         placeholder={account.status === 'connected' ? 'Type a message…' : 'Account not connected'}
                         disabled={account.status !== 'connected'}
                         rows={1}
-                        className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 resize-none focus:outline-none disabled:opacity-50"
+                        className="flex-1 bg-transparent text-sm text-fg placeholder-slate-400 resize-none focus:outline-none disabled:opacity-50"
                         style={{ maxHeight: 120, overflowY: 'auto' }}
                     />
                     <button onClick={handleSend} disabled={!text.trim() || sendMutation.isPending || account.status !== 'connected'}
-                        className="w-9 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white flex items-center justify-center transition-colors disabled:opacity-40 shrink-0">
+                        className="w-9 h-9 rounded-md bg-accent hover:bg-accent-hover text-white flex items-center justify-center transition-colors disabled:opacity-40 shrink-0">
                         {sendMutation.isPending ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         ) : (
@@ -184,7 +184,7 @@ function MessageThread({ conversation, account }) {
                         )}
                     </button>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Enter to send · Shift+Enter for new line</p>
+                <p className="text-[10px] text-fg-subtle mt-1.5 ml-1">Enter to send · Shift+Enter for new line</p>
             </div>
         </div>
     );
@@ -205,18 +205,18 @@ export default function WhatsAppDetail() {
 
     const disconnectMutation = useMutation({
         mutationFn: () => whatsappApi.disconnectAccount(id),
-        onSuccess: () => { toast.success('Disconnected'); queryClient.invalidateQueries(['whatsapp-account', id]); },
+        onSuccess: () => { toast.success('Disconnected'); queryClient.invalidateQueries({ queryKey: ['whatsapp-account', id] }); },
         onError: (err) => toast.error(err.response?.data?.error || 'Failed'),
     });
 
     if (isLoading) return (
         <div className="flex items-center justify-center -m-6 h-[calc(100vh-64px)]">
-            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
         </div>
     );
 
     if (!account) return (
-        <div className="flex items-center justify-center -m-6 h-[calc(100vh-64px)] text-slate-400">Account not found</div>
+        <div className="flex items-center justify-center -m-6 h-[calc(100vh-64px)] text-fg-subtle">Account not found</div>
     );
 
     const cfg = STATUS_CONFIG[account.status] || STATUS_CONFIG.disconnected;
@@ -224,27 +224,27 @@ export default function WhatsAppDetail() {
     return (
         <div className="flex flex-col -m-6 h-[calc(100vh-64px)]">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface shrink-0">
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate('/whatsapp')}
-                        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+                        className="p-2 rounded-lg hover:bg-surface-2 text-fg-muted transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold ${account.channel === 'baileys' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+                        <div className={`w-10 h-10 rounded-md flex items-center justify-center text-white font-bold ${account.channel === 'baileys' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
                             {account.channel === 'baileys' ? '⚡' : 'M'}
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h1 className="font-bold text-slate-900 dark:text-white">{account.label}</h1>
+                                <h1 className="font-bold text-fg">{account.label}</h1>
                                 <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cfg.badge}`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                                     {cfg.label}
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-400">
+                            <p className="text-xs text-fg-subtle">
                                 {account.phone || (account.channel === 'baileys' ? 'Not connected' : 'Meta API')}
                                 {account.owner_id ? ` · Tenant: ${account.owner_id}` : ' · Napnix'}
                             </p>
@@ -256,13 +256,13 @@ export default function WhatsAppDetail() {
                 <div className="flex items-center gap-2">
                     {account.status === 'connected' && (
                         <button onClick={() => disconnectMutation.mutate()} disabled={disconnectMutation.isPending}
-                            className="px-3 py-2 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-500 hover:border-rose-300 transition-colors disabled:opacity-50">
+                            className="px-3 py-2 rounded-lg text-xs font-medium border border-border text-fg-muted hover:text-rose-500 hover:border-rose-300 transition-colors disabled:opacity-50">
                             Disconnect
                         </button>
                     )}
                     {account.status !== 'connected' && account.channel === 'baileys' && (
                         <button onClick={() => navigate('/whatsapp')}
-                            className="px-3 py-2 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-colors">
+                            className="px-3 py-2 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white transition-colors">
                             Connect Number
                         </button>
                     )}
@@ -272,9 +272,9 @@ export default function WhatsAppDetail() {
             {/* Body */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Conversations sidebar */}
-                <div className="w-80 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-slate-900">
-                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Conversations</p>
+                <div className="w-80 border-r border-border flex flex-col bg-surface">
+                    <div className="px-4 py-3 border-b border-border">
+                        <p className="text-xs font-bold text-fg-subtle uppercase tracking-widest">Conversations</p>
                     </div>
                     <ConversationList
                         accountId={id}
@@ -288,9 +288,9 @@ export default function WhatsAppDetail() {
                     {selectedConv ? (
                         <MessageThread conversation={selectedConv} account={account} />
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center h-full text-center text-fg-subtle">
                             <div className="text-5xl mb-4">💬</div>
-                            <p className="font-medium text-slate-500 dark:text-slate-400">Select a conversation</p>
+                            <p className="font-medium text-fg-muted">Select a conversation</p>
                             <p className="text-sm mt-1">Messages will appear here</p>
                         </div>
                     )}
