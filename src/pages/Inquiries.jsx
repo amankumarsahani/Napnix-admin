@@ -1,340 +1,174 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { inquiriesAPI } from '../api';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import usePagination from '../hooks/usePagination';
+import { FiArrowRight, FiEye, FiTrash2 } from 'react-icons/fi';
+import { inquiriesAPI } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import Pagination from '../components/common/Pagination';
-import ConfirmModal from '../components/common/ConfirmModal';
+import {
+    Button, ConfirmDialog, DataTable, Dialog, EmptyState, IconButton, PageHeader, Panel, SearchInput,
+    Select, StatusBadge, cx,
+} from '../components/ui';
 
-export default function Inquiries() {
-    const [inquiries, setInquiries] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedInquiry, setSelectedInquiry] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
-    const [searchTerm, setSearchTerm] = useState('');
-    const navigate = useNavigate();
+const PAGE_SIZE = 10;
+const STATUSES = [['new', 'New'], ['contacted', 'Contacted'], ['resolved', 'Resolved']];
+const formatDate = value => new Date(value).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
-
-    useEffect(() => {
-        fetchInquiries();
-    }, [currentPage, searchTerm]);
-
-    const fetchInquiries = async () => {
-        try {
-            const response = await inquiriesAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) });
-            // Backend returns { success: true, data: [...], pagination: {...} }
-            const list = response?.data || [];
-            setInquiries(Array.isArray(list) ? list : []);
-            if (response?.pagination) setPagination(response.pagination);
-        } catch (error) {
-            toast.error('Failed to load inquiries');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleStatusChange = async (id, newStatus) => {
-        try {
-            await inquiriesAPI.updateStatus(id, newStatus);
-            toast.success('Status updated successfully');
-            fetchInquiries();
-        } catch (error) {
-            toast.error('Failed to update status');
-        }
-    };
-
-    const handleDelete = (id) => {
-        setConfirmState({
-            isOpen: true,
-            title: 'Delete Inquiry',
-            message: 'Are you sure you want to delete this inquiry? This action cannot be undone.',
-            variant: 'danger',
-            confirmText: 'Delete',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                try {
-                    await inquiriesAPI.delete(id);
-                    toast.success('Inquiry deleted successfully');
-                    fetchInquiries();
-                    setShowModal(false);
-                } catch (error) {
-                    toast.error('Failed to delete inquiry');
-                }
-            },
-        });
-    };
-
-    const handleConvertToLead = async (inquiry) => {
-        try {
-            toast.loading('Converting to lead...', { id: 'convert' });
-
-            const result = await inquiriesAPI.convertToLead(inquiry.id, {
-                notes: inquiry.message
-            });
-
-            toast.success('Inquiry converted to lead!', { id: 'convert' });
-            fetchInquiries();
-            setShowModal(false);
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to convert', { id: 'convert' });
-        }
-    };
-
-    const getStatusBadge = (status) => {
-        const styles = {
-            new: 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400',
-            contacted: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400',
-            resolved: 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400',
-            converted: 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400',
-        };
-        return styles[status] || styles.new;
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
-            </div>
-        );
-    }
-
+function Detail({ label, children }) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Contact Inquiries</h1>
-                    <p className="text-slate-600 dark:text-slate-400 mt-1">Manage contact form submissions from your website</p>
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Total: <span className="font-semibold">{inquiries.length}</span>
-                </div>
-            </div>
-
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Search inquiries..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
-
-            {/* Inquiries Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Name
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Email
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Company
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Date
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                            {inquiries.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                        No inquiries found
-                                    </td>
-                                </tr>
-                            ) : (
-                                inquiries.map((inquiry) => (
-                                    <tr
-                                        key={inquiry.id}
-                                        className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
-                                        onClick={() => navigate(`/inquiries/${inquiry.id}`)}
-                                    >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="font-medium text-slate-900 dark:text-white">{inquiry.name}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-600 dark:text-slate-300">{inquiry.email}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-slate-600 dark:text-slate-300">{inquiry.company || '-'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <select
-                                                value={inquiry.status}
-                                                onChange={(e) => {
-                                                    e.stopPropagation();
-                                                    if (e.target.value === 'converted') {
-                                                        handleConvertToLead(inquiry);
-                                                    } else {
-                                                        handleStatusChange(inquiry.id, e.target.value);
-                                                    }
-                                                }}
-                                                className={`px-3 py-1 text-xs font-semibold rounded-full border-0 cursor-pointer ${getStatusBadge(inquiry.status)}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                disabled={inquiry.status === 'converted'}
-                                            >
-                                                <option value="new">New</option>
-                                                <option value="contacted">Contacted</option>
-                                                <option value="resolved">Resolved</option>
-                                                <option value="converted">→ Convert to Lead</option>
-                                            </select>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
-                                            {formatDate(inquiry.createdAt)}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedInquiry(inquiry);
-                                                        setShowModal(true);
-                                                    }}
-                                                    className="text-brand-600 hover:text-brand-800 font-medium"
-                                                >
-                                                    View
-                                                </button>
-                                                {inquiry.status !== 'converted' && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleConvertToLead(inquiry);
-                                                        }}
-                                                        className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
-                                                        title="Convert to Lead"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                                                        </svg>
-                                                        Lead
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
-            </div>
-
-            {/* Detail Modal */}
-            {showModal && selectedInquiry && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Inquiry Details</h2>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-slate-500 dark:text-slate-400"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{selectedInquiry.name}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{selectedInquiry.email}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Phone</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{selectedInquiry.phone || '-'}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Company</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{selectedInquiry.company || '-'}</p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Message</label>
-                                <p className="mt-1 text-slate-900 dark:text-white whitespace-pre-wrap bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
-                                    {selectedInquiry.message}
-                                </p>
-                            </div>
-
-                            <div className="flex items-center gap-4 pt-2">
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
-                                    <span className={`ml-2 px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(selectedInquiry.status)}`}>
-                                        {selectedInquiry.status}
-                                    </span>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Submitted</label>
-                                    <p className="mt-1 text-slate-900 dark:text-white">{formatDate(selectedInquiry.createdAt)}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                            <button
-                                onClick={() => handleDelete(selectedInquiry.id)}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-                            >
-                                Delete Inquiry
-                            </button>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition-colors"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => setConfirmState({ isOpen: false })}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
-            />
+        <div>
+            <dt className="text-xs font-medium text-fg-muted">{label}</dt>
+            <dd className="mt-0.5 text-sm text-fg break-words">{children || '—'}</dd>
         </div>
     );
 }
 
+export default function Inquiries() {
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+    const [viewing, setViewing] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+
+    const params = { page, limit: PAGE_SIZE, ...(search && { search }) };
+    const query = useQuery({
+        queryKey: ['inquiries', 'list', params],
+        queryFn: () => inquiriesAPI.getAll(params),
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+    });
+    const inquiries = query.data?.data || [];
+    const pagination = query.data?.pagination;
+
+    // ['inquiries'] also covers the sidebar's new-inquiry count
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['inquiries'] });
+
+    const setStatus = useMutation({
+        mutationFn: ({ id, status }) => inquiriesAPI.updateStatus(id, status),
+        onSuccess: () => { toast.success('Status updated'); invalidate(); },
+        onError: () => toast.error('Failed to update status'),
+    });
+    const convert = useMutation({
+        mutationFn: inquiry => inquiriesAPI.convertToLead(inquiry.id, { notes: inquiry.message }),
+        onSuccess: () => {
+            toast.success('Inquiry converted to lead');
+            setViewing(null);
+            invalidate();
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+        },
+        onError: err => toast.error(err.response?.data?.error || 'Failed to convert'),
+    });
+    const remove = useMutation({
+        mutationFn: id => inquiriesAPI.delete(id),
+        onSuccess: () => { toast.success('Inquiry deleted'); setDeleting(null); setViewing(null); invalidate(); },
+        onError: () => toast.error('Failed to delete inquiry'),
+    });
+
+    return (
+        <div className="space-y-4">
+            <PageHeader
+                title="Contact Inquiries"
+                description="Manage contact form submissions from your website."
+                actions={pagination && <span className="text-sm text-fg-muted">Total <span className="font-mono tabular-nums text-fg">{pagination.total}</span></span>}
+            />
+
+            <SearchInput value={search} onChange={term => { setSearch(term); setPage(1); }} placeholder="Search inquiries" label="Search inquiries" className="w-full sm:w-72" />
+
+            <Panel flush>
+                <DataTable
+                    caption="Inquiries"
+                    loading={query.isLoading}
+                    error={query.error}
+                    onRetry={query.refetch}
+                    rows={inquiries}
+                    onRowClick={inquiry => navigate(`/inquiries/${inquiry.id}`)}
+                    className={cx(query.isPlaceholderData && 'opacity-60')}
+                    empty={<EmptyState title={search ? `No inquiries match “${search}”` : 'No inquiries yet'} description={search ? undefined : 'Website contact form submissions appear here.'} />}
+                    columns={[
+                        { key: 'name', header: 'Name', render: i => <span className="font-medium">{i.name}</span> },
+                        { key: 'email', header: 'Email', className: 'text-fg-muted' },
+                        { key: 'company', header: 'Company', render: i => i.company || <span className="text-fg-subtle">—</span> },
+                        {
+                            key: 'status', header: 'Status',
+                            render: i => (i.status === 'converted' ? <StatusBadge entity="inquiry" status="converted" /> : (
+                                <span onClick={e => e.stopPropagation()}>
+                                    <Select
+                                        aria-label={`Status for ${i.name}`}
+                                        value={i.status}
+                                        disabled={setStatus.isPending}
+                                        onChange={e => setStatus.mutate({ id: i.id, status: e.target.value })}
+                                        className="h-8 w-32 text-sm"
+                                    >
+                                        {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                                    </Select>
+                                </span>
+                            )),
+                        },
+                        { key: 'createdAt', header: 'Received', className: 'whitespace-nowrap text-fg-muted', render: i => formatDate(i.createdAt) },
+                    ]}
+                    actions={i => (
+                        <span className="inline-flex gap-0.5">
+                            <IconButton size="sm" label={`Quick view ${i.name}`} onClick={() => setViewing(i)}><FiEye className="size-4" /></IconButton>
+                            {i.status !== 'converted' && (
+                                <IconButton size="sm" label={`Convert ${i.name} to lead`} disabled={convert.isPending} onClick={() => convert.mutate(i)}><FiArrowRight className="size-4" /></IconButton>
+                            )}
+                            {isAdmin && <IconButton size="sm" variant="danger" label={`Delete inquiry from ${i.name}`} onClick={() => setDeleting(i)}><FiTrash2 className="size-4" /></IconButton>}
+                        </span>
+                    )}
+                />
+                {pagination && pagination.pages > 1 && (
+                    <div className="border-t border-border">
+                        <Pagination currentPage={page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+                    </div>
+                )}
+            </Panel>
+
+            <Dialog
+                open={!!viewing}
+                onClose={() => setViewing(null)}
+                title="Inquiry details"
+                size="lg"
+                footer={viewing && (
+                    <>
+                        {isAdmin && <Button variant="danger" className="mr-auto" onClick={() => setDeleting(viewing)}><FiTrash2 className="size-4" />Delete</Button>}
+                        <Button onClick={() => navigate(`/inquiries/${viewing.id}`)}>Open full page</Button>
+                        {viewing.status !== 'converted' && (
+                            <Button variant="primary" loading={convert.isPending} onClick={() => convert.mutate(viewing)}>Convert to lead</Button>
+                        )}
+                    </>
+                )}
+            >
+                {viewing && (
+                    <div className="space-y-4">
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Detail label="Name">{viewing.name}</Detail>
+                            <Detail label="Email">{viewing.email && <a href={`mailto:${viewing.email}`} className="text-accent hover:underline">{viewing.email}</a>}</Detail>
+                            <Detail label="Phone">{viewing.phone && <a href={`tel:${viewing.phone}`} className="text-accent hover:underline">{viewing.phone}</a>}</Detail>
+                            <Detail label="Company">{viewing.company}</Detail>
+                            <Detail label="Status"><StatusBadge entity="inquiry" status={viewing.status} /></Detail>
+                            <Detail label="Received">{formatDate(viewing.createdAt)}</Detail>
+                        </dl>
+                        <div>
+                            <p className="text-xs font-medium text-fg-muted">Message</p>
+                            <p className="mt-1 rounded-sm border border-border bg-surface-2 p-3 text-sm text-fg whitespace-pre-wrap">{viewing.message || '—'}</p>
+                        </div>
+                    </div>
+                )}
+            </Dialog>
+
+            <ConfirmDialog
+                open={!!deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={() => remove.mutate(deleting.id)}
+                loading={remove.isPending}
+                title="Delete inquiry?"
+                message={deleting && `This deletes the inquiry from ${deleting.name}. This can't be undone.`}
+                confirmText="Delete inquiry"
+            />
+        </div>
+    );
+}
