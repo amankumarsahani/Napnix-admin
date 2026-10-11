@@ -202,3 +202,26 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #475569;
 }
+
+/* CKEditor (blog body) on the design tokens, so it follows light/dark */
+.blog-editor {
+  --ck-color-base-background: var(--surface);
+  --ck-color-base-foreground: var(--surface-2);
+  --ck-color-base-border: var(--border-strong);
+  --ck-color-text: var(--fg);
+  --ck-color-toolbar-background: var(--surface-2);
+  --ck-color-toolbar-border: var(--border-strong);
+  --ck-color-panel-background: var(--surface);
+  --ck-color-panel-border: var(--border-strong);
+  --ck-color-input-background: var(--surface);
+  --ck-color-input-text: var(--fg);
+  --ck-color-list-background: var(--surface);
+  --ck-color-list-button-hover-background: var(--surface-3);
+  --ck-color-dropdown-panel-background: var(--surface);
+  --ck-color-button-default-hover-background: var(--surface-3);
+  --ck-color-button-on-background: var(--accent-soft);
+  --ck-color-button-on-color: var(--accent);
+  --ck-color-focus-border: var(--accent);
+  --ck-border-radius: 4px;
+}
+.blog-editor .ck-editor__editable { min-height: 320px; color: var(--fg); }

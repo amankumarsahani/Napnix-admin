@@ -1,365 +1,151 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import { blogsAPI } from '../../api';
-import { FiArrowLeft, FiSave, FiImage, FiType } from '../../components/icons/FeatherIcons';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { blogsAPI } from '../../api';
+import { Button, Checkbox, ErrorState, Field, Input, PageHeader, Panel, Select, Skeleton, Textarea } from '../../components/ui';
 
+const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+const EMPTY = {
+    title: '', slug: '', excerpt: '', content: '', category: '', author: 'Napnix Admin', image: '',
+    featured: false, status: 'published', read_time: 5, keywords: [],
+};
+
+function BlogForm({ blog, isEdit, onSave, saving, onCancel }) {
+    const [form, setForm] = useState(() => ({ ...EMPTY, ...blog }));
+    // Slug follows the title until someone edits it by hand
+    const [slugTouched, setSlugTouched] = useState(isEdit);
+    // keywords are typed as one string and split on save (splitting per keystroke ate trailing commas/spaces)
+    const [keywords, setKeywords] = useState(() => (Array.isArray(blog?.keywords) ? blog.keywords.join(', ') : ''));
+    const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
+    const [imgBroken, setImgBroken] = useState(false);
+
+    const submit = e => {
+        e.preventDefault();
+        onSave({ ...form, keywords: keywords.split(',').map(k => k.trim()).filter(Boolean) });
+    };
+
+    return (
+        <form onSubmit={submit} className="space-y-4">
+            <PageHeader
+                back={{ to: '/blogs', label: 'Blogs' }}
+                title={isEdit ? 'Edit blog' : 'New blog'}
+                actions={
+                    <>
+                        <Button onClick={onCancel} disabled={saving}>Cancel</Button>
+                        <Button variant="primary" type="submit" loading={saving}>{isEdit ? 'Save changes' : form.status === 'published' ? 'Publish' : 'Save'}</Button>
+                    </>
+                }
+            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="space-y-4 lg:col-span-2">
+                    <Panel title="Content">
+                        <div className="space-y-4">
+                            <Field label="Title" required>
+                                <Input required value={form.title} placeholder="An engaging title"
+                                    onChange={e => { const title = e.target.value; setForm(f => ({ ...f, title, ...(slugTouched ? {} : { slug: slugify(title) }) })); }} />
+                            </Field>
+                            <Field label="Slug" required hint="The post URL: /blog/slug">
+                                <Input required value={form.slug} className="font-mono text-sm" placeholder="my-blog-post"
+                                    onChange={e => { setSlugTouched(true); setForm(f => ({ ...f, slug: e.target.value })); }} />
+                            </Field>
+                            <Field label="Excerpt" hint="Short summary for preview cards">
+                                <Textarea rows={3} value={form.excerpt || ''} onChange={set('excerpt')} />
+                            </Field>
+                            <div>
+                                <p className="mb-1.5 text-sm font-medium text-fg">Main content</p>
+                                <div className="blog-editor prose max-w-none">
+                                    <CKEditor
+                                        editor={ClassicEditor}
+                                        data={form.content || ''}
+                                        onChange={(_, editor) => { const content = editor.getData(); setForm(f => ({ ...f, content })); }}
+                                        config={{
+                                            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|', 'undo', 'redo'],
+                                            placeholder: 'Start writing…',
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </Panel>
+                </div>
+
+                <div className="space-y-4">
+                    <Panel title="Publishing">
+                        <div className="space-y-4">
+                            <Field label="Status">
+                                <Select value={form.status} onChange={set('status')}>
+                                    <option value="published">Published</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="archived">Archived</option>
+                                </Select>
+                            </Field>
+                            <Checkbox label="Feature this post" checked={!!form.featured} onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))} />
+                        </div>
+                    </Panel>
+
+                    <Panel title="Details">
+                        <div className="space-y-4">
+                            <Field label="Category"><Input value={form.category || ''} onChange={set('category')} placeholder="Guide, Technology…" /></Field>
+                            <Field label="Author"><Input value={form.author || ''} onChange={set('author')} /></Field>
+                            <Field label="Read time (min)"><Input type="number" min="1" value={form.read_time ?? ''} onChange={set('read_time')} className="font-mono" /></Field>
+                            <Field label="SEO keywords" hint="Comma separated"><Input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="seo, crm, guide" /></Field>
+                        </div>
+                    </Panel>
+
+                    <Panel title="Feature image">
+                        <div className="space-y-3">
+                            <Field label="Image URL">
+                                <Input value={form.image || ''} onChange={e => { setImgBroken(false); setForm(f => ({ ...f, image: e.target.value })); }} placeholder="https://…" />
+                            </Field>
+                            {form.image && !imgBroken && (
+                                <img src={form.image} alt="" onError={() => setImgBroken(true)} className="aspect-video w-full rounded-sm border border-border object-cover" />
+                            )}
+                            {form.image && imgBroken && <p className="text-xs text-danger">This image URL didn&apos;t load.</p>}
+                        </div>
+                    </Panel>
+                </div>
+            </div>
+        </form>
+    );
+}
 
 export default function BlogEditor() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const isEditMode = !!id;
+    const queryClient = useQueryClient();
+    const isEdit = !!id;
 
-    const [loading, setLoading] = useState(false);
-    const [fetching, setFetching] = useState(isEditMode);
-
-    const [formData, setFormData] = useState({
-        title: '',
-        slug: '',
-        excerpt: '',
-        content: '',
-        category: '',
-        author: 'Napnix Admin',
-        image: '',
-        featured: false,
-        status: 'published',
-        read_time: 5,
-        keywords: []
+    const query = useQuery({
+        queryKey: ['blog', id],
+        queryFn: async () => {
+            const r = await blogsAPI.getById(id);
+            if (!r.success || !r.blog) throw new Error('Blog not found');
+            return r.blog;
+        },
+        enabled: isEdit,
+        staleTime: 0,
     });
 
-    useEffect(() => {
-        if (isEditMode) {
-            fetchBlog();
-        }
-    }, [id]);
-
-    const fetchBlog = async () => {
-        try {
-            setFetching(true);
-            const response = await blogsAPI.getById(id);
-            if (response.success && response.blog) {
-                setFormData(response.blog);
-            } else {
-                toast.error('Blog not found');
-                navigate('/blogs');
-            }
-        } catch (error) {
-            toast.error('Failed to load blog details');
-        } finally {
-            setFetching(false);
-        }
-    };
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-
-        // Handle keywords specific logic
-        if (name === 'keywords') {
-            const keywordsArray = value.split(',').map(k => k.trim()).filter(Boolean);
-            setFormData(prev => ({ ...prev, keywords: keywordsArray }));
-        }
-
-        // Auto-generate slug from title
-        if (name === 'title' && !isEditMode) {
-            const slug = value
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)+/g, '');
-            setFormData(prev => ({ ...prev, slug: slug }));
-        }
-    };
-
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!formData.title || !formData.slug) {
-            toast.error('Title and Slug are required');
-            return;
-        }
-
-        try {
-            setLoading(true);
-            if (isEditMode) {
-                await blogsAPI.update(id, formData);
-                toast.success('Blog updated successfully');
-            } else {
-                await blogsAPI.create(formData);
-                toast.success('Blog created successfully');
-            }
+    const save = useMutation({
+        mutationFn: data => (isEdit ? blogsAPI.update(id, data) : blogsAPI.create(data)),
+        onSuccess: () => {
+            toast.success(isEdit ? 'Blog updated' : 'Blog created');
+            queryClient.invalidateQueries({ queryKey: ['content-blog'] });
+            queryClient.invalidateQueries({ queryKey: ['blog', id] });
             navigate('/blogs');
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to save blog');
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+        onError: err => toast.error(err.response?.data?.error || 'Failed to save blog'),
+    });
 
-    if (fetching) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
-            </div>
-        );
-    }
+    if (isEdit && query.isLoading) return <div className="max-w-5xl space-y-4"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 rounded-md" /></div>;
+    if (isEdit && query.isError) return <ErrorState error={query.error} onRetry={query.refetch} />;
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
-            <h1 className="sr-only">Blog editor</h1>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <button
-                    onClick={() => navigate('/blogs')}
-                    className="flex items-center gap-2 text-slate-500 hover:text-brand-600 transition-colors"
-                >
-                    <FiArrowLeft />
-                    <span>Back to Blogs</span>
-                </button>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/blogs')}
-                        className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                            <FiSave />
-                        )}
-                        <span>{isEditMode ? 'Update Blog' : 'Publish Blog'}</span>
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-6">
-                {/* Main Content Form */}
-                <div className="col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-6">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                            <FiType />
-                            Content Details
-                        </h2>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Blog Title <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                placeholder="Enter an engaging title..."
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Slug (URL) <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="slug"
-                                value={formData.slug}
-                                onChange={handleChange} // Allow manual edit if needed
-                                placeholder="my-blog-post-url"
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Excerpt
-                            </label>
-                            <textarea
-                                name="excerpt"
-                                value={formData.excerpt}
-                                onChange={handleChange}
-                                rows="3"
-                                placeholder="Short summary for preview cards..."
-                                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Main Content
-                            </label>
-                            <div className="prose dark:prose-invert max-w-none">
-                                <CKEditor
-                                    editor={ClassicEditor}
-                                    data={formData.content}
-                                    onChange={(event, editor) => {
-                                        const data = editor.getData();
-                                        setFormData(prev => ({ ...prev, content: data }));
-                                    }}
-                                    config={{
-                                        toolbar: [
-                                            'heading', '|',
-                                            'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', '|',
-                                            'undo', 'redo'
-                                        ],
-                                        placeholder: 'Start writing your amazing blog post...'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sidebar Options */}
-                <div className="col-span-1 space-y-6">
-                    {/* Publishing Options */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Publishing</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Status
-                            </label>
-                            <select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            >
-                                <option value="published">Published</option>
-                                <option value="draft">Draft</option>
-                                <option value="archived">Archived</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
-                                id="featured"
-                                name="featured"
-                                checked={formData.featured}
-                                onChange={handleChange}
-                                className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500"
-                            />
-                            <label htmlFor="featured" className="text-sm text-slate-700 dark:text-slate-300 select-none cursor-pointer">
-                                Mark as Featured Post
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Meta Data */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Meta Data</h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Category
-                            </label>
-                            <input
-                                type="text"
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                placeholder="Technology, Guide..."
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Author
-                            </label>
-                            <input
-                                type="text"
-                                name="author"
-                                value={formData.author}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Read Time (min)
-                            </label>
-                            <input
-                                type="number"
-                                name="read_time"
-                                value={formData.read_time}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                SEO Keywords (comma separated)
-                            </label>
-                            <input
-                                type="text"
-                                name="keywords_input" // distinct name to avoid direct conflict with state keywords array
-                                defaultValue={formData.keywords ? formData.keywords.join(', ') : ''}
-                                // Controlled input is tricky with calculated value from array. 
-                                // Better to handle onChange locally or just use a helper. 
-                                // Let's try simple controlled:
-                                value={Array.isArray(formData.keywords) ? formData.keywords.join(', ') : ''}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    const tags = val.split(',').map(s => s.trim());
-                                    setFormData(prev => ({ ...prev, keywords: tags }));
-                                }}
-                                placeholder="seo, marketing, guide"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Feature Image */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 space-y-4">
-                        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                            <FiImage />
-                            Feature Image
-                        </h3>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Image URL
-                            </label>
-                            <input
-                                type="text"
-                                name="image"
-                                value={formData.image}
-                                onChange={handleChange}
-                                placeholder="https://..."
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
-
-                        {formData.image && (
-                            <div className="relative aspect-video rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-                                <img
-                                    src={formData.image}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => { e.target.style.display = 'none'; }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+        <div className="max-w-6xl">
+            <BlogForm key={id || 'new'} blog={query.data} isEdit={isEdit} onSave={save.mutate} saving={save.isPending} onCancel={() => navigate('/blogs')} />
         </div>
     );
 }
