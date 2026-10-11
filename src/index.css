@@ -4,48 +4,129 @@
 /* Enable class-based dark mode for Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ─── Design tokens ("Ledger", see docs/admin-revamp-plan.md §2) ───
+   Semantic colours switch with the .dark class, so new code uses one class
+   (bg-surface, text-fg-muted, border-border) and needs no dark: pair.
+   Existing slate-* + dark: code keeps working untouched. */
+:root {
+  --canvas: oklch(0.975 0.004 260);
+  --surface: oklch(0.995 0.002 260);
+  --surface-2: oklch(0.962 0.005 260);
+  --surface-3: oklch(0.935 0.007 260);
+  --border: oklch(0.905 0.006 260);
+  --border-strong: oklch(0.640 0.012 260);
+  --fg: oklch(0.225 0.020 262);
+  --fg-muted: oklch(0.440 0.020 262);
+  --fg-subtle: oklch(0.540 0.018 262);
+  --accent: oklch(0.545 0.214 259.5); /* logo blue #0E6BEF, nudged darker so links pass AA on accent-soft */
+  --accent-hover: oklch(0.500 0.200 260);
+  --accent-soft: oklch(0.978 0.014 255);
+  --accent-fg: oklch(0.990 0.002 260);
+  --success: oklch(0.520 0.130 155);
+  --success-soft: oklch(0.960 0.030 155);
+  --warning: oklch(0.530 0.120 70);
+  --warning-soft: oklch(0.960 0.030 80);
+  --danger: oklch(0.540 0.190 25);
+  --danger-soft: oklch(0.960 0.030 25);
+  --elev-pop: 0 4px 12px oklch(0.2 0.02 260 / 0.10);
+  --elev-modal: 0 16px 40px oklch(0.2 0.02 260 / 0.18);
+}
+
+.dark {
+  --canvas: oklch(0.165 0.014 266);
+  --surface: oklch(0.200 0.016 266);
+  --surface-2: oklch(0.182 0.015 266);
+  --surface-3: oklch(0.245 0.018 266);
+  --border: oklch(0.285 0.018 266);
+  --border-strong: oklch(0.540 0.020 266);
+  --fg: oklch(0.950 0.005 260);
+  --fg-muted: oklch(0.770 0.012 260);
+  --fg-subtle: oklch(0.670 0.012 260);
+  --accent: oklch(0.680 0.160 248);
+  --accent-hover: oklch(0.740 0.140 248);
+  --accent-soft: oklch(0.280 0.070 258);
+  --accent-fg: oklch(0.165 0.014 266);
+  --success: oklch(0.720 0.140 155);
+  --success-soft: oklch(0.270 0.060 155);
+  --warning: oklch(0.800 0.140 80);
+  --warning-soft: oklch(0.270 0.060 80);
+  --danger: oklch(0.700 0.170 25);
+  --danger-soft: oklch(0.270 0.060 25);
+  --elev-pop: 0 4px 12px oklch(0 0 0 / 0.35);
+  --elev-modal: 0 16px 40px oklch(0 0 0 / 0.45);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --shadow-pop: var(--elev-pop);
+  --shadow-modal: var(--elev-modal);
+}
+
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Geist pending decision (plan §5); Inter was declared but never loaded */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
 
-  --color-brand-50: #f0f3ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
-  --color-brand-950: #1e1b4b;
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
 
-  --color-accent-50: #fdf4ff;
-  --color-accent-100: #fae8ff;
-  --color-accent-200: #f5d0fe;
-  --color-accent-300: #f0abfc;
-  --color-accent-400: #e879f9;
-  --color-accent-500: #d946ef;
-  --color-accent-600: #c026d3;
-  --color-accent-700: #a21caf;
-  --color-accent-800: #86198f;
-  --color-accent-900: #701a75;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+
+  /* brand-* re-skinned from Tailwind indigo to the Napnix logo blue (hue 259.5);
+     every existing bg-brand-600 / text-brand-* picks this up with no page edits */
+  --color-brand-50: oklch(0.970 0.018 255);
+  --color-brand-100: oklch(0.935 0.040 256);
+  --color-brand-200: oklch(0.875 0.075 257);
+  --color-brand-300: oklch(0.790 0.120 258);
+  --color-brand-400: oklch(0.690 0.170 259);
+  --color-brand-500: oklch(0.615 0.200 259.5);
+  --color-brand-600: oklch(0.561 0.214 259.5);
+  --color-brand-700: oklch(0.500 0.200 260);
+  --color-brand-800: oklch(0.430 0.170 261);
+  --color-brand-900: oklch(0.370 0.140 262);
+  --color-brand-950: oklch(0.270 0.100 264);
 }
 
 @layer base {
   body {
-    @apply font-sans antialiased text-slate-700 bg-slate-50 dark:text-slate-200 dark:bg-slate-900;
+    @apply font-sans antialiased bg-canvas text-fg;
+  }
+
+  /* One visible keyboard focus style everywhere (pages still using outline-none override it; strip as touched) */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
 /* ─── Utility Classes ─── */
-
-.glass-panel {
-  @apply bg-white border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-800;
-}
-
-.glass-card {
-  @apply bg-white border border-slate-200 shadow-sm hover:shadow transition-shadow duration-150 dark:bg-slate-900 dark:border-slate-800;
-}
 
 /* Button Utilities */
 .btn {
@@ -66,15 +147,6 @@
 
 .btn-ghost {
   @apply text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white;
-}
-
-/* Card utilities */
-.card {
-  @apply bg-white border border-slate-100 rounded-xl shadow-sm dark:bg-slate-800 dark:border-slate-700;
-}
-
-.card-hover {
-  @apply bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow transition-shadow dark:bg-slate-800 dark:border-slate-700;
 }
 
 /* Custom Scrollbar */

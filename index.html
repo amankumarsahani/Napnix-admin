@@ -7,6 +7,13 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Napnix Admin</title>
+  <!-- Apply the saved theme before first paint (ThemeContext keeps it in sync afterwards) -->
+  <script>
+    try {
+      var t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      if (t === 'dark') document.documentElement.classList.add('dark');
+    } catch (e) {}
+  </script>
   <!-- SPA redirect script for GitHub Pages -->
   <script type="text/javascript">
     (function (l) {

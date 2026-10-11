@@ -163,34 +163,22 @@ export default function App() {
             position="top-right"
             toastOptions={{
               duration: 4000,
+              // Design tokens (index.css), so toasts follow light/dark automatically
               style: {
-                background: '#4f46e5',
-                color: '#ffffff',
-                borderRadius: '12px',
-                padding: '14px 18px',
-                fontSize: '14px',
+                background: 'var(--surface)',
+                color: 'var(--fg)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '13px',
                 fontWeight: '500',
-                boxShadow: '0 10px 25px -5px rgba(79, 70, 229, 0.4)',
+                boxShadow: 'var(--elev-pop)',
               },
               success: {
-                style: {
-                  background: '#10b981',
-                  boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.4)',
-                },
-                iconTheme: {
-                  primary: '#ffffff',
-                  secondary: '#10b981',
-                },
+                iconTheme: { primary: 'var(--success)', secondary: 'var(--surface)' },
               },
               error: {
-                style: {
-                  background: '#ef4444',
-                  boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.4)',
-                },
-                iconTheme: {
-                  primary: '#ffffff',
-                  secondary: '#ef4444',
-                },
+                iconTheme: { primary: 'var(--danger)', secondary: 'var(--surface)' },
                 duration: 5000,
               },
             }}

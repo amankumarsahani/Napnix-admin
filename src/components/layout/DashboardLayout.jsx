@@ -77,6 +77,21 @@ const UserDropdown = ({ user }) => {
     );
 };
 
+// Header title by first URL segment (mirrors the routes in App.jsx)
+const PAGE_TITLES = {
+    dashboard: 'Dashboard', clients: 'Clients', projects: 'Projects', leads: 'Leads',
+    inquiries: 'Inquiries', documents: 'Documents', templates: 'Templates', team: 'Team',
+    settings: 'Settings', transactions: 'Transactions', tenants: 'Tenants', campaigns: 'Campaigns',
+    'smtp-accounts': 'SMTP Accounts', workflows: 'Workflows', 'api-docs': 'API Docs',
+    'mobile-app': 'Mobile App', telemetry: 'Telemetry', 'site-analytics': 'Site Analytics',
+    pricing: 'Pricing', blogs: 'Blog', portfolio: 'Portfolio', 'case-studies': 'Case Studies',
+    tools: 'Tools', expenses: 'Expenses', support: 'Support Tickets', whatsapp: 'WhatsApp',
+};
+const EMAIL_MARKETING_TITLES = {
+    contacts: 'Contacts', templates: 'Email Templates', campaigns: 'Email Campaigns',
+    automations: 'Automations', smtp: 'Sending Accounts', domains: 'Domains',
+};
+
 export default function DashboardLayout() {
     const location = useLocation();
     const { user } = useAuth();
@@ -95,13 +110,10 @@ export default function DashboardLayout() {
     }, []);
 
     const getPageTitle = () => {
-        const path = location.pathname;
-        if (path.includes('dashboard')) return 'Dashboard';
-        if (path.includes('clients')) return 'Clients';
-        if (path.includes('projects')) return 'Projects';
-        if (path.includes('leads')) return 'Leads';
-        if (path.includes('mobile-app')) return 'Mobile App';
-        return 'Dashboard';
+        const [first = 'dashboard', second] = location.pathname.split('/').filter(Boolean);
+        if (first === 'infrastructure') return second === 'backups' ? 'Backups' : 'Servers';
+        if (first === 'email-marketing') return EMAIL_MARKETING_TITLES[second] || 'Email Marketing';
+        return PAGE_TITLES[first] || 'Napnix Admin';
     };
 
     return (
