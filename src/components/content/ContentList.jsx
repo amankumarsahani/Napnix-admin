@@ -94,7 +94,7 @@ export default function ContentList({ config }) {
                             render: item => (
                                 <span className="flex flex-wrap items-center gap-1">
                                     <Badge tone={item.status === 'published' ? 'success' : 'warning'} className="capitalize">{String(item.status || 'draft').replace(/_/g, ' ')}</Badge>
-                                    {item.featured && <Badge tone="info">Featured</Badge>}
+                                    {!!item.featured && <Badge tone="info">Featured</Badge>}
                                 </span>
                             ),
                         },

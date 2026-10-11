@@ -105,7 +105,7 @@ export default function SmtpAccounts() {
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
                                         <h2 className="font-semibold text-fg">{acc.name}</h2>
-                                        {acc.is_default && <Badge tone="info">Default</Badge>}
+                                        {!!acc.is_default && <Badge tone="info">Default</Badge>}
                                     </div>
                                     <p className="font-mono text-xs text-fg-muted">{acc.host}:{acc.port} · {acc.auth_user}</p>
                                     {acc.from_email && acc.from_email !== acc.auth_user && <p className="text-xs text-fg-subtle">Sends as {acc.from_email}</p>}
