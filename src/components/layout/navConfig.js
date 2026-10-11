@@ -33,7 +33,7 @@ export const NAV_GROUPS = [
         ],
     },
     {
-        id: 'email', title: 'Email Marketing',
+        id: 'email', title: 'Email Marketing', hidden: true, // NexMail is not a shipped product: out of the sidebar and Cmd-K, routes and titles kept
         items: [
             { name: 'Overview', path: '/email-marketing', icon: FiTrendingUp, roles: ADMIN, end: true, crumb: 'Email Marketing' },
             { name: 'Contacts', path: '/email-marketing/contacts', icon: FiUsers, roles: ADMIN },
@@ -84,6 +84,7 @@ export const canSee = (item, role) => !item.roles || item.roles.includes(role ||
 /** Groups with only the items this role may see (empty groups dropped). */
 export function navForRole(role) {
     return NAV_GROUPS
+        .filter(group => !group.hidden)
         .map(group => ({ ...group, items: group.items.filter(item => canSee(item, role)) }))
         .filter(group => group.items.length > 0);
 }
