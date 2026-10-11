@@ -1,1567 +1,196 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-    FiGlobe, FiDatabase, FiActivity, FiTerminal, FiTrash2,
-    FiRefreshCw, FiExternalLink, FiServer, FiCreditCard, FiCheckCircle, FiXCircle, FiClock
-} from '../../components/icons/FeatherIcons';
-import { tenantsAPI, billingAPI, plansAPI, toolsAPI } from '../../api';
+import { useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { createStatusColorFn } from '../../utils/statusColors';
-import ConfirmModal from '../../components/common/ConfirmModal';
-import { Button, Checkbox, Dialog, Field, Input } from '../../components/ui';
+import { FiChevronDown, FiCreditCard, FiFileText } from 'react-icons/fi';
+import { tenantsAPI } from '../../api';
+import {
+    Button, ConfirmDialog, ErrorState, Menu, PageHeader, Skeleton, StatusBadge, Tabs, cx,
+} from '../../components/ui';
+import OverviewTab from './detail/OverviewTab';
+import BillingTab from './detail/BillingTab';
+import ToolsTab from './detail/ToolsTab';
+import LogsTab from './detail/LogsTab';
+import { DeleteDialog, DomainDialog } from './detail/TenantDialogs';
+import { PROCESS_DOT, apiError } from './detail/helpers';
 
-const TenantDetail = () => {
+const TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'billing', label: 'Billing' },
+    { id: 'tools', label: 'Tools' },
+    { id: 'logs', label: 'Logs' },
+];
+const DONE = { start: 'Tenant started', stop: 'Tenant stopped', restart: 'Tenant restarted', provision: 'Tenant provisioned', unsuspend: 'Tenant unsuspended' };
+
+export default function TenantDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [tenant, setTenant] = useState(null);
-    const [subscription, setSubscription] = useState(null);
-    const [plans, setPlans] = useState([]);
-    const [tools, setTools] = useState([]);
-    const [tenantTools, setTenantTools] = useState([]);
-    const [toolPlans, setToolPlans] = useState({});
-    const [payments, setPayments] = useState([]);
-    const [paymentsLoading, setPaymentsLoading] = useState(false);
-    const [logs, setLogs] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [logsLoading, setLogsLoading] = useState(false);
-    const [actionLoading, setActionLoading] = useState(null);
-    const [autoRefresh, setAutoRefresh] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleteOptions, setDeleteOptions] = useState({ dropDatabase: false });
-    const [deleteLoading, setDeleteLoading] = useState(false);
-    const [confirmText, setConfirmText] = useState('');
-    const [showDomainHelp, setShowDomainHelp] = useState(false);
-    const [showDomainModal, setShowDomainModal] = useState(false);
-    const [customDomains, setCustomDomains] = useState({ crm: '', storefront: '', api: '' });
-    const [domainLoading, setDomainLoading] = useState(false);
-    const [repairingDns, setRepairingDns] = useState(false);
-    const [runningMigration, setRunningMigration] = useState(false);
-    const [sendingAgreement, setSendingAgreement] = useState(false);
-    const [sendingBillingInvoice, setSendingBillingInvoice] = useState(false);
-    const [savingBilling, setSavingBilling] = useState(false);
-    const [subscriptionActionLoading, setSubscriptionActionLoading] = useState(null);
-    const [toolActionLoading, setToolActionLoading] = useState(null);
-    const [billingForm, setBillingForm] = useState({
-        plan_id: '',
-        status: 'trial',
-        trial_ends_at: '',
-        billing_cycle: 'monthly',
-        amount: '',
-        follow_up_action: 'none'
+    const qc = useQueryClient();
+    const [params, setParams] = useSearchParams();
+    const tab = TABS.some(t => t.id === params.get('tab')) ? params.get('tab') : 'overview';
+    const [confirm, setConfirm] = useState(null); // { title, message, confirmText, variant, run }
+    const [domainsOpen, setDomainsOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+
+    const query = useQuery({
+        queryKey: ['tenant', id],
+        queryFn: () => tenantsAPI.getById(id).then(r => r.data),
+        // follow provisioning until it settles
+        refetchInterval: q => (q.state.data?.process_status === 'starting' ? 4000 : false),
     });
-    const [toolForms, setToolForms] = useState({});
-    const [billingRequestForm, setBillingRequestForm] = useState({
-        billing_month: new Date().toISOString().slice(0, 7),
-        due_date: ''
+    const tenant = query.data;
+
+    const refresh = () => {
+        qc.invalidateQueries({ queryKey: ['tenant', id] });
+        qc.invalidateQueries({ queryKey: ['tenants'] });
+        qc.invalidateQueries({ queryKey: ['tenant-logs', id] });
+    };
+    const fail = (fallback) => err => toast.error(err.response?.data?.provisionError || apiError(err, fallback));
+
+    const process = useMutation({
+        mutationFn: action => tenantsAPI[action](id),
+        onSuccess: (_, action) => { toast.success(DONE[action]); refresh(); },
+        onError: (err, action) => fail(`Failed to ${action} tenant`)(err),
     });
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
-    const logsRef = useRef(null);
-    const refreshInterval = useRef(null);
+    const endTrial = useMutation({
+        mutationFn: () => tenantsAPI.endTrial(id),
+        onSuccess: r => { toast.success(r.message || 'Trial ended. Payment email sent.'); refresh(); },
+        onError: fail('Failed to end trial'),
+    });
+    const paymentLink = useMutation({
+        mutationFn: () => tenantsAPI.sendPaymentLink(id, { billing_cycle: 'monthly' }),
+        onSuccess: r => toast.success(r.message || 'Payment link sent.'),
+        onError: fail('Failed to send payment link'),
+    });
+    const agreement = useMutation({
+        mutationFn: () => tenantsAPI.sendAgreement(id),
+        onSuccess: r => toast.success(r.message || 'Agreement sent to the tenant email'),
+        onError: fail('Failed to send agreement'),
+    });
+    const domains = useMutation({
+        mutationFn: d => tenantsAPI.setupCustomDomain(id, d),
+        onSuccess: () => { toast.success('Custom domains configured'); setDomainsOpen(false); refresh(); },
+        onError: fail('Failed to set up domains'),
+    });
+    const migration = useMutation({
+        mutationFn: () => tenantsAPI.runMigration(id),
+        onSuccess: () => toast.success('Migration complete: all tables are up to date'),
+        onError: fail('Migration failed'),
+    });
+    const repair = useMutation({
+        mutationFn: () => tenantsAPI.repairDns(id),
+        onSuccess: r => (r.success ? (toast.success('DNS repaired: domains are active'), refresh()) : toast.error('Repair attempted, but the Pages domain may still be starting. Try again in 30s.')),
+        onError: fail('DNS repair failed'),
+    });
+    const del = useMutation({
+        mutationFn: opts => tenantsAPI.fullDelete(id, opts),
+        onSuccess: () => { toast.success('Tenant deleted'); qc.invalidateQueries({ queryKey: ['tenants'] }); navigate('/tenants'); },
+        onError: fail('Failed to delete tenant'),
+    });
 
-    const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
+    if (query.isLoading) return <div className="max-w-6xl space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-10 rounded-md" /><Skeleton className="h-64 rounded-md" /></div>;
+    if (query.isError || !tenant) return <ErrorState error={query.error || { message: 'Tenant not found' }} onRetry={query.refetch} />;
 
-    useEffect(() => {
-        fetchTenant();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]);
-
-    useEffect(() => {
-        if (tenant) {
-            fetchLogs();
-            fetchPayments();
-            fetchSubscription();
-            fetchTenantTools();
-            setBillingForm(prev => ({
-                ...prev,
-                plan_id: tenant.plan_id ? String(tenant.plan_id) : '',
-                status: tenant.status || 'trial',
-                trial_ends_at: tenant.trial_ends_at ? new Date(tenant.trial_ends_at).toISOString().split('T')[0] : '',
-                amount: ''
-            }));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [tenant?.id]);
-
-    useEffect(() => {
-        fetchPlans();
-        fetchTools();
-    }, []);
-
-    useEffect(() => {
-        if (autoRefresh && tenant) {
-            refreshInterval.current = setInterval(fetchLogs, 5000);
-        } else {
-            clearInterval(refreshInterval.current);
-        }
-        return () => clearInterval(refreshInterval.current);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoRefresh, tenant?.id]);
-
-    const fetchTenant = async () => {
-        try {
-            setLoading(true);
-            const response = await tenantsAPI.getById(id);
-            setTenant(response.data);
-        } catch {
-            toast.error('Failed to fetch tenant');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchPayments = async () => {
-        if (!id) return;
-        try {
-            setPaymentsLoading(true);
-            const response = await billingAPI.getTenantPayments(id);
-            if (response.success) {
-                setPayments(response.data);
-            }
-        } catch {
-            // silently ignore
-        } finally {
-            setPaymentsLoading(false);
-        }
-    };
-
-    const fetchSubscription = async () => {
-        if (!id) return;
-        try {
-            const response = await billingAPI.getSubscription(id);
-            if (response.success) {
-                setSubscription(response.data);
-                setBillingForm(prev => ({
-                    ...prev,
-                    billing_cycle: response.data?.billing_cycle || prev.billing_cycle || 'monthly'
-                }));
-            }
-        } catch {
-            setSubscription(null);
-        }
-    };
-
-    const fetchPlans = async () => {
-        try {
-            const response = await plansAPI.getAll();
-            if (response.success) {
-                setPlans(response.data || []);
-            }
-        } catch {
-            // silently ignore
-        }
-    };
-
-    const fetchTools = async () => {
-        try {
-            const response = await toolsAPI.getAll();
-            if (response.success) {
-                const toolList = response.data || [];
-                setTools(toolList);
-
-                const planResults = await Promise.all(
-                    toolList.map(async (tool) => {
-                        const plansResponse = await toolsAPI.getPlans(tool.id);
-                        return [tool.id, plansResponse.success ? (plansResponse.data || []) : []];
-                    })
-                );
-
-                setToolPlans(Object.fromEntries(planResults));
-            }
-        } catch {
-            // silently ignore
-        }
-    };
-
-    const fetchTenantTools = async () => {
-        if (!id) return;
-        try {
-            const response = await toolsAPI.getTenantTools(id);
-            if (response.success) {
-                const assignments = response.data || [];
-                setTenantTools(assignments);
-                setToolForms((prev) => {
-                    const next = { ...prev };
-                    assignments.forEach((assignment) => {
-                        next[assignment.tool_id] = {
-                            tool_plan_id: assignment.tool_plan_id ? String(assignment.tool_plan_id) : '',
-                            trial_days: assignment.status === 'trial' && assignment.trial_ends_at
-                                ? Math.max(1, Math.ceil((new Date(assignment.trial_ends_at).getTime() - Date.now()) / 86400000))
-                                : ''
-                        };
-                    });
-                    return next;
-                });
-            }
-        } catch {
-            setTenantTools([]);
-        }
-    };
-
-    const fetchLogs = async () => {
-        if (!tenant) return;
-        try {
-            setLogsLoading(true);
-            const response = await tenantsAPI.getLogs(tenant.id, 150);
-            setLogs(response.data?.logs || 'No logs available');
-            if (logsRef.current) {
-                logsRef.current.scrollTop = logsRef.current.scrollHeight;
-            }
-        } catch {
-            setLogs('Error fetching logs');
-        } finally {
-            setLogsLoading(false);
-        }
-    };
-
-    // Stop/restart interrupt the customer's live CRM, so ask first (same wording as the list)
-    const confirmProcess = (action) => setConfirmState({
-        isOpen: true,
+    const busy = process.isPending;
+    const failed = tenant.process_status === 'error' || tenant.provision_error;
+    const askProcess = action => setConfirm({
         title: action === 'stop' ? 'Stop tenant?' : 'Restart tenant?',
         message: action === 'stop'
-            ? `${tenant.name}'s CRM will be offline for its users until you start it again.`
-            : `${tenant.name}'s CRM will be unavailable for a few seconds while it restarts.`,
-        variant: action === 'stop' ? 'danger' : 'info',
+            ? `${tenant.name}'s CRM goes offline for its users until you start it again.`
+            : `${tenant.name}'s CRM is unavailable for a few seconds while it restarts.`,
         confirmText: action === 'stop' ? 'Stop tenant' : 'Restart',
-        onConfirm: () => { setConfirmState({ isOpen: false }); handleAction(action); },
+        variant: action === 'stop' ? 'danger' : 'primary',
+        run: () => process.mutate(action),
     });
 
-    const handleAction = async (action) => {
-        setActionLoading(action);
-        try {
-            switch (action) {
-                case 'start':
-                    await tenantsAPI.start(tenant.id);
-                    toast.success('Tenant started');
-                    break;
-                case 'stop':
-                    await tenantsAPI.stop(tenant.id);
-                    toast.success('Tenant stopped');
-                    break;
-                case 'restart':
-                    await tenantsAPI.restart(tenant.id);
-                    toast.success('Tenant restarted');
-                    break;
-                case 'provision':
-                    await tenantsAPI.provision(tenant.id);
-                    toast.success('Tenant provisioned');
-                    break;
-                case 'unsuspend':
-                    await tenantsAPI.unsuspend(tenant.id);
-                    toast.success('Tenant unsuspended');
-                    break;
-            }
-            await fetchTenant();
-            await fetchLogs();
-        } catch (error) {
-            const apiError = error.response?.data;
-            toast.error(apiError?.provisionError || apiError?.error || `Failed to ${action} tenant`);
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const handleFullDelete = async () => {
-        if (confirmText !== tenant.slug) {
-            toast.error('Please type the tenant slug to confirm');
-            return;
-        }
-
-        setDeleteLoading(true);
-        try {
-            await tenantsAPI.fullDelete(tenant.id, deleteOptions);
-            toast.success('Tenant fully deleted');
-            navigate('/tenants');
-        } catch {
-            toast.error('Failed to delete tenant');
-        } finally {
-            setDeleteLoading(false);
-        }
-    };
-
-    const handleSetupDomain = async () => {
-        if (!customDomains.crm && !customDomains.storefront) {
-            toast.error('Enter at least one domain');
-            return;
-        }
-        setDomainLoading(true);
-        try {
-            await tenantsAPI.setupCustomDomain(tenant.id, { crm: customDomains.crm, storefront: customDomains.storefront });
-            toast.success('Custom domains configured!');
-            setShowDomainModal(false);
-            fetchTenant();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to setup domains');
-        } finally {
-            setDomainLoading(false);
-        }
-    };
-
-    const handleRunMigration = async () => {
-        if (!window.confirm(`Run database migrations for tenant "${tenant.slug}"? This will create any missing tables for the ${tenant.industry_type || 'core'} industry.`)) return;
-        setRunningMigration(true);
-        try {
-            await tenantsAPI.runMigration(tenant.id);
-            toast.success('Migration completed — all tables are up to date');
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Migration failed');
-        } finally {
-            setRunningMigration(false);
-        }
-    };
-
-    const handleRepairDns = async () => {
-        if (!window.confirm('Re-attach Pages custom domains and wait for active state before DNS creation. This may take up to 60s. Continue?')) return;
-        setRepairingDns(true);
-        try {
-            const result = await tenantsAPI.repairDns(tenant.id);
-            if (result.success) {
-                toast.success('DNS repaired — domains are now active');
-                fetchTenant();
-            } else {
-                toast.error('Repair attempted but Pages domain may still be initializing. Try again in 30s.');
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'DNS repair failed');
-        } finally {
-            setRepairingDns(false);
-        }
-    };
-
-    const openDomainModal = () => {
-        // Pre-fill with existing custom domains
-        setCustomDomains({
-            crm: tenant.custom_domain_crm || '',
-            storefront: tenant.custom_domain_storefront || '',
-            api: ''
-        });
-        setShowDomainModal(true);
-    };
-
-    const handleEndTrial = () => {
-        setConfirmState({
-            isOpen: true,
-            title: 'End Trial',
-            message: 'Are you sure you want to end this trial and suspend the tenant? This will send them an email requesting payment.',
-            variant: 'warning',
-            confirmText: 'End Trial',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                setActionLoading('endTrial');
-                try {
-                    const res = await tenantsAPI.endTrial(tenant.id);
-                    toast.success(res.message || 'Trial ended successfully. Payment email sent.');
-                    fetchTenant();
-                } catch (error) {
-                    toast.error(error.response?.data?.error || 'Failed to end trial');
-                } finally {
-                    setActionLoading(null);
-                }
-            },
-        });
-    };
-
-    const handleSendPaymentLink = () => {
-        setConfirmState({
-            isOpen: true,
-            title: 'Send Payment Link',
-            message: 'Send a payment link email to this tenant to subscribe?',
-            variant: 'info',
-            confirmText: 'Send Link',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                setActionLoading('sendPayment');
-                try {
-                    const res = await tenantsAPI.sendPaymentLink(tenant.id, {
-                        billing_cycle: billingForm.billing_cycle || 'monthly'
-                    });
-                    toast.success(res.message || 'Payment link sent successfully.');
-                } catch (error) {
-                    toast.error(error.response?.data?.error || 'Failed to send payment link');
-                } finally {
-                    setActionLoading(null);
-                }
-            },
-        });
-    };
-
-    const handleSendAgreement = async () => {
-        setSendingAgreement(true);
-        try {
-            const res = await tenantsAPI.sendAgreement(tenant.id);
-            toast.success(res.message || 'Agreement sent to tenant email');
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to send agreement');
-        } finally {
-            setSendingAgreement(false);
-        }
-    };
-
-    const handleBillingFormChange = (field, value) => {
-        setBillingForm(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleToolFormChange = (toolId, field, value) => {
-        setToolForms((prev) => ({
-            ...prev,
-            [toolId]: {
-                ...(prev[toolId] || {}),
-                [field]: value
-            }
-        }));
-    };
-
-    const handleBillingRequestFormChange = (field, value) => {
-        setBillingRequestForm((prev) => ({ ...prev, [field]: value }));
-    };
-
-    const handleSaveBilling = async () => {
-        if (!tenant) return;
-
-        setSavingBilling(true);
-        try {
-            await tenantsAPI.update(tenant.id, {
-                plan_id: billingForm.plan_id ? Number(billingForm.plan_id) : null,
-                status: billingForm.status,
-                trial_ends_at: billingForm.trial_ends_at || null
-            });
-
-            if (billingForm.follow_up_action === 'send_payment_link') {
-                const response = await tenantsAPI.sendPaymentLink(tenant.id, {
-                    billing_cycle: billingForm.billing_cycle
-                });
-                toast.success(response.message || 'Billing updated and payment link sent.');
-            } else if (billingForm.follow_up_action === 'mark_paid') {
-                const response = await tenantsAPI.markPaid(tenant.id, {
-                    billing_cycle: billingForm.billing_cycle,
-                    amount: billingForm.amount ? Number(billingForm.amount) : undefined
-                });
-                toast.success(response.message || 'Billing updated and tenant marked as paid.');
-            } else {
-                toast.success('Billing settings updated.');
-            }
-
-            await fetchTenant();
-            await fetchSubscription();
-            await fetchPayments();
-            setBillingForm(prev => ({ ...prev, amount: '', follow_up_action: 'none' }));
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to update billing settings');
-        } finally {
-            setSavingBilling(false);
-        }
-    };
-
-    const handlePauseSubscription = async () => {
-        if (!tenant) return;
-        setSubscriptionActionLoading('pause');
-        try {
-            const response = await billingAPI.pauseSubscription(tenant.id);
-            toast.success(response.message || 'Subscription paused.');
-            await fetchTenant();
-            await fetchSubscription();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to pause subscription');
-        } finally {
-            setSubscriptionActionLoading(null);
-        }
-    };
-
-    const handleSendBillingInvoice = async () => {
-        if (!tenant) return;
-
-        setSendingBillingInvoice(true);
-        try {
-            const response = await tenantsAPI.sendBillingInvoice(tenant.id, {
-                billing_cycle: billingForm.billing_cycle,
-                billing_month: billingRequestForm.billing_month,
-                due_date: billingRequestForm.due_date || undefined,
-                amount: effectiveAmount ? Number(effectiveAmount) : undefined
-            });
-            toast.success(response.message || 'Invoice and payment link sent.');
-            await fetchPayments();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to send billing invoice');
-        } finally {
-            setSendingBillingInvoice(false);
-        }
-    };
-
-    const handleResumeSubscription = async () => {
-        if (!tenant) return;
-        setSubscriptionActionLoading('resume');
-        try {
-            const response = await billingAPI.resumeSubscription(tenant.id);
-            toast.success(response.message || 'Subscription resumed.');
-            await fetchTenant();
-            await fetchSubscription();
-        } catch (error) {
-            toast.error(error.response?.data?.error || 'Failed to resume subscription');
-        } finally {
-            setSubscriptionActionLoading(null);
-        }
-    };
-
-    const handleCancelSubscription = (immediate) => {
-        if (!tenant) return;
-        setConfirmState({
-            isOpen: true,
-            title: immediate ? 'Cancel Subscription Now' : 'Cancel At Period End',
-            message: immediate
-                ? 'This will cancel the current subscription immediately and stop active tenant access.'
-                : 'This will ask Razorpay to cancel the subscription at the end of the current billing period.',
-            variant: 'warning',
-            confirmText: immediate ? 'Cancel Now' : 'Schedule Cancel',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                setSubscriptionActionLoading(immediate ? 'cancel-now' : 'cancel-later');
-                try {
-                    const response = await billingAPI.cancelSubscription(tenant.id, { immediate });
-                    toast.success(response.message || 'Subscription updated.');
-                    await fetchTenant();
-                    await fetchSubscription();
-                } catch (error) {
-                    toast.error(error.response?.data?.error || 'Failed to cancel subscription');
-                } finally {
-                    setSubscriptionActionLoading(null);
-                }
-            }
-        });
-    };
-
-    const handleEnableTool = async (tool) => {
-        if (!tenant) return;
-        const formState = toolForms[tool.id] || {};
-        setToolActionLoading(`enable-${tool.id}`);
-        try {
-            if (tool.slug === 'nexcrm') {
-                const response = await toolsAPI.enableCRM(tenant.id, {
-                    plan_id: billingForm.plan_id ? Number(billingForm.plan_id) : tenant.plan_id,
-                    server_id: tenant.server_id || undefined
-                });
-                toast.success(response.message || 'CRM provisioning started.');
-            } else {
-                const response = await toolsAPI.enableTool(tenant.id, {
-                    tool_id: tool.id,
-                    tool_plan_id: formState.tool_plan_id ? Number(formState.tool_plan_id) : null,
-                    trial_days: formState.trial_days ? Number(formState.trial_days) : null
-                });
-                toast.success(response.message || `${tool.name} enabled.`);
-            }
-            await fetchTenant();
-            await fetchTenantTools();
-        } catch (error) {
-            toast.error(error.response?.data?.error || `Failed to enable ${tool.name}`);
-        } finally {
-            setToolActionLoading(null);
-        }
-    };
-
-    const handleDisableTool = async (tool) => {
-        if (!tenant) return;
-        setToolActionLoading(`disable-${tool.id}`);
-        try {
-            const response = await toolsAPI.disableTool(tenant.id, { tool_id: tool.id });
-            toast.success(response.message || `${tool.name} disabled.`);
-            await fetchTenantTools();
-        } catch (error) {
-            toast.error(error.response?.data?.error || `Failed to disable ${tool.name}`);
-        } finally {
-            setToolActionLoading(null);
-        }
-    };
-
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text);
-        toast.success('Copied to clipboard');
-    };
-
-    const getStatusColor = createStatusColorFn('tenant');
-
-    const getPaymentStatusIcon = (status) => {
-        switch (status?.toLowerCase()) {
-            case 'success':
-            case 'succeeded':
-                return <FiCheckCircle className="w-4 h-4 text-emerald-500" />;
-            case 'failed':
-                return <FiXCircle className="w-4 h-4 text-rose-500" />;
-            default:
-                return <FiClock className="w-4 h-4 text-amber-500" />;
-        }
-    };
-
-    const getProcessStatusColor = (status) => {
-        switch (status) {
-            case 'running': return 'bg-emerald-500';
-            case 'stopped': return 'bg-slate-400';
-            case 'starting': return 'bg-amber-500 animate-pulse';
-            case 'error': return 'bg-rose-500';
-            default: return 'bg-slate-400';
-        }
-    };
-
-    const selectedPlan = plans.find((plan) => String(plan.id) === String(billingForm.plan_id));
-    const suggestedAmount = selectedPlan
-        ? Number(billingForm.billing_cycle === 'yearly' ? selectedPlan.price_yearly : selectedPlan.price_monthly)
-        : 0;
-    const effectiveAmount = billingForm.amount || (suggestedAmount ? String(suggestedAmount) : '');
-    const tenantToolMap = tenantTools.reduce((acc, assignment) => {
-        acc[assignment.tool_id] = assignment;
-        return acc;
-    }, {});
-    const trialDaysRemaining = tenant?.trial_ends_at
-        ? Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / 86400000)
-        : null;
-    const currentMonthValue = new Date().toISOString().slice(0, 7);
-    const previousMonthDate = new Date();
-    previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);
-    const previousMonthValue = `${previousMonthDate.getFullYear()}-${String(previousMonthDate.getMonth() + 1).padStart(2, '0')}`;
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
-            </div>
+    let processControls;
+    if (tenant.process_status === 'running') {
+        processControls = (
+            <>
+                <Button onClick={() => askProcess('restart')} disabled={busy}>Restart</Button>
+                <Button variant="danger" onClick={() => askProcess('stop')} disabled={busy}>Stop</Button>
+            </>
         );
+    } else if (tenant.process_status === 'starting') {
+        processControls = <Button disabled loading>Provisioning{tenant.provision_step ? `: ${tenant.provision_step.replace(/_/g, ' ')}` : ''}</Button>;
+    } else if (failed || !tenant.assigned_port || !tenant.db_name) {
+        processControls = <Button variant="primary" onClick={() => process.mutate('provision')} loading={busy}>Retry provisioning</Button>;
+    } else {
+        processControls = <Button variant="primary" onClick={() => process.mutate('start')} loading={busy}>Start</Button>;
     }
 
-    if (!tenant) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-fg-muted">Tenant not found</p>
-            </div>
-        );
-    }
-
-    const infrastructureReady = Boolean(
-        tenant.assigned_port
-        && tenant.db_name
-        && tenant.process_status !== 'starting'
-        && tenant.process_status !== 'error'
-        && !tenant.provision_error
-    );
+    const moreItems = [
+        { label: 'Send payment link', icon: <FiCreditCard className="size-4" />, onSelect: () => setConfirm({ title: 'Send payment link?', message: 'Emails this tenant a link to subscribe.', confirmText: 'Send link', variant: 'primary', run: () => paymentLink.mutate() }) },
+        { label: 'Send agreement', icon: <FiFileText className="size-4" />, onSelect: () => agreement.mutate() },
+        ...(tenant.status === 'trial' ? [{
+            label: 'End trial and request payment', icon: <FiCreditCard className="size-4" />, danger: true, separatorBefore: true,
+            onSelect: () => setConfirm({ title: 'End this trial?', message: 'The tenant is suspended and emailed a payment request.', confirmText: 'End trial', variant: 'danger', run: () => endTrial.mutate() }),
+        }] : []),
+    ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/tenants')}
-                        className="p-2 text-fg-muted hover:text-slate-700 hover:bg-surface-2 rounded-lg transition-colors"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-fg">{tenant.name}</h1>
-                        <p className="text-fg-muted font-mono text-xs">{tenant.slug}</p>
-                    </div>
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(tenant.status)}`}>
-                        {tenant.status}
-                    </span>
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${getProcessStatusColor(tenant.process_status)}`}></div>
-                        <span className="text-sm text-fg-muted capitalize">
+        <div className="max-w-6xl space-y-4">
+            <PageHeader
+                back={{ to: '/tenants', label: 'Tenants' }}
+                title={tenant.name}
+                description={
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="font-mono text-xs">{tenant.slug}</span>
+                        <StatusBadge entity="tenant" status={tenant.status} />
+                        <span className="inline-flex items-center gap-1.5 text-sm capitalize">
+                            <span aria-hidden="true" className={cx('size-2 rounded-full', PROCESS_DOT[tenant.process_status] || 'bg-fg-subtle')} />
                             {tenant.process_status || 'stopped'}
                         </span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    {tenant.process_status === 'running' ? (
-                        <>
-                            <button
-                                onClick={() => confirmProcess('stop')}
-                                disabled={actionLoading}
-                                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                            >
-                                Stop
-                            </button>
-                            <button
-                                onClick={() => confirmProcess('restart')}
-                                disabled={actionLoading}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                            >
-                                Restart
-                            </button>
-                        </>
-                    ) : tenant.process_status === 'starting' ? (
-                        <button
-                            disabled
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg opacity-70 cursor-wait transition-colors flex items-center gap-2"
-                        >
-                            Provisioning{tenant.provision_step ? `: ${tenant.provision_step.replace(/_/g, ' ')}` : '...'}
-                        </button>
-                    ) : tenant.process_status === 'error' || tenant.provision_error || !tenant.assigned_port || !tenant.db_name ? (
-                        <button
-                            onClick={() => handleAction('provision')}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                        >
-                            {actionLoading === 'provision' ? 'Retrying...' : 'Retry Provisioning'}
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => handleAction('start')}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                        >
-                            Start
-                        </button>
-                    )}
+                    </span>
+                }
+                actions={
+                    <>
+                        {processControls}
+                        <Menu label="More actions" items={moreItems}
+                            trigger={<>More<FiChevronDown aria-hidden="true" className="size-4" /></>}
+                            buttonClassName="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border-strong bg-surface px-3.5 text-sm text-fg hover:bg-surface-2" />
+                    </>
+                }
+            />
 
-                    <div className="w-px h-8 bg-surface-3 mx-2"></div>
-
-                    {tenant.status === 'trial' && (
-                        <button
-                            onClick={handleEndTrial}
-                            disabled={actionLoading === 'endTrial'}
-                            className="px-4 py-2 bg-brand-600 dark:bg-brand-500 text-white rounded-lg hover:bg-brand-700 dark:hover:bg-brand-600 disabled:opacity-50 transition-colors flex items-center gap-2"
-                        >
-                            {actionLoading === 'endTrial' ? (
-                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                            ) : (
-                                <FiCreditCard className="w-4 h-4" />
-                            )}
-                            End Trial
-                        </button>
-                    )}
-
-                    <button
-                        onClick={handleSendPaymentLink}
-                        disabled={actionLoading === 'sendPayment'}
-                        className="px-4 py-2 border border-border-strong text-fg hover:bg-surface-2 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
-                        title="Send payment link email without suspending tenant"
-                    >
-                        {actionLoading === 'sendPayment' ? (
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                        ) : (
-                            <FiCreditCard className="w-4 h-4 text-brand-500" />
-                        )}
-                        Send Payment Link
-                    </button>
-
-                    <button
-                        onClick={handleSendAgreement}
-                        disabled={sendingAgreement}
-                        className="px-4 py-2 bg-brand-50 dark:bg-brand-900/30 border border-brand-200 dark:border-brand-700 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
-                        title="Send service agreement PDF to tenant email"
-                    >
-                        {sendingAgreement ? (
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        )}
-                        {sendingAgreement ? 'Sending...' : 'Send Agreement'}
-                    </button>
-                </div>
-            </div>
-
-            {(tenant.process_status === 'error' || tenant.provision_error) && (
-                <div className="rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 px-5 py-4">
-                    <div className="font-semibold text-rose-800 dark:text-rose-200">Provisioning failed</div>
-                    <div className="mt-1 text-sm text-rose-700 dark:text-rose-300">
-                        {tenant.provision_step && (
-                            <span className="font-medium">Step: {tenant.provision_step.replace(/_/g, ' ')}. </span>
-                        )}
+            {failed && (
+                <div role="alert" className="rounded-sm border border-danger/30 bg-danger-soft px-4 py-3">
+                    <p className="font-medium text-danger">Provisioning failed</p>
+                    <p className="mt-0.5 text-sm text-danger">
+                        {tenant.provision_step && <span className="font-medium">Step: {tenant.provision_step.replace(/_/g, ' ')}. </span>}
                         {tenant.provision_error || 'The tenant infrastructure is incomplete. Retry provisioning to continue from the existing database and port.'}
-                    </div>
+                    </p>
                 </div>
             )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-surface rounded-md p-4 border border-border">
-                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Port</div>
-                    <div className="text-xl font-bold text-fg">{tenant.assigned_port || '-'}</div>
-                </div>
-                <div className="bg-surface rounded-md p-4 border border-border">
-                    <div className="text-xs font-medium text-fg-muted uppercase mb-1 flex items-center gap-1">
-                        <FiServer className="text-brand-500" /> Server
-                    </div>
-                    <div className="text-lg font-bold text-fg truncate">{tenant.server_name || 'Primary'}</div>
-                </div>
-                <div className="bg-surface rounded-md p-4 border border-border">
-                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Industry</div>
-                    <div className="text-lg font-semibold text-fg capitalize">{tenant.industry_type || 'general'}</div>
-                </div>
-                <div className="bg-surface rounded-md p-4 border border-border">
-                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Plan</div>
-                    <div className="text-lg font-semibold text-purple-600">{tenant.plan_name || 'Starter'}</div>
-                </div>
-            </div>
+            <Tabs label="Tenant sections" tabs={TABS} value={tab} onChange={t => setParams({ tab: t }, { replace: true })} />
 
-            <div className="bg-surface rounded-md p-6 border border-border">
-                <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
-                    <FiGlobe className="w-5 h-5 text-fg-muted" />
-                    Domains
-                    <button onClick={handleRepairDns} disabled={repairingDns || !infrastructureReady} title={infrastructureReady ? 'Re-attach Pages custom domains' : 'Finish tenant provisioning before repairing DNS'} className="ml-auto text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1 mr-2 disabled:opacity-50">
-                        {repairingDns ? 'Repairing…' : '⚡ Repair DNS'}
-                    </button>
-                    <button onClick={openDomainModal} disabled={!infrastructureReady} title={infrastructureReady ? 'Configure custom domains' : 'Finish tenant provisioning before configuring domains'} className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 disabled:opacity-50">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        Configure
-                    </button>
-                </h3>
-                <div className="grid md:grid-cols-3 gap-4">
-                    {/* CRM Dashboard */}
-                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
-                                <FiGlobe />
-                            </div>
-                            <div>
-                                <p className="text-xs text-fg-muted">CRM Dashboard</p>
-                                <p className="font-medium text-fg text-sm">{tenant.custom_domain_crm || `${tenant.slug}-crm.${domain}`}</p>
-                                {tenant.custom_domain_crm ? (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                        {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
-                                )}
-                            </div>
-                        </div>
-                        <a href={infrastructureReady ? (tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
-                            <FiExternalLink />
-                        </a>
-                    </div>
-                    {/* API (always uses default napnixsolutions domain) */}
-                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-surface-3 rounded-lg flex items-center justify-center text-fg-muted">
-                                <FiGlobe />
-                            </div>
-                            <div>
-                                <p className="text-xs text-fg-muted">API</p>
-                                <p className="font-medium text-fg text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Managed by Napnix' : 'Not provisioned'}</span>
-                            </div>
-                        </div>
-                        <a href={infrastructureReady ? `https://${tenant.slug}-crm-api.${domain}` : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
-                            <FiExternalLink />
-                        </a>
-                    </div>
-                    {/* Storefront */}
-                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
-                                <FiGlobe />
-                            </div>
-                            <div>
-                                <p className="text-xs text-fg-muted">Storefront</p>
-                                <p className="font-medium text-fg text-sm">{tenant.custom_domain_storefront || `${tenant.slug}.${domain}`}</p>
-                                {tenant.custom_domain_storefront ? (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                        {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
-                                )}
-                            </div>
-                        </div>
-                        <a href={infrastructureReady ? (tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
-                            <FiExternalLink />
-                        </a>
-                    </div>
-                </div>
-            </div>
+            {tab === 'overview' && (
+                <OverviewTab
+                    tenant={tenant}
+                    onConfigureDomains={() => setDomainsOpen(true)}
+                    onRepairDns={() => setConfirm({ title: 'Repair DNS?', message: 'Re-attaches the Pages custom domains and waits for them to go active. This can take up to 60 seconds.', confirmText: 'Repair DNS', variant: 'primary', run: () => repair.mutate() })}
+                    repairing={repair.isPending}
+                    onRunMigration={() => setConfirm({ title: 'Run migrations?', message: `Creates any missing tables on ${tenant.slug} for the ${tenant.industry_type || 'core'} industry.`, confirmText: 'Run migration', variant: 'primary', run: () => migration.mutate() })}
+                    migrating={migration.isPending}
+                    onDelete={() => setDeleteOpen(true)}
+                />
+            )}
+            {tab === 'billing' && <BillingTab tenant={tenant} />}
+            {tab === 'tools' && <ToolsTab tenant={tenant} />}
+            {tab === 'logs' && <LogsTab tenant={tenant} />}
 
-            <div className="bg-surface rounded-md p-6 border border-border">
-                <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
-                    <FiDatabase className="w-5 h-5 text-fg-muted" />
-                    Infrastructure Details
-                    <button onClick={handleRunMigration} disabled={runningMigration} title="Run database migrations to create missing industry tables" className="ml-auto text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 disabled:opacity-50">
-                        {runningMigration ? 'Running…' : '⚡ Run Migration'}
-                    </button>
-                </h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <p className="text-xs font-medium text-fg-muted uppercase mb-2">Database Name</p>
-                        <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
-                            <span className="font-mono text-sm text-fg">{tenant.db_name}</span>
-                            <button onClick={() => copyToClipboard(tenant.db_name)} className="text-fg-subtle hover:text-brand-600">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-xs font-medium text-fg-muted uppercase mb-2">Admin Email</p>
-                        <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
-                            <span className="font-mono text-sm text-fg">{tenant.email || 'admin@' + tenant.slug + '.local'}</span>
-                            <button onClick={() => copyToClipboard(tenant.email || 'admin@' + tenant.slug + '.local')} className="text-fg-subtle hover:text-brand-600">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    {tenant.admin_password && (
-                        <div className="md:col-span-2">
-                            <p className="text-xs font-medium text-fg-muted uppercase mb-2">Admin Password</p>
-                            <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                                <span className="font-mono text-sm text-fg">{tenant.admin_password}</span>
-                                <button onClick={() => copyToClipboard(tenant.admin_password)} className="text-amber-600 hover:text-amber-700">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Use this password for initial admin login</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="bg-surface rounded-md border border-border overflow-hidden">
-                <div className="px-6 py-4 border-b border-border">
-                    <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
-                        <FiCreditCard className="w-5 h-5 text-fg-muted" />
-                        Billing & Subscriptions
-                        {paymentsLoading && (
-                            <svg className="animate-spin h-4 w-4 text-fg-subtle" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                        )}
-                    </h3>
-                </div>
-                <div className="p-6 border-b border-border space-y-6">
-                    <div className="grid md:grid-cols-5 gap-4">
-                        <div className="rounded-md border border-border p-4">
-                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Current Plan</div>
-                            <div className="text-lg font-semibold text-fg">{subscription?.plan_name || tenant.plan_name || 'Unassigned'}</div>
-                        </div>
-                        <div className="rounded-md border border-border p-4">
-                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Subscription</div>
-                            <div className="text-lg font-semibold text-fg capitalize">{subscription?.status || 'Not created yet'}</div>
-                        </div>
-                        <div className="rounded-md border border-border p-4">
-                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Billing Cycle</div>
-                            <div className="text-lg font-semibold text-fg capitalize">{subscription?.billing_cycle || billingForm.billing_cycle}</div>
-                        </div>
-                        <div className="rounded-md border border-border p-4">
-                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Current Period Ends</div>
-                            <div className="text-lg font-semibold text-fg">
-                                {subscription?.current_period_end
-                                    ? new Date(subscription.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                    : 'Not set'}
-                            </div>
-                        </div>
-                        <div className="rounded-md border border-border p-4">
-                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Trial Ends</div>
-                            <div className="text-lg font-semibold text-fg">
-                                {tenant.trial_ends_at
-                                    ? new Date(tenant.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                                    : 'No trial'}
-                            </div>
-                            {tenant.status === 'trial' && trialDaysRemaining !== null && (
-                                <div className={`mt-1 text-xs ${trialDaysRemaining >= 0 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                    {trialDaysRemaining >= 0 ? `${trialDaysRemaining} day(s) remaining` : 'Trial expired'}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            onClick={handlePauseSubscription}
-                            disabled={!subscription || subscription.status !== 'active' || subscriptionActionLoading}
-                            className="px-4 py-2.5 rounded-lg border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50 transition-colors"
-                        >
-                            {subscriptionActionLoading === 'pause' ? 'Pausing...' : 'Pause Subscription'}
-                        </button>
-                        <button
-                            onClick={handleResumeSubscription}
-                            disabled={!subscription || subscription.status !== 'paused' || subscriptionActionLoading}
-                            className="px-4 py-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-50 transition-colors"
-                        >
-                            {subscriptionActionLoading === 'resume' ? 'Resuming...' : 'Resume Subscription'}
-                        </button>
-                        <button
-                            onClick={() => handleCancelSubscription(false)}
-                            disabled={!subscription || ['cancelled', 'expired'].includes(subscription.status) || subscriptionActionLoading}
-                            className="px-4 py-2.5 rounded-lg border border-border-strong text-fg hover:bg-surface-2 disabled:opacity-50 transition-colors"
-                        >
-                            {subscriptionActionLoading === 'cancel-later' ? 'Scheduling...' : 'Cancel At Period End'}
-                        </button>
-                        <button
-                            onClick={() => handleCancelSubscription(true)}
-                            disabled={!subscription || ['cancelled', 'expired'].includes(subscription.status) || subscriptionActionLoading}
-                            className="px-4 py-2.5 rounded-lg border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 transition-colors"
-                        >
-                            {subscriptionActionLoading === 'cancel-now' ? 'Cancelling...' : 'Cancel Immediately'}
-                        </button>
-                    </div>
-
-                    <div className="rounded-md border border-border p-5 space-y-5">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <h4 className="text-sm font-semibold text-fg">Edit Trial & Billing</h4>
-                                <p className="text-xs text-fg-muted mt-1">
-                                    New tenants already start automatically as a 14-day trial. Use this form to change the plan, edit the trial end date, activate access, send a payment link, or mark the tenant as paid.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Plan</label>
-                                <select
-                                    value={billingForm.plan_id}
-                                    onChange={(e) => handleBillingFormChange('plan_id', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                >
-                                    <option value="">Select Plan</option>
-                                    {plans.map((plan) => (
-                                        <option key={plan.id} value={plan.id}>
-                                            {plan.name} - ₹{plan.price_monthly}/mo
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Tenant Status</label>
-                                <select
-                                    value={billingForm.status}
-                                    onChange={(e) => handleBillingFormChange('status', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                >
-                                    <option value="trial">Trial</option>
-                                    <option value="active">Active</option>
-                                    <option value="suspended">Suspended</option>
-                                    <option value="cancelled">Cancelled</option>
-                                    <option value="pending">Pending</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Trial Ends On</label>
-                                <input
-                                    type="date"
-                                    value={billingForm.trial_ends_at}
-                                    onChange={(e) => handleBillingFormChange('trial_ends_at', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Billing Cycle</label>
-                                <select
-                                    value={billingForm.billing_cycle}
-                                    onChange={(e) => handleBillingFormChange('billing_cycle', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                >
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Manual Amount</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={billingForm.amount}
-                                    onChange={(e) => handleBillingFormChange('amount', e.target.value)}
-                                    placeholder={suggestedAmount ? `${suggestedAmount}` : 'Auto from plan'}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                />
-                                <p className="mt-1 text-xs text-fg-muted">
-                                    {selectedPlan
-                                        ? `Suggested ${billingForm.billing_cycle} amount: ₹${suggestedAmount.toFixed(2)}`
-                                        : 'Pick a plan to auto-suggest the amount.'}
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">After Save</label>
-                                <select
-                                    value={billingForm.follow_up_action}
-                                    onChange={(e) => handleBillingFormChange('follow_up_action', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                >
-                                    <option value="none">Do nothing</option>
-                                    <option value="send_payment_link">Send payment link</option>
-                                    <option value="mark_paid">Mark paid & activate</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {billingForm.follow_up_action === 'mark_paid' && (
-                            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                                Saving will record a successful manual payment of ₹{Number(effectiveAmount || 0).toFixed(2)} and activate the tenant.
-                            </div>
-                        )}
-
-                        {billingForm.follow_up_action === 'send_payment_link' && (
-                            <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-4 py-3 text-sm text-brand-700 dark:text-brand-300">
-                                Saving will keep the edited plan/trial values and email a payment link to the tenant.
-                            </div>
-                        )}
-
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleSaveBilling}
-                                disabled={savingBilling}
-                                className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                            >
-                                {savingBilling ? (
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                ) : (
-                                    <FiCheckCircle className="w-4 h-4" />
-                                )}
-                                Save Billing Changes
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="rounded-md border border-border p-5 space-y-5">
-                        <div>
-                            <h4 className="text-sm font-semibold text-fg">Send Billing Invoice</h4>
-                            <p className="text-xs text-fg-muted mt-1">
-                                Send a PDF invoice plus Razorpay payment link for a specific billing month. Use this for previous month dues or the current cycle.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                onClick={() => handleBillingRequestFormChange('billing_month', previousMonthValue)}
-                                className="px-3 py-2 rounded-lg border border-border-strong text-fg hover:bg-surface-2 transition-colors text-sm"
-                            >
-                                Previous Month
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleBillingRequestFormChange('billing_month', currentMonthValue)}
-                                className="px-3 py-2 rounded-lg border border-border-strong text-fg hover:bg-surface-2 transition-colors text-sm"
-                            >
-                                Current Month
-                            </button>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Billing Month</label>
-                                <input
-                                    type="month"
-                                    value={billingRequestForm.billing_month}
-                                    onChange={(e) => handleBillingRequestFormChange('billing_month', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Due Date</label>
-                                <input
-                                    type="date"
-                                    value={billingRequestForm.due_date}
-                                    onChange={(e) => handleBillingRequestFormChange('due_date', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
-                                />
-                            </div>
-                            <div className="flex items-end">
-                                <div className="w-full rounded-lg bg-surface-2 border border-border px-4 py-3">
-                                    <div className="text-xs font-medium text-fg-muted uppercase">Invoice Amount</div>
-                                    <div className="mt-1 text-lg font-semibold text-fg">
-                                        ₹{Number(effectiveAmount || 0).toFixed(2)}
-                                    </div>
-                                    <div className="mt-1 text-xs text-fg-muted">
-                                        Uses the manual amount above when entered, otherwise the selected plan amount.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleSendBillingInvoice}
-                                disabled={sendingBillingInvoice || !billingRequestForm.billing_month}
-                                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-                            >
-                                {sendingBillingInvoice ? (
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                ) : (
-                                    <FiCreditCard className="w-4 h-4" />
-                                )}
-                                Send Invoice + Payment Link
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="rounded-md border border-border p-5 space-y-5">
-                        <div>
-                            <h4 className="text-sm font-semibold text-fg">Tenant Tools</h4>
-                            <p className="text-xs text-fg-muted mt-1">
-                                Enable or suspend add-on products per tenant. CRM provisioning is special-cased and uses the tenant infrastructure already assigned.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-4">
-                            {tools.map((tool) => {
-                                const assignment = tenantToolMap[tool.id];
-                                const formState = toolForms[tool.id] || {};
-                                const plansForTool = toolPlans[tool.id] || [];
-                                const isEnabled = Boolean(assignment) && !['suspended', 'cancelled'].includes(assignment.status);
-                                const loadingKey = isEnabled ? `disable-${tool.id}` : `enable-${tool.id}`;
-
-                                return (
-                                    <div key={tool.id} className="rounded-md border border-border p-4 space-y-4">
-                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h5 className="font-semibold text-fg">{tool.name}</h5>
-                                                    <span className={`px-2 py-0.5 text-xs rounded-full ${isEnabled ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
-                                                        {assignment?.status || 'not enabled'}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-fg-muted mt-1">{tool.description}</p>
-                                                {assignment?.plan_name && (
-                                                    <p className="text-xs text-fg-muted mt-2">
-                                                        Current plan: <span className="font-medium text-fg">{assignment.plan_name}</span>
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {tool.slug !== 'nexcrm' && isEnabled && (
-                                                    <button
-                                                        onClick={() => handleDisableTool(tool)}
-                                                        disabled={toolActionLoading === loadingKey}
-                                                        className="px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-50 transition-colors"
-                                                    >
-                                                        {toolActionLoading === loadingKey ? 'Disabling...' : 'Disable'}
-                                                    </button>
-                                                )}
-                                                {!isEnabled && (
-                                                    <button
-                                                        onClick={() => handleEnableTool(tool)}
-                                                        disabled={toolActionLoading === loadingKey}
-                                                        className="px-3 py-2 rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
-                                                    >
-                                                        {toolActionLoading === loadingKey ? 'Enabling...' : tool.slug === 'nexcrm' ? 'Provision CRM' : 'Enable'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid md:grid-cols-3 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Tool Plan</label>
-                                                <select
-                                                    value={formState.tool_plan_id || ''}
-                                                    onChange={(e) => handleToolFormChange(tool.id, 'tool_plan_id', e.target.value)}
-                                                    disabled={tool.slug === 'nexcrm' || plansForTool.length === 0}
-                                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg disabled:opacity-60"
-                                                >
-                                                    <option value="">No plan</option>
-                                                    {plansForTool.map((plan) => (
-                                                        <option key={plan.id} value={plan.id}>
-                                                            {plan.name} - ₹{plan.price_monthly}/mo
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Trial Days</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={formState.trial_days || ''}
-                                                    onChange={(e) => handleToolFormChange(tool.id, 'trial_days', e.target.value)}
-                                                    disabled={tool.slug === 'nexcrm'}
-                                                    placeholder="Leave empty for active"
-                                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg disabled:opacity-60"
-                                                />
-                                            </div>
-                                            <div className="flex items-end">
-                                                <div className="text-xs text-fg-muted">
-                                                    {tool.slug === 'nexcrm'
-                                                        ? 'CRM uses tenant process/server provisioning and is managed separately from add-on tools.'
-                                                        : assignment?.trial_ends_at
-                                                            ? `Trial ends ${new Date(assignment.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                                                            : 'Enable with a trial or direct active status.'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse">
-                        <thead>
-                            <tr className="bg-surface-2 border-b border-border">
-                                <th className="px-6 py-3 font-medium text-fg-muted">Date</th>
-                                <th className="px-6 py-3 font-medium text-fg-muted">Invoice</th>
-                                <th className="px-6 py-3 font-medium text-fg-muted">Plan</th>
-                                <th className="px-6 py-3 font-medium text-fg-muted">Amount</th>
-                                <th className="px-6 py-3 font-medium text-fg-muted text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {paymentsLoading ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-fg-muted">Loading billing history...</td>
-                                </tr>
-                            ) : payments.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-fg-muted">No payment history found for this tenant.</td>
-                                </tr>
-                            ) : (
-                                payments.map((payment) => (
-                                    <tr key={payment.id} className="hover:bg-surface-2">
-                                        <td className="px-6 py-3 text-fg-muted">
-                                            {new Date(payment.created_at).toLocaleDateString('en-IN', {
-                                                day: 'numeric', month: 'short', year: 'numeric'
-                                            })}
-                                        </td>
-                                        <td className="px-6 py-3 font-mono text-xs text-fg-muted">{payment.invoice_number || '-'}</td>
-                                        <td className="px-6 py-3 text-fg font-medium">{payment.plan_name || 'One-time Payment'}</td>
-                                        <td className="px-6 py-3 font-semibold text-fg">
-                                            ₹{parseFloat(payment.amount).toFixed(2)}
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <div className="flex items-center justify-center gap-1.5 capitalize text-fg">
-                                                {getPaymentStatusIcon(payment.status)}
-                                                <span className="text-xs">{payment.status}</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div className="bg-surface rounded-md border border-border overflow-hidden">
-                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-fg flex items-center gap-2">
-                        <FiTerminal className="w-5 h-5 text-fg-muted" />
-                        PM2 Logs
-                        {logsLoading && (
-                            <svg className="animate-spin h-4 w-4 text-fg-subtle" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                            </svg>
-                        )}
-                    </h3>
-                    <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 text-sm text-fg-muted">
-                            <input
-                                type="checkbox"
-                                checked={autoRefresh}
-                                onChange={(e) => setAutoRefresh(e.target.checked)}
-                                className="rounded border-slate-300 text-brand-600"
-                            />
-                            Auto-refresh
-                        </label>
-                        <button
-                            onClick={fetchLogs}
-                            disabled={logsLoading}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-lg transition-colors flex items-center gap-2"
-                        >
-                            <FiRefreshCw className={`w-4 h-4 ${actionLoading === 'refresh' ? 'animate-spin' : ''}`} />
-                            Refresh
-                        </button>
-
-                        <a
-                            href={`https://${tenant.slug}-crm.${domain}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-                        >
-                            <FiExternalLink className="w-4 h-4" />
-                            Open CRM
-                        </a>
-                    </div>
-                </div>
-                <div ref={logsRef} className="bg-slate-900 text-green-400 font-mono text-xs p-4 h-80 overflow-auto whitespace-pre-wrap">
-                    {logs || 'No logs available'}
-                </div>
-            </div>
-
-            <div className="bg-rose-50 dark:bg-rose-900/10 rounded-md border border-rose-200 dark:border-rose-900/30 p-6">
-                <h3 className="text-lg font-semibold text-rose-700 dark:text-rose-400 mb-2 flex items-center gap-2">
-                    <FiTrash2 className="w-5 h-5" />
-                    Danger Zone
-                </h3>
-                <p className="text-sm text-rose-600 dark:text-rose-400 mb-4">
-                    Permanently delete this tenant and all associated data. This action is irreversible.
-                </p>
-                <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
-                >
-                    Delete Tenant
-                </button>
-            </div>
-
-            {/* Custom Domain Modal */}
-            <Dialog
-                open={showDomainModal}
-                onClose={() => setShowDomainModal(false)}
-                title="Configure custom domains"
-                footer={
-                    <>
-                        <Button onClick={() => setShowDomainModal(false)}>Cancel</Button>
-                        <Button variant="primary" onClick={handleSetupDomain} loading={domainLoading}>Save Domains</Button>
-                    </>
-                }
-            >
-                    <div>
-                        <p className="text-sm text-fg-muted mb-4">
-                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-surface-3 px-1 rounded">{tenant.slug}-crm-api.{domain}</code>.
-                        </p>
-
-                        {/* CRM Domain */}
-                        <div className="mb-4 p-3 border border-border rounded-sm">
-                            <label className="block text-sm font-medium text-fg mb-1">CRM Dashboard</label>
-                            <input
-                                type="text"
-                                value={customDomains.crm}
-                                onChange={(e) => setCustomDomains(prev => ({ ...prev, crm: e.target.value }))}
-                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg text-sm"
-                                placeholder="crm.yourbrand.com"
-                            />
-                            <p className="text-xs text-fg-muted mt-1">CNAME Target: <code className="bg-surface-3 px-1 rounded">nexcrm-frontend.pages.dev</code></p>
-                        </div>
-
-                        {/* Storefront Domain */}
-                        <div className="mb-4 p-3 border border-border rounded-sm">
-                            <label className="block text-sm font-medium text-fg mb-1">Storefront</label>
-                            <input
-                                type="text"
-                                value={customDomains.storefront}
-                                onChange={(e) => setCustomDomains(prev => ({ ...prev, storefront: e.target.value }))}
-                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg text-sm"
-                                placeholder="yourbrand.com or store.yourbrand.com"
-                            />
-                            <p className="text-xs text-fg-muted mt-1">CNAME Target: <code className="bg-surface-3 px-1 rounded">nexcrm-storefront.pages.dev</code></p>
-                        </div>
-
-                        {/* Setup Help Section */}
-                        <div className="mb-4 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
-                            <button
-                                type="button"
-                                onClick={() => setShowDomainHelp(prev => !prev)}
-                                className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                            >
-                                <span className="flex items-center gap-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    How to set up a custom domain
-                                </span>
-                                <svg className={`w-4 h-4 transition-transform ${showDomainHelp ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                            </button>
-                            {showDomainHelp && (
-                                <div className="px-4 py-3 text-sm text-fg-muted space-y-3 bg-surface">
-                                    <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">1</span>
-                                        <div>
-                                            <p className="font-medium text-fg">Enter the tenant's custom domains above</p>
-                                            <p className="text-xs mt-0.5">CRM and Storefront are both optional. You can set up one or both.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">2</span>
-                                        <div>
-                                            <p className="font-medium text-fg">Click "Save Domains"</p>
-                                            <p className="text-xs mt-0.5">This registers the custom domains with Cloudflare Pages automatically.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">3</span>
-                                        <div>
-                                            <p className="font-medium text-fg">Tenant adds CNAME records in their DNS provider</p>
-                                            <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
-                                            <div className="mt-2 bg-surface-2 rounded-md p-2 text-xs font-mono space-y-1">
-                                                <p><span className="text-fg-subtle">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
-                                                <p><span className="text-fg-subtle">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
-                                            </div>
-                                            <p className="text-xs mt-1.5 text-fg-muted">Works with any DNS provider — no Cloudflare account needed for the tenant.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">4</span>
-                                        <div>
-                                            <p className="font-medium text-fg">Wait for DNS propagation</p>
-                                            <p className="text-xs mt-0.5">Usually takes a few minutes. Cloudflare Pages handles SSL certificates automatically.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">5</span>
-                                        <div>
-                                            <p className="font-medium text-fg">Done!</p>
-                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-surface-3 px-1 rounded">{domain}</code> under the hood — customers never see it.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                    </div>
-            </Dialog>
-
-            <Dialog
-                open={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                dismissible={!deleteLoading}
-                title="Confirm permanent deletion"
-                size="sm"
-                footer={
-                    <>
-                        <Button onClick={() => setShowDeleteModal(false)} disabled={deleteLoading}>Cancel</Button>
-                        <Button variant="danger" onClick={handleFullDelete} loading={deleteLoading} disabled={confirmText !== tenant.slug}>
-                            Delete Permanently
-                        </Button>
-                    </>
-                }
-            >
-                <div className="space-y-4">
-                    <p className="text-sm text-fg-muted">
-                        This permanently deletes <strong className="text-fg">{tenant.name}</strong>. It can't be undone.
-                    </p>
-                    <Field label={<>Type <span className="font-mono">{tenant.slug}</span> to confirm</>}>
-                        <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={tenant.slug} className="font-mono" data-autofocus />
-                    </Field>
-                    <Checkbox
-                        label={<>Drop database <span className="font-mono">({tenant.db_name})</span></>}
-                        checked={deleteOptions.dropDatabase}
-                        onChange={(e) => setDeleteOptions(prev => ({ ...prev, dropDatabase: e.target.checked }))}
-                    />
-                </div>
-            </Dialog>
-
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => setConfirmState({ isOpen: false })}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
+            <DomainDialog tenant={tenant} open={domainsOpen} onClose={() => setDomainsOpen(false)} onSubmit={d => domains.mutate(d)} saving={domains.isPending} />
+            <DeleteDialog tenant={tenant} open={deleteOpen} onClose={() => setDeleteOpen(false)} onSubmit={opts => del.mutate(opts)} deleting={del.isPending} />
+            <ConfirmDialog
+                open={!!confirm}
+                onClose={() => setConfirm(null)}
+                onConfirm={() => { const run = confirm.run; setConfirm(null); run(); }}
+                title={confirm?.title}
+                message={confirm?.message}
+                confirmText={confirm?.confirmText}
+                variant={confirm?.variant}
             />
         </div>
     );
-};
-
-export default TenantDetail;
+}
