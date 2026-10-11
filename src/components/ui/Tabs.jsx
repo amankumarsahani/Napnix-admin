@@ -19,7 +19,7 @@ export function Tabs({ tabs, value, onChange, label = 'Sections', className }) {
         else if (e.key === 'End') { e.preventDefault(); move(tabs.length - 1); }
     };
     return (
-        <div role="tablist" aria-label={label} className={cx('flex gap-1 border-b border-border overflow-x-auto', className)}>
+        <div role="tablist" aria-label={label} className={cx('flex gap-1 border-b border-border overflow-x-auto overflow-y-hidden', className)}>
             {tabs.map((tab, i) => {
                 const selected = tab.id === value;
                 return (
