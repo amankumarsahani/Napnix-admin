@@ -1,6 +1,12 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { NODE_PALETTE } from './workflow/palette';
 import { useNavigate, useParams } from 'react-router-dom';
-import ConfirmModal from '../../components/common/ConfirmModal';
+import { useQueryClient } from '@tanstack/react-query';
+import { FiArrowLeft, FiSearch, FiTrash2, FiX } from 'react-icons/fi';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useChartTheme } from '../../components/charts/useChartTheme';
+import { Badge, Button, ConfirmDialog, Field, IconButton, Input, Switch, cx } from '../../components/ui';
+import { nodeTypes } from './workflow/nodeTypes';
 
 // Searchable dropdown component — filters locally, no API calls on type
 const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, renderOption, getOptionLabel, getOptionValue, hint }) => {
@@ -31,25 +37,25 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
         <div ref={containerRef} className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white cursor-pointer flex items-center justify-between min-h-[38px]"
+                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg cursor-pointer flex items-center justify-between min-h-[38px]"
             >
-                <span className={selectedOption ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+                <span className={selectedOption ? 'text-fg' : 'text-fg-subtle'}>
                     {selectedOption ? getOptionLabel(selectedOption) : (emptyLabel || placeholder || 'Select...')}
                 </span>
-                <svg className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 text-fg-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                    <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div className="p-2 border-b border-border">
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search..."
-                            className="w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            className="w-full px-2.5 py-1.5 text-sm border border-border rounded-md bg-surface-2 text-fg placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
                             autoFocus
                             onClick={(e) => e.stopPropagation()}
                         />
@@ -58,12 +64,12 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                         <button
                             type="button"
                             onClick={() => { onChange(''); setIsOpen(false); setSearch(''); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!value ? 'bg-slate-50 dark:bg-slate-700 font-medium' : 'text-slate-500'}`}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors ${!value ? 'bg-surface-2 font-medium' : 'text-fg-muted'}`}
                         >
                             {emptyLabel || 'None'}
                         </button>
                         {filtered.length === 0 && (
-                            <div className="px-3 py-4 text-sm text-slate-400 text-center">No results found</div>
+                            <div className="px-3 py-4 text-sm text-fg-subtle text-center">No results found</div>
                         )}
                         {filtered.map((option) => {
                             const optValue = getOptionValue(option);
@@ -73,7 +79,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                                     type="button"
                                     key={optValue}
                                     onClick={() => { onChange(optValue, option); setIsOpen(false); setSearch(''); }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-between ${isSelected ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-300'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors flex items-center justify-between ${isSelected ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-fg'}`}
                                 >
                                     <span>{renderOption ? renderOption(option) : getOptionLabel(option)}</span>
                                     {isSelected && (
@@ -87,7 +93,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                     </div>
                 </div>
             )}
-            {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
+            {hint && <p className={HINT_CLS}>{hint}</p>}
         </div>
     );
 };
@@ -108,265 +114,24 @@ import { workflowsAPI, templatesAPI, documentTemplatesAPI } from '../../api';
 import toast from 'react-hot-toast';
 
 // ============================================
-// CUSTOM NODE COMPONENTS
-// ============================================
-
-const TriggerNode = ({ data, selected }) => (
-    <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-green-500'
-        } bg-white dark:bg-slate-800`}>
-        <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <polygon points="5 3 19 12 5 21 5 3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            </div>
-            <span className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase">Trigger</span>
-        </div>
-        <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-
-        {/* Visual Preview */}
-        {data.config && Object.keys(data.config).length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                {data.triggerType === 'lead_created' && data.config.source_filter && (
-                    <div className="text-[10px] text-slate-500 line-clamp-1">Source: {data.config.source_filter}</div>
-                )}
-                {data.triggerType === 'scheduled' && (
-                    <div className="text-[10px] text-slate-500 line-clamp-1">{data.config.schedule_type} @ {data.config.schedule_time}</div>
-                )}
-            </div>
-        )}
-
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-slate-800"
-        />
-    </div>
-);
-
-const ActionNode = ({ data, selected }) => (
-    <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-blue-500'
-        } bg-white dark:bg-slate-800`}>
-        <Handle
-            type="target"
-            position={Position.Top}
-            className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-slate-800"
-        />
-        <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            </div>
-            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">Action</span>
-        </div>
-        <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-
-        {/* Visual Preview */}
-        {data.config && Object.keys(data.config).length > 0 && (
-            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                {data.actionType === 'send_email' && (
-                    <div className="text-[10px] text-slate-500 line-clamp-1 italic">"{data.config.subject}"</div>
-                )}
-                {data.actionType === 'add_note' && (
-                    <div className="text-[10px] text-slate-500 line-clamp-2 italic">"{data.config.content}"</div>
-                )}
-                {data.actionType === 'ai_assistant' && (
-                    <div className="text-[10px] text-brand-500 font-medium">{data.config.model}</div>
-                )}
-                {data.actionType === 'create_task' && (
-                    <div className="text-[10px] text-slate-500 line-clamp-1">Task: {data.config.title}</div>
-                )}
-                {/* AI Blog Nodes Preview */}
-                {data.actionType === 'ai_pick_topic' && data.config.niche && (
-                    <div className="text-[10px] text-pink-500 font-medium">Niche: {data.config.niche}</div>
-                )}
-                {data.actionType === 'ai_write_blog' && (
-                    <div className="text-[10px] text-pink-500 font-medium">{data.config.word_count || 1000} words • {data.config.tone || 'professional'}</div>
-                )}
-                {data.actionType === 'ai_fetch_image' && data.config.query && (
-                    <div className="text-[10px] text-orange-500 font-medium">Query: {data.config.query}</div>
-                )}
-                {data.actionType === 'ai_post_blog' && (
-                    <div className="text-[10px] text-red-500 font-medium">
-                        {data.config.author || 'AI Writer'} • {data.config.status || 'draft'}
-                    </div>
-                )}
-            </div>
-        )}
-
-        {data.actionType && !data.config?.content && !data.config?.subject && (
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{data.actionType}</div>
-        )}
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            className="w-3 h-3 !bg-blue-500 !border-2 !border-white dark:!border-slate-800"
-        />
-        {data.config?.on_error === 'branch' && (
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="error"
-                title="On error"
-                className="w-3 h-3 !bg-red-500 !border-2 !border-white dark:!border-slate-800"
-            />
-        )}
-    </div>
-);
-
-const ConditionNode = ({ data, selected }) => (
-    <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-amber-500'
-        } bg-white dark:bg-slate-800`}>
-        <Handle
-            type="target"
-            position={Position.Top}
-            className="w-3 h-3 !bg-amber-500 !border-2 !border-white dark:!border-slate-800"
-        />
-        <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            </div>
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">Condition</span>
-        </div>
-        <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-
-        {/* Visual Preview */}
-        {data.config && data.config.field && (
-            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium line-clamp-1">
-                {data.config.field} {data.config.operator?.replace('_', ' ')} {data.config.value}
-            </div>
-        )}
-
-        <div className="flex justify-between mt-2 text-xs">
-            <span className="text-green-600 font-medium">Yes</span>
-            <span className="text-red-600 font-medium">No</span>
-        </div>
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            id="yes"
-            style={{ left: '25%' }}
-            className="w-3 h-3 !bg-green-500 !border-2 !border-white dark:!border-slate-800"
-        />
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            id="no"
-            style={{ left: '75%' }}
-            className="w-3 h-3 !bg-red-500 !border-2 !border-white dark:!border-slate-800"
-        />
-    </div>
-);
-
-const DelayNode = ({ data, selected }) => (
-    <div className={`px-4 py-3 rounded-lg shadow-lg border-2 min-w-[180px] ${selected ? 'border-brand-500' : 'border-purple-500'
-        } bg-white dark:bg-slate-800`}>
-        <Handle
-            type="target"
-            position={Position.Top}
-            className="w-3 h-3 !bg-purple-500 !border-2 !border-white dark:!border-slate-800"
-        />
-        <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                    <polyline points="12 6 12 12 16 14" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-            </div>
-            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase">Delay</span>
-        </div>
-        <div className="font-medium text-slate-800 dark:text-white text-sm">{data.label}</div>
-
-        {/* Visual Preview */}
-        {data.config && data.config.value && (
-            <div className="mt-1 text-[10px] text-purple-600 dark:text-purple-400 font-medium text-center line-clamp-1">
-                Wait {data.config.value} {data.config.unit}
-            </div>
-        )}
-
-        <Handle
-            type="source"
-            position={Position.Bottom}
-            className="w-3 h-3 !bg-purple-500 !border-2 !border-white dark:!border-slate-800"
-        />
-    </div>
-);
-
-// ============================================
-// NODE TYPES CONFIG
-// ============================================
-
-const nodeTypes = {
-    trigger: TriggerNode,
-    action: ActionNode,
-    condition: ConditionNode,
-    delay: DelayNode
-};
-
-// ============================================
-// NODE PALETTE
-// ============================================
-
-const NODE_PALETTE = {
-    triggers: [
-        { id: 'lead_created', label: 'Lead Created', type: 'trigger' },
-        { id: 'client_created', label: 'Client Created', type: 'trigger' },
-        { id: 'lead_status_changed', label: 'Lead Status Changed', type: 'trigger' },
-        { id: 'client_status_changed', label: 'Client Status Changed', type: 'trigger' },
-        { id: 'inquiry_created', label: 'Inquiry Created', type: 'trigger' },
-        { id: 'inquiry_status_updated', label: 'Inquiry Status Updated', type: 'trigger' },
-        { id: 'scheduled', label: 'Scheduled', type: 'trigger' },
-        { id: 'manual', label: 'Manual Trigger', type: 'trigger' },
-        { id: 'webhook_received', label: 'Incoming Webhook', type: 'trigger' },
-        { id: 'stripe_payment_received', label: 'Stripe Payment Received', type: 'trigger' },
-        { id: 'stripe_subscription_created', label: 'Stripe Subscription Created', type: 'trigger' },
-        { id: 'stripe_subscription_cancelled', label: 'Stripe Subscription Cancelled', type: 'trigger' },
-        { id: 'stripe_invoice_paid', label: 'Stripe Invoice Paid', type: 'trigger' },
-        { id: 'whatsapp_message_received', label: 'WhatsApp Message Received', type: 'trigger' }
-    ],
-    actions: [
-        { id: 'send_email', label: 'Send Email', type: 'action', actionType: 'send_email' },
-        { id: 'update_lead', label: 'Update Lead', type: 'action', actionType: 'update_lead' },
-        { id: 'update_client', label: 'Update Client', type: 'action', actionType: 'update_client' },
-        { id: 'create_task', label: 'Create Task', type: 'action', actionType: 'create_task' },
-        { id: 'assign_user', label: 'Assign User', type: 'action', actionType: 'assign_user' },
-        { id: 'add_note', label: 'Add Note', type: 'action', actionType: 'add_note' },
-        { id: 'update_inquiry', label: 'Update Inquiry', type: 'action', actionType: 'update_inquiry' },
-        { id: 'assign_inquiry', label: 'Assign Inquiry', type: 'action', actionType: 'assign_inquiry' },
-        { id: 'send_notification', label: 'Send Notification', type: 'action', actionType: 'send_notification' },
-        { id: 'webhook', label: 'Webhook', type: 'action', actionType: 'webhook' },
-        { id: 'http_request', label: 'HTTP Request', type: 'action', actionType: 'http_request' },
-        { id: 'loop_items', label: 'Loop Over Items', type: 'action', actionType: 'loop_items' },
-        { id: 'ai_assistant', label: 'AI Assistant', type: 'action', actionType: 'ai_assistant' },
-        { id: 'ai_agent', label: 'AI Agent (with tools)', type: 'action', actionType: 'ai_agent' }
-    ],
-    aiBlog: [
-        { id: 'keyword_research', label: 'Keyword Research (Google)', type: 'action', actionType: 'keyword_research' },
-        { id: 'gsc_opportunities', label: 'Search Console Opportunities', type: 'action', actionType: 'gsc_opportunities' },
-        { id: 'ai_pick_topic', label: 'AI Pick Topic', type: 'action', actionType: 'ai_pick_topic' },
-        { id: 'ai_write_blog', label: 'AI Write Blog', type: 'action', actionType: 'ai_write_blog' },
-        { id: 'ai_fetch_image', label: 'Fetch Image (Unsplash)', type: 'action', actionType: 'ai_fetch_image' },
-        { id: 'ai_post_blog', label: 'Post Blog', type: 'action', actionType: 'ai_post_blog' },
-        { id: 'index_url', label: 'Google Search URL Index', type: 'action', actionType: 'index_url' }
-    ],
-    whatsapp: [
-        { id: 'send_whatsapp', label: 'Send WhatsApp', type: 'whatsapp', actionType: 'send_whatsapp' },
-        { id: 'send_whatsapp_reply', label: 'Reply on WhatsApp', type: 'whatsapp', actionType: 'send_whatsapp_reply' }
-    ],
-    conditions: [
-        { id: 'condition', label: 'If/Else Condition', type: 'condition' }
-    ],
-    delays: [
-        { id: 'delay', label: 'Wait/Delay', type: 'delay' }
-    ]
-};
-
-// ============================================
 // MAIN EDITOR COMPONENT
 // ============================================
+
+const LABEL_CLS = 'block text-sm font-medium text-fg mb-1';
+const CONTROL_CLS = 'w-full min-h-9 px-3 py-1.5 rounded-sm border border-border-strong bg-surface text-fg text-sm placeholder:text-fg-subtle focus:outline-none focus-visible:outline-2 focus-visible:outline-accent';
+const HINT_CLS = 'text-xs text-fg-subtle mt-1';
+
+const PALETTE_GROUPS = [
+    ['triggers', 'Triggers', 'bg-success'], ['actions', 'Actions', 'bg-accent'], ['conditions', 'Conditions', 'bg-warning'],
+    ['aiBlog', 'AI and SEO', 'bg-accent'], ['whatsapp', 'WhatsApp', 'bg-success'], ['delays', 'Timing', 'bg-fg-subtle'],
+];
+
+// What "unsaved" means: anything the save payload contains
+const serialize = (name, description, nodes, edges) => JSON.stringify([
+    name, description,
+    nodes.map(n => [n.id, n.type, n.data, Math.round(n.position.x), Math.round(n.position.y)]),
+    edges.map(e => [e.source, e.target, e.sourceHandle || null]),
+]);
 
 const WorkflowEditor = () => {
     const navigate = useNavigate();
@@ -382,9 +147,15 @@ const WorkflowEditor = () => {
     const [showNodeConfig, setShowNodeConfig] = useState(false);
     const [localConfig, setLocalConfig] = useState({});
     const [localLabel, setLocalLabel] = useState('');
-    const [isApplyingConfig, setIsApplyingConfig] = useState(false);
     const [isActive, setIsActive] = useState(false);
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
+    const [paletteSearch, setPaletteSearch] = useState('');
+    const [collapsed, setCollapsed] = useState({});
+    const [leaveTo, setLeaveTo] = useState(null);
+    const [deletingNode, setDeletingNode] = useState(false);
+    const [baseline, setBaseline] = useState(() => (isNew ? serialize('New Workflow', '', [{ id: 'trigger-1', type: 'trigger', position: { x: 250, y: 50 }, data: { label: 'Lead Created', triggerType: 'lead_created', config: {} } }], []) : null));
+    const queryClient = useQueryClient();
+    const { theme } = useTheme();
+    const chart = useChartTheme();
 
 
 
@@ -398,20 +169,20 @@ const WorkflowEditor = () => {
             try {
                 const res = await templatesAPI.getAll({ limit: 100 });
                 setEmailTemplates(res.data || res.templates || []);
-            } catch (error) {
+            } catch {
                 // silently ignore
             }
             try {
                 const res = await documentTemplatesAPI.getAll();
                 setDocumentTemplates(res.data || []);
-            } catch (error) {
+            } catch {
                 // silently ignore
             }
             try {
                 const { whatsappApi } = await import('../../api/whatsapp');
                 const accounts = await whatsappApi.getAccounts();
                 setWaAccounts(accounts.filter(a => a.status === 'connected'));
-            } catch (error) {
+            } catch {
                 // silently ignore
             }
         };
@@ -426,6 +197,7 @@ const WorkflowEditor = () => {
             toast.error('Invalid workflow access');
             navigate('/workflows');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, isNew]);
 
     // Synchronize local state when selected node changes
@@ -479,10 +251,14 @@ const WorkflowEditor = () => {
             setWorkflowName(data.name || 'Untitled Workflow');
             setWorkflowDescription(data.description || '');
             setIsActive(!!data.is_active);
+            let loadedNodes = [];
+            let loadedEdges = [];
 
             if (data.canvas_data) {
-                setNodes(data.canvas_data.nodes || []);
-                setEdges(data.canvas_data.edges || []);
+                loadedNodes = data.canvas_data.nodes || [];
+                loadedEdges = data.canvas_data.edges || [];
+                setNodes(loadedNodes);
+                setEdges(loadedEdges);
             } else if (data.nodes) {
                 // Map legacy structure to React Flow format if needed
                 const formattedNodes = data.nodes.map(n => {
@@ -494,7 +270,7 @@ const WorkflowEditor = () => {
                         } else if (n.data?.config) {
                             nodeConfig = typeof n.data.config === 'string' ? JSON.parse(n.data.config) : n.data.config;
                         }
-                    } catch (e) {
+                    } catch {
 
                         nodeConfig = {};
                     }
@@ -514,6 +290,7 @@ const WorkflowEditor = () => {
                         }
                     };
                 });
+                loadedNodes = formattedNodes;
                 setNodes(formattedNodes);
 
                 // Map connections to edges
@@ -525,13 +302,15 @@ const WorkflowEditor = () => {
                         sourceHandle: c.source_handle === 'default' ? null : c.source_handle,
                         type: 'smoothstep',
                         animated: true,
-                        style: { strokeWidth: 2, stroke: '#10b981' },
-                        markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' }
+                        style: { strokeWidth: 2 },
+                        markerEnd: { type: MarkerType.ArrowClosed }
                     }));
+                    loadedEdges = formattedEdges;
                     setEdges(formattedEdges);
                 }
             }
-        } catch (error) {
+            setBaseline(serialize(data.name || 'Untitled Workflow', data.description || '', loadedNodes, loadedEdges));
+        } catch {
             toast.error('Failed to load workflow data');
         } finally {
             setIsLoading(false);
@@ -563,9 +342,15 @@ const WorkflowEditor = () => {
     }, [setEdges]);
 
     const onNodeClick = useCallback((event, node) => {
+        if (selectedNodeId && selectedNodeId !== node.id) {
+            setNodes(nds => nds.map(n => (n.id === selectedNodeId ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } } : n)));
+        }
+        // sync the panel state in the same batch so the unsaved check never sees a half-switched node
+        setLocalConfig(node.data.config || {});
+        setLocalLabel(node.data.label || '');
         setSelectedNodeId(node.id);
         setShowNodeConfig(true);
-    }, []);
+    }, [selectedNodeId, localLabel, localConfig, setNodes]);
 
     // Add node from palette
     const addNode = (paletteItem) => {
@@ -592,38 +377,22 @@ const WorkflowEditor = () => {
             setSelectedNodeId(null);
             setShowNodeConfig(false);
         }
+        setDeletingNode(false);
     };
 
-    // Save workflow
-    const applyNodeConfig = useCallback(() => {
-        if (!selectedNodeId) return;
-
-        setIsApplyingConfig(true);
-        setNodes(nds => nds.map(n =>
-            n.id === selectedNodeId
-                ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } }
-                : n
-        ));
-
-        // Show success feedback
-        setTimeout(() => {
-            setIsApplyingConfig(false);
-            toast.success('Configuration applied');
-        }, 300);
-    }, [selectedNodeId, localLabel, localConfig, setNodes]);
+    // The config panel debounces edits into `nodes` (300 ms). Merge the pending edit so Save never loses it.
+    const liveNodes = selectedNodeId
+        ? nodes.map(n => (n.id === selectedNodeId ? { ...n, data: { ...n.data, label: localLabel, config: localConfig } } : n))
+        : nodes;
+    const key = serialize(workflowName, workflowDescription, liveNodes, edges);
+    const dirty = baseline !== null && key !== baseline;
 
     const saveWorkflow = async () => {
-
-        if (id === 'undefined') {
-            toast.error('Cannot save: Invalid ID');
-            return;
-        }
         if (!workflowName.trim()) {
-            toast.error('Please enter a workflow name');
+            toast.error('Give the workflow a name');
             return;
         }
-
-        const triggerNode = nodes.find(n => n.type === 'trigger');
+        const triggerNode = liveNodes.find(n => n.type === 'trigger');
         if (!triggerNode) {
             toast.error('Workflow must have a trigger node');
             return;
@@ -632,10 +401,10 @@ const WorkflowEditor = () => {
         setSaving(true);
         try {
             const workflowData = {
-                name: workflowName,
+                name: workflowName.trim(),
                 description: workflowDescription,
                 trigger_type: triggerNode.data.triggerType || 'lead_created',
-                nodes: nodes.map(n => ({
+                nodes: liveNodes.map(n => ({
                     node_uid: n.id,
                     node_type: n.type,
                     action_type: n.data.actionType || null,
@@ -654,239 +423,147 @@ const WorkflowEditor = () => {
                 is_active: isActive
             };
 
-            // Payload size check
-            const payloadString = JSON.stringify(workflowData);
-            const sizeInMB = (payloadString.length / (1024 * 1024)).toFixed(2);
-
-            if (sizeInMB > 5) {
-                setConfirmState({
-                    isOpen: true,
-                    title: 'Large Workflow Data',
-                    message: `Workflow data is unusually large (${sizeInMB} MB). Are you sure you want to save? This may affect performance.`,
-                    variant: 'warning',
-                    confirmText: 'Save Anyway',
-                    onConfirm: async () => {
-                        setConfirmState({ isOpen: false });
-                        try {
-                            if (isNew) {
-                                await workflowsAPI.create(workflowData);
-                                toast.success('Workflow created!');
-                            } else {
-                                await workflowsAPI.update(id, workflowData);
-                                toast.success('Workflow saved!');
-                            }
-                            navigate('/workflows');
-                        } catch (error) {
-                            toast.error('Failed to save workflow');
-                        } finally {
-                            setSaving(false);
-                        }
-                    },
-                });
-                setSaving(false);
-                return;
-            }
-
-            if (isNew) {
-                await workflowsAPI.create(workflowData);
-                toast.success('Workflow created!');
-            } else {
-                await workflowsAPI.update(id, workflowData);
-                toast.success('Workflow saved!');
-            }
-            navigate('/workflows');
+            const res = isNew ? await workflowsAPI.create(workflowData) : await workflowsAPI.update(id, workflowData);
+            setBaseline(key);
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+            queryClient.invalidateQueries({ queryKey: ['workflow'] });
+            queryClient.invalidateQueries({ queryKey: ['workflow-runs'] });
+            toast.success(isNew ? 'Workflow created' : 'Saved');
+            // Stay in the editor after saving an existing workflow; a new one opens its detail page
+            if (isNew) navigate(`/workflows/${res.workflowId || res.data?.id}`, { replace: true });
         } catch (error) {
-            toast.error('Failed to save workflow');
+            toast.error(error.response?.data?.error || 'Failed to save workflow');
         } finally {
             setSaving(false);
         }
     };
 
+    // Ctrl/Cmd+S saves; closing the tab with unsaved work asks first
+    useEffect(() => {
+        const onKey = e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                if (!saving) saveWorkflow();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
+    useEffect(() => {
+        if (!dirty) return undefined;
+        const warn = e => { e.preventDefault(); e.returnValue = ''; };
+        window.addEventListener('beforeunload', warn);
+        return () => window.removeEventListener('beforeunload', warn);
+    }, [dirty]);
+
+    const leave = to => (dirty ? setLeaveTo(to) : navigate(to));
+    const backTo = isNew ? '/workflows' : `/workflows/${id}`;
+
+    const toggleActive = async () => {
+        const next = !isActive;
+        setIsActive(next);
+        if (isNew) return;
+        try {
+            await workflowsAPI.toggle(id);
+            queryClient.invalidateQueries({ queryKey: ['workflows'] });
+            queryClient.invalidateQueries({ queryKey: ['workflow', id] });
+            toast.success(next ? 'Workflow activated' : 'Workflow deactivated');
+        } catch {
+            setIsActive(!next);
+            toast.error('Failed to update workflow status');
+        }
+    };
+
+    const search = paletteSearch.trim().toLowerCase();
+
     if (isLoading) {
         return (
-            <div className="flex h-[calc(100vh-80px)] items-center justify-center bg-slate-50 dark:bg-slate-900">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600"></div>
-                    <p className="text-slate-500 font-medium">Loading Workflow...</p>
-                </div>
+            <div className="-m-4 lg:-m-6 grid h-[calc(100dvh-52px)] place-items-center">
+                <p role="status" className="flex items-center gap-2 text-sm text-fg-muted">
+                    <span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-accent border-r-transparent" />
+                    Loading workflow…
+                </p>
             </div>
         );
     }
 
+    const minimapColor = n => ({ trigger: chart.success, action: chart.accent, condition: chart.warning, whatsapp: chart.success }[n.type] || chart.subtle);
+
     return (
-        <div className="flex h-[calc(100vh-80px)] overflow-hidden">
+        <div className="-m-4 lg:-m-6 flex h-[calc(100dvh-52px)] overflow-hidden bg-surface-2">
             <h1 className="sr-only">{isNew ? 'New workflow' : `Edit workflow: ${workflowName}`}</h1>
-            {/* Left Sidebar - Node Palette */}
-            <div className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Nodes</h3>
 
-                {/* Triggers */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Triggers</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.triggers.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
+            {/* Node palette */}
+            <aside aria-label="Node palette" className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-surface">
+                <div className="border-b border-border p-3">
+                    <div className="relative">
+                        <FiSearch aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
+                        <Input value={paletteSearch} onChange={e => setPaletteSearch(e.target.value)} placeholder="Search nodes" aria-label="Search nodes" className="pl-8" />
+                    </div>
+                </div>
+                <div className="flex-1 space-y-1 overflow-y-auto p-2">
+                    {PALETTE_GROUPS.map(([groupKey, title, dot]) => {
+                        const items = NODE_PALETTE[groupKey].filter(i => !search || i.label.toLowerCase().includes(search));
+                        if (!items.length) return null;
+                        const open = !!search || !collapsed[groupKey];
+                        return (
+                            <section key={groupKey}>
+                                <button
+                                    type="button"
+                                    aria-expanded={open}
+                                    onClick={() => setCollapsed(c => ({ ...c, [groupKey]: !c[groupKey] }))}
+                                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-medium text-fg-muted hover:bg-surface-2"
+                                >
+                                    <span aria-hidden="true" className={cx('size-1.5 rounded-full', dot)} />
+                                    {title}
+                                    <span className="ml-auto font-mono tabular-nums text-2xs text-fg-subtle">{items.length}</span>
+                                </button>
+                                {open && (
+                                    <ul className="mt-0.5 mb-2">
+                                        {items.map(item => (
+                                            <li key={item.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addNode(item)}
+                                                    className="w-full rounded-sm px-2 py-1.5 pl-6 text-left text-sm text-fg-muted hover:bg-surface-2 hover:text-fg"
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </section>
+                        );
+                    })}
+                    {search && !PALETTE_GROUPS.some(([k]) => NODE_PALETTE[k].some(i => i.label.toLowerCase().includes(search))) && (
+                        <p className="px-2 py-4 text-sm text-fg-subtle">No node matches “{paletteSearch}”.</p>
+                    )}
+                </div>
+            </aside>
+
+            {/* Canvas */}
+            <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-surface px-3">
+                    <IconButton label={isNew ? 'Back to workflows' : 'Back to workflow'} onClick={() => leave(backTo)}>
+                        <FiArrowLeft className="size-4" />
+                    </IconButton>
+                    <input
+                        aria-label="Workflow name"
+                        value={workflowName}
+                        onChange={e => setWorkflowName(e.target.value)}
+                        placeholder="Workflow name"
+                        className="h-8 min-w-0 max-w-md flex-1 rounded-sm bg-transparent px-1.5 text-base font-semibold text-fg placeholder:text-fg-subtle hover:bg-surface-2 focus:bg-surface-2 focus:outline-2 focus:outline-accent"
+                    />
+                    {dirty && <Badge tone="warning">Unsaved</Badge>}
+                    <div className="ml-auto flex items-center gap-3">
+                        <Switch checked={isActive} onChange={toggleActive} label={isActive ? 'Active' : 'Inactive'} />
+                        {!isNew && <Button onClick={() => leave(`/workflows/${id}?tab=runs`)}>Run history</Button>}
+                        <Button variant="primary" onClick={saveWorkflow} loading={saving} title="Save (Ctrl+S)">Save</Button>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Actions</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.actions.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Conditions */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Conditions</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.conditions.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* AI Blog */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">AI Blog</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.aiBlog.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 rounded-lg hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* WhatsApp */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">WhatsApp</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.whatsapp.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Delays */}
-                <div className="mb-4">
-                    <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Timing</h4>
-                    <div className="space-y-2">
-                        {NODE_PALETTE.delays.map(item => (
-                            <button
-                                key={item.id}
-                                onClick={() => addNode(item)}
-                                className="w-full text-left px-3 py-2 text-sm bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Canvas */}
-            <div className="flex-1 flex flex-col relative">
-                {/* Top Bar */}
-                <div className="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate('/workflows')}
-                            className="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                        </button>
-                        <input
-                            type="text"
-                            value={workflowName}
-                            onChange={(e) => setWorkflowName(e.target.value)}
-                            className="text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 text-slate-900 dark:text-white"
-                            placeholder="Workflow Name"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div
-                            onClick={async () => {
-                                const newActive = !isActive;
-                                setIsActive(newActive);
-
-                                if (!isNew && id && id !== 'new') {
-                                    try {
-                                        await workflowsAPI.toggle(id);
-                                        toast.success(`Workflow ${newActive ? 'activated' : 'deactivated'}`);
-                                    } catch (error) {
-                                        setIsActive(!newActive);
-                                        toast.error('Failed to update workflow status');
-                                    }
-                                }
-                            }}
-                            className="flex items-center gap-2 mr-4 bg-slate-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            <span className={`text-xs font-bold uppercase select-none ${isActive ? 'text-green-500' : 'text-slate-400'}`}>
-                                {isActive ? 'Active' : 'Inactive'}
-                            </span>
-                            <div
-                                className={`relative inline-flex h-5 w-10 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${isActive ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}
-                            >
-                                <span
-                                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isActive ? 'translate-x-5' : 'translate-x-0'}`}
-                                />
-                            </div>
-                        </div>
-                        {selectedNode && (
-                            <button
-                                onClick={deleteSelectedNode}
-                                className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-medium border border-red-200 dark:border-red-900/50"
-                            >
-                                Delete Node
-                            </button>
-                        )}
-                        <button
-                            onClick={saveWorkflow}
-                            disabled={saving}
-                            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors font-medium shadow-sm"
-                        >
-                            {saving ? 'Saving...' : 'Save Workflow'}
-                        </button>
-                    </div>
-                </div>
-
-                {/* React Flow Canvas */}
-                <div className="flex-1">
+                <div className="min-h-0 flex-1">
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -895,62 +572,35 @@ const WorkflowEditor = () => {
                         onConnect={onConnect}
                         onNodeClick={onNodeClick}
                         nodeTypes={nodeTypes}
-                        colorMode="system"
+                        colorMode={theme === 'dark' ? 'dark' : 'light'}
                         fitView
-                        className="bg-slate-50 dark:bg-[#0f172a]"
+                        className="!bg-surface-2"
                     >
-                        <Controls className="!bg-white dark:!bg-slate-800 !border-slate-200 dark:!border-slate-700 !shadow-lg rounded-lg overflow-hidden" />
-                        <MiniMap
-                            className="!bg-white dark:!bg-slate-800 !border-slate-200 dark:!border-slate-700 !shadow-lg rounded-lg"
-                            nodeColor={(node) => {
-                                switch (node.type) {
-                                    case 'trigger': return '#22c55e';
-                                    case 'action': return '#3b82f6';
-                                    case 'condition': return '#f59e0b';
-                                    case 'delay': return '#a855f7';
-                                    default: return '#eee';
-                                }
-                            }}
-                            maskColor="rgba(0, 0, 0, 0.1)"
-                        />
-                        <Background
-                            variant="dots"
-                            gap={16}
-                            size={1}
-                            color="#94a3b8"
-                            className="opacity-20 dark:opacity-10"
-                        />
+                        <Controls showInteractive={false} />
+                        <MiniMap nodeColor={minimapColor} maskColor="rgba(0, 0, 0, 0.12)" pannable zoomable />
+                        <Background gap={16} size={1} color={chart.border} />
                     </ReactFlow>
                 </div>
             </div>
 
-            {/* Right Sidebar - Node Configuration */}
+            {/* Node settings */}
             {showNodeConfig && selectedNode && (
-                <div className="w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Configure Node</h3>
-                        <button
-                            onClick={() => setShowNodeConfig(false)}
-                            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                <aside aria-label="Node settings" className="w-80 shrink-0 overflow-y-auto border-l border-border bg-surface">
+                    <div className="sticky top-0 z-10 flex h-12 items-center justify-between gap-2 border-b border-border bg-surface px-4">
+                        <div className="min-w-0">
+                            <p className="text-2xs font-medium uppercase tracking-wide text-fg-subtle">{selectedNode.type}</p>
+                            <h2 className="truncate text-sm font-semibold text-fg">Node settings</h2>
+                        </div>
+                        <span className="flex gap-0.5">
+                            <IconButton size="sm" variant="danger" label="Delete node" onClick={() => setDeletingNode(true)}><FiTrash2 className="size-4" /></IconButton>
+                            <IconButton size="sm" label="Close settings" onClick={() => setShowNodeConfig(false)}><FiX className="size-4" /></IconButton>
+                        </span>
                     </div>
 
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Label
-                            </label>
-                            <input
-                                type="text"
-                                value={localLabel}
-                                onChange={(e) => setLocalLabel(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
-                            />
-                        </div>
+                    <div className="space-y-4 p-4">
+                        <Field label="Label">
+                            <Input value={localLabel} onChange={e => setLocalLabel(e.target.value)} />
+                        </Field>
 
                         {/* Trigger-specific config: Lead Created */}
                         {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'lead_created' || selectedNode.data.label === 'Lead Created') && (
@@ -961,13 +611,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Source
                                     </label>
                                     <select
                                         value={localConfig?.source_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, source_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">All Sources</option>
                                         <option value="website">Website</option>
@@ -977,16 +627,16 @@ const WorkflowEditor = () => {
                                         <option value="advertisement">Advertisement</option>
                                         <option value="other">Other</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all leads</p>
+                                    <p className={HINT_CLS}>Leave empty to trigger for all leads</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Initial Status
                                     </label>
                                     <select
                                         value={localConfig?.status_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, status_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="new">New</option>
@@ -1008,29 +658,29 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Client Type
                                     </label>
                                     <select
                                         value={localConfig?.client_type_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, client_type_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">All Client Types</option>
                                         <option value="individual">Individual</option>
                                         <option value="business">Business</option>
                                         <option value="enterprise">Enterprise</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all clients</p>
+                                    <p className={HINT_CLS}>Leave empty to trigger for all clients</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Source
                                     </label>
                                     <select
                                         value={localConfig?.source_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, source_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">All Sources</option>
                                         <option value="conversion">Lead Conversion</option>
@@ -1051,13 +701,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         From Status
                                     </label>
                                     <select
                                         value={localConfig?.from_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="new">New</option>
@@ -1068,16 +718,16 @@ const WorkflowEditor = () => {
                                         <option value="won">Won</option>
                                         <option value="lost">Lost</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">The status the lead is changing FROM</p>
+                                    <p className={HINT_CLS}>The status the lead is changing FROM</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         To Status
                                     </label>
                                     <select
                                         value={localConfig?.to_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="new">New</option>
@@ -1088,7 +738,7 @@ const WorkflowEditor = () => {
                                         <option value="won">Won</option>
                                         <option value="lost">Lost</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">The status the lead is changing TO</p>
+                                    <p className={HINT_CLS}>The status the lead is changing TO</p>
                                 </div>
                             </>
                         )}
@@ -1102,13 +752,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         From Status
                                     </label>
                                     <select
                                         value={localConfig?.from_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="active">Active</option>
@@ -1117,16 +767,16 @@ const WorkflowEditor = () => {
                                         <option value="suspended">Suspended</option>
                                         <option value="churned">Churned</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">The status the client is changing FROM</p>
+                                    <p className={HINT_CLS}>The status the client is changing FROM</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         To Status
                                     </label>
                                     <select
                                         value={localConfig?.to_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="active">Active</option>
@@ -1135,16 +785,16 @@ const WorkflowEditor = () => {
                                         <option value="suspended">Suspended</option>
                                         <option value="churned">Churned</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">The status the client is changing TO</p>
+                                    <p className={HINT_CLS}>The status the client is changing TO</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Client Type
                                     </label>
                                     <select
                                         value={localConfig?.client_type_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, client_type_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">All Client Types</option>
                                         <option value="individual">Individual</option>
@@ -1161,7 +811,7 @@ const WorkflowEditor = () => {
                                         Triggers when a new inquiry is submitted
                                     </p>
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic text-center p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg">
+                                <div className="text-xs text-fg-muted mt-2 italic text-center p-4 border border-dashed border-border-strong rounded-lg">
                                     No additional filters needed for this trigger.
                                 </div>
                             </>
@@ -1176,13 +826,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         From Status
                                     </label>
                                     <select
                                         value={localConfig?.from_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, from_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="new">New</option>
@@ -1192,13 +842,13 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         To Status
                                     </label>
                                     <select
                                         value={localConfig?.to_status || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, to_status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Any Status</option>
                                         <option value="new">New</option>
@@ -1219,13 +869,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Schedule Type
                                     </label>
                                     <select
                                         value={localConfig?.schedule_type || 'daily'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, schedule_type: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="once">One-time</option>
                                         <option value="daily">Daily</option>
@@ -1234,25 +884,25 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Time (24-hour format)
                                     </label>
                                     <input
                                         type="time"
                                         value={localConfig?.schedule_time || '09:00'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, schedule_time: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                                 {localConfig?.schedule_type === 'weekly' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Day of Week
                                         </label>
                                         <select
                                             value={localConfig?.day_of_week || 'monday'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, day_of_week: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         >
                                             <option value="monday">Monday</option>
                                             <option value="tuesday">Tuesday</option>
@@ -1266,49 +916,49 @@ const WorkflowEditor = () => {
                                 )}
                                 {localConfig?.schedule_type === 'monthly' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Day of Month
                                         </label>
                                         <select
                                             value={localConfig?.day_of_month || '1'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, day_of_month: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         >
                                             {[...Array(28)].map((_, i) => (
                                                 <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
                                             ))}
                                         </select>
-                                        <p className="text-xs text-slate-400 mt-1">Limited to 28 to avoid issues with short months</p>
+                                        <p className={HINT_CLS}>Limited to 28 to avoid issues with short months</p>
                                     </div>
                                 )}
                                 {localConfig?.schedule_type === 'once' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Date
                                         </label>
                                         <input
                                             type="date"
                                             value={localConfig?.schedule_date || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, schedule_date: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Target Entities
                                     </label>
                                     <select
                                         value={localConfig?.target_entity || 'all_leads'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, target_entity: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="all_leads">All Active Leads</option>
                                         <option value="all_clients">All Active Clients</option>
                                         <option value="new_leads">New Leads (last 7 days)</option>
                                         <option value="inactive_leads">Inactive Leads (30+ days)</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">Which entities to run this workflow on</p>
+                                    <p className={HINT_CLS}>Which entities to run this workflow on</p>
                                 </div>
                             </>
                         )}
@@ -1323,36 +973,36 @@ const WorkflowEditor = () => {
                                         <p className="text-sm text-brand-700 dark:text-brand-400 font-medium">
                                             Stripe Event: {selectedNode.data.label}
                                         </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        <p className="text-xs text-fg-muted mt-1">
                                             Trigger automations based on real payment events.
                                         </p>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Filter by Plan
                                         </label>
                                         <select
                                             value={localConfig?.plan_id || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, plan_id: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         >
                                             <option value="">All Plans</option>
                                             <option value="starter">Starter Plan</option>
                                             <option value="growth">Growth Plan</option>
                                             <option value="business">Business Plan</option>
                                         </select>
-                                        <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for all plans</p>
+                                        <p className={HINT_CLS}>Leave empty to trigger for all plans</p>
                                     </div>
                                     {selectedNode.data.triggerType === 'stripe_invoice_paid' && (
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            <label className={LABEL_CLS}>
                                                 Minimum Amount (USD)
                                             </label>
                                             <input
                                                 type="number"
                                                 value={localConfig?.min_amount || ''}
                                                 onChange={(e) => setLocalConfig({ ...localConfig, min_amount: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                className={CONTROL_CLS}
                                                 placeholder="e.g. 50"
                                             />
                                         </div>
@@ -1363,30 +1013,30 @@ const WorkflowEditor = () => {
                         {/* Trigger-specific config: Incoming Webhook */}
                         {selectedNode.type === 'trigger' && selectedNode.data.triggerType === 'webhook_received' && (
                             <>
-                                <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600">
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Incoming Webhook</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                <div className="p-3 bg-surface-3 rounded-lg border border-border-strong">
+                                    <p className="text-sm text-fg font-medium">Incoming Webhook</p>
+                                    <p className="text-xs text-fg-muted mt-1">
                                         Any app can start this workflow by POSTing JSON to the URL below. Its fields become variables, e.g. {'{{email}}'}.
                                     </p>
                                 </div>
                                 {localConfig?.webhook_secret ? (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Webhook URL</label>
+                                        <label className={LABEL_CLS}>Webhook URL</label>
                                         {isNew ? (
                                             <p className="text-xs text-amber-600">Save the workflow first; the URL includes its ID.</p>
                                         ) : (
                                             <div className="flex gap-2">
-                                                <input readOnly value={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`} className="flex-1 min-w-0 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono" />
-                                                <button type="button" onClick={() => { navigator.clipboard.writeText(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`); toast.success('Webhook URL copied'); }} className="px-3 py-2 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200">Copy</button>
+                                                <input readOnly value={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`} className="flex-1 min-w-0 px-3 py-2 border border-border-strong rounded-lg bg-surface-2 text-fg text-xs font-mono" />
+                                                <button type="button" onClick={() => { navigator.clipboard.writeText(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api')}/workflows/hooks/${id}/${localConfig.webhook_secret}`); toast.success('Webhook URL copied'); }} className="px-3 py-2 text-xs font-medium rounded-lg border border-border-strong text-fg">Copy</button>
                                             </div>
                                         )}
-                                        <p className="text-xs text-slate-500 mt-1">Treat this URL like a password. The workflow must be active.</p>
+                                        <p className="text-xs text-fg-muted mt-1">Treat this URL like a password. The workflow must be active.</p>
                                     </div>
                                 ) : null}
                                 <button
                                     type="button"
                                     onClick={() => setLocalConfig({ ...localConfig, webhook_secret: crypto.randomUUID().replace(/-/g, '') })}
-                                    className="w-full px-3 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                                    className="w-full px-3 py-2 text-sm font-medium rounded-lg border border-border-strong text-fg hover:bg-surface-2"
                                 >
                                     {localConfig?.webhook_secret ? 'Regenerate secret (old URL stops working)' : 'Generate webhook URL'}
                                 </button>
@@ -1396,41 +1046,41 @@ const WorkflowEditor = () => {
                         {/* Trigger-specific config: Manual */}
                         {selectedNode.type === 'trigger' && (selectedNode.data.triggerType === 'manual' || selectedNode.data.label === 'Manual Trigger') && (
                             <>
-                                <div className="p-3 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600">
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                <div className="p-3 bg-surface-3 rounded-lg border border-border-strong">
+                                    <p className="text-sm text-fg font-medium">
                                         Manually triggered workflow
                                     </p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    <p className="text-xs text-fg-muted mt-1">
                                         Run this workflow on-demand from the workflows list
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Target Entity Type
                                     </label>
                                     <select
                                         value={localConfig?.target_type || 'leads'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, target_type: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="leads">Leads</option>
                                         <option value="clients">Clients</option>
                                         <option value="selected">Selected Entities Only</option>
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">When triggered, run on these entities</p>
+                                    <p className={HINT_CLS}>When triggered, run on these entities</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter Query (Optional)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.filter_query || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, filter_query: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="status:qualified AND source:website"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Filter entities before running</p>
+                                    <p className={HINT_CLS}>Filter entities before running</p>
                                 </div>
                             </>
                         )}
@@ -1447,13 +1097,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Filter by Account (Optional)
                                     </label>
                                     <select
                                         value={localConfig?.account_id_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, account_id_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">All accounts</option>
                                         {waAccounts.map(a => (
@@ -1462,20 +1112,20 @@ const WorkflowEditor = () => {
                                             </option>
                                         ))}
                                     </select>
-                                    <p className="text-xs text-slate-400 mt-1">Leave empty to trigger for messages on any account</p>
+                                    <p className={HINT_CLS}>Leave empty to trigger for messages on any account</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Keyword Filter (Optional)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.keyword_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, keyword_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="e.g. pricing, help, demo"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Only trigger if message contains this word (comma-separated for multiple)</p>
+                                    <p className={HINT_CLS}>Only trigger if message contains this word (comma-separated for multiple)</p>
                                 </div>
                             </>
                         )}
@@ -1484,7 +1134,7 @@ const WorkflowEditor = () => {
                         {selectedNode.type === 'action' && selectedNode.data.actionType === 'send_email' && (
                             <>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Email Template
                                     </label>
                                     <SearchableSelect
@@ -1509,52 +1159,52 @@ const WorkflowEditor = () => {
                                         renderOption={(t) => (
                                             <span className="flex items-center gap-2">
                                                 <span>{t.name}</span>
-                                                {t.category && <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400">{t.category}</span>}
+                                                {t.category && <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-600 text-fg-muted">{t.category}</span>}
                                             </span>
                                         )}
                                         hint={emailTemplates.length === 0 ? 'No templates found. Go to Templates to create one.' : 'Type to search or select a template'}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         To Email (Recipient)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.to_email || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, to_email: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="{{email}}"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Use {"{{email}}"} for the inquiry/lead email address</p>
+                                    <p className={HINT_CLS}>Use {"{{email}}"} for the inquiry/lead email address</p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Email Subject
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.subject || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, subject: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Welcome {{contact_name}}!"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Email Body
                                     </label>
                                     <textarea
                                         rows={4}
                                         value={localConfig?.body || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, body: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Hello {{contact_name}}, ..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Attach Document as PDF
                                     </label>
                                     <SearchableSelect
@@ -1577,11 +1227,11 @@ const WorkflowEditor = () => {
                                         getOptionValue={(d) => d.slug}
                                         renderOption={(d) => (
                                             <span className="flex items-center gap-2">
-                                                <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-3.5 h-3.5 text-fg-subtle flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                 </svg>
                                                 <span>{d.name}</span>
-                                                <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-600 text-slate-500 dark:text-slate-400">{d.category}</span>
+                                                <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-600 text-fg-muted">{d.category}</span>
                                             </span>
                                         )}
                                         hint={localConfig?.document_slug
@@ -1607,7 +1257,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Update Status To
                                     </label>
                                     <select
@@ -1617,7 +1267,7 @@ const WorkflowEditor = () => {
                                             new_status: e.target.value,
                                             updates: { ...localConfig?.updates, status: e.target.value }
                                         })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- No change --</option>
                                         <option value="new">New</option>
@@ -1630,7 +1280,7 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Update Source To
                                     </label>
                                     <select
@@ -1640,7 +1290,7 @@ const WorkflowEditor = () => {
                                             new_source: e.target.value,
                                             updates: { ...localConfig?.updates, source: e.target.value }
                                         })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- No change --</option>
                                         <option value="website">Website</option>
@@ -1651,14 +1301,14 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Add Tags (comma-separated)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.add_tags || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, add_tags: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="hot-lead, follow-up"
                                     />
                                 </div>
@@ -1674,7 +1324,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Update Status To
                                     </label>
                                     <select
@@ -1684,7 +1334,7 @@ const WorkflowEditor = () => {
                                             new_status: e.target.value,
                                             updates: { ...localConfig?.updates, status: e.target.value }
                                         })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- No change --</option>
                                         <option value="active">Active</option>
@@ -1695,7 +1345,7 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Update Client Type To
                                     </label>
                                     <select
@@ -1705,7 +1355,7 @@ const WorkflowEditor = () => {
                                             new_client_type: e.target.value,
                                             updates: { ...localConfig?.updates, client_type: e.target.value }
                                         })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- No change --</option>
                                         <option value="individual">Individual</option>
@@ -1714,14 +1364,14 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Add Tags (comma-separated)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.add_tags || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, add_tags: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                             </>
@@ -1736,7 +1386,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Set Status to
                                     </label>
                                     <select
@@ -1745,7 +1395,7 @@ const WorkflowEditor = () => {
                                             ...localConfig,
                                             updates: { ...localConfig.updates, status: e.target.value }
                                         })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- No change --</option>
                                         <option value="new">New</option>
@@ -1766,37 +1416,37 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Task Title
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.title || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, title: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Follow up with {{contact_name}}"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Task Description
                                     </label>
                                     <textarea
                                         rows={2}
                                         value={localConfig?.description || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, description: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Task details..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Priority
                                     </label>
                                     <select
                                         value={localConfig?.priority || 'medium'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, priority: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
@@ -1805,7 +1455,7 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Due In
                                     </label>
                                     <div className="grid grid-cols-2 gap-2">
@@ -1814,12 +1464,12 @@ const WorkflowEditor = () => {
                                             min="1"
                                             value={localConfig?.due_in_value || 1}
                                             onChange={(e) => setLocalConfig({ ...localConfig, due_in_value: parseInt(e.target.value) })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         />
                                         <select
                                             value={localConfig?.due_in_unit || 'days'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, due_in_unit: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         >
                                             <option value="hours">Hours</option>
                                             <option value="days">Days</option>
@@ -1839,13 +1489,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Assignment Method
                                     </label>
                                     <select
                                         value={localConfig?.assignment_method || 'round_robin'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, assignment_method: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="round_robin">Round Robin</option>
                                         <option value="least_busy">Least Busy</option>
@@ -1855,30 +1505,30 @@ const WorkflowEditor = () => {
                                 </div>
                                 {localConfig?.assignment_method === 'specific_user' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             User ID or Email
                                         </label>
                                         <input
                                             type="text"
                                             value={localConfig?.specific_user || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, specific_user: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                             placeholder="user@example.com"
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Team/Department Filter
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.team_filter || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, team_filter: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="sales"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Only assign to users in this team</p>
+                                    <p className={HINT_CLS}>Only assign to users in this team</p>
                                 </div>
                             </>
                         )}
@@ -1892,14 +1542,14 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         User ID
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.user_id || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, user_id: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="User ID"
                                     />
                                 </div>
@@ -1915,25 +1565,25 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Note Content
                                     </label>
                                     <textarea
                                         rows={3}
                                         value={localConfig?.content || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, content: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Automated note: {{contact_name}} was qualified via workflow"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Note Type
                                     </label>
                                     <select
                                         value={localConfig?.note_type || 'general'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, note_type: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="general">General</option>
                                         <option value="call">Call Note</option>
@@ -1942,17 +1592,17 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Activity Summary (Optional)
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.summary || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, summary: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="Automated Note"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">This will show up in the activity timeline header.</p>
+                                    <p className={HINT_CLS}>This will show up in the activity timeline header.</p>
                                 </div>
                             </>
                         )}
@@ -1966,37 +1616,37 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Notification Title
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.title || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, title: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="New lead assigned to you"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Notification Message
                                     </label>
                                     <textarea
                                         rows={2}
                                         value={localConfig?.message || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, message: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="{{contact_name}} from {{company}} needs follow-up"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Send To
                                     </label>
                                     <select
                                         value={localConfig?.send_to || 'assigned_user'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, send_to: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="assigned_user">Assigned User</option>
                                         <option value="all_admins">All Admins</option>
@@ -2016,25 +1666,25 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Webhook URL
                                     </label>
                                     <input
                                         type="url"
                                         value={localConfig?.url || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                         placeholder="https://api.example.com/webhook"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         HTTP Method
                                     </label>
                                     <select
                                         value={localConfig?.method || 'POST'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, method: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="POST">POST</option>
                                         <option value="PUT">PUT</option>
@@ -2043,29 +1693,29 @@ const WorkflowEditor = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Headers (JSON)
                                     </label>
                                     <textarea
                                         rows={2}
                                         value={localConfig?.headers_json || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, headers_json: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
+                                        className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 font-mono text-xs"
                                         placeholder='{"Authorization": "Bearer xxx"}'
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Custom Payload (JSON)
                                     </label>
                                     <textarea
                                         rows={3}
                                         value={localConfig?.custom_payload || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, custom_payload: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-xs"
+                                        className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 font-mono text-xs"
                                         placeholder="Leave empty to send entity data"
                                     />
-                                    <p className="text-xs text-slate-400 mt-1">Leave empty to send all entity data automatically</p>
+                                    <p className={HINT_CLS}>Leave empty to send all entity data automatically</p>
                                 </div>
                             </>
                         )}
@@ -2086,7 +1736,7 @@ const WorkflowEditor = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         AI Prompt / Instructions
                                     </label>
                                     <textarea
@@ -2094,15 +1744,15 @@ const WorkflowEditor = () => {
                                         value={localConfig?.prompt || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, prompt: e.target.value })}
                                         placeholder="e.g. Analyze this lead: {{name}} from {{company}}"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
-                                    <p className="mt-1 text-[10px] text-slate-400">
+                                    <p className="mt-1 text-[10px] text-fg-subtle">
                                         Use {'{{variable}}'} to inject dynamic data.
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         System Message
                                     </label>
                                     <input
@@ -2110,19 +1760,19 @@ const WorkflowEditor = () => {
                                         value={localConfig?.system_message || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, system_message: e.target.value })}
                                         placeholder="e.g. You are an expert sales analyst."
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             AI Model
                                         </label>
                                         <select
                                             value={localConfig?.model || 'gpt-4o-mini'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                            className={CONTROL_CLS}
                                         >
                                             <optgroup label="Google Gemini (Free Tier)">
                                                 <option value="gemini-2.0-flash">Gemini 2.0 Flash (Latest)</option>
@@ -2148,7 +1798,7 @@ const WorkflowEditor = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Store Result In
                                         </label>
                                         <input
@@ -2156,7 +1806,7 @@ const WorkflowEditor = () => {
                                             value={localConfig?.output_variable || 'ai_response'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, output_variable: e.target.value })}
                                             placeholder="variable_name"
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                            className={CONTROL_CLS}
                                         />
                                     </div>
                                 </div>
@@ -2169,7 +1819,7 @@ const WorkflowEditor = () => {
                                         onChange={(e) => setLocalConfig({ ...localConfig, strict_mode: e.target.checked })}
                                         className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                                     />
-                                    <label htmlFor="strict_mode" className="text-sm text-slate-600 dark:text-slate-400">
+                                    <label htmlFor="strict_mode" className="text-sm text-fg-muted">
                                         Strict Mode (Fail workflow on AI error)
                                     </label>
                                 </div>
@@ -2191,7 +1841,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Blog Niche / Category
                                     </label>
                                     <input
@@ -2199,11 +1849,11 @@ const WorkflowEditor = () => {
                                         value={localConfig?.niche || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, niche: e.target.value })}
                                         placeholder="Default: CRM, lead follow-up and sales process for Indian service businesses"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Brand Context / Instructions
                                     </label>
                                     <textarea
@@ -2211,20 +1861,20 @@ const WorkflowEditor = () => {
                                         value={localConfig?.brand_context || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })}
                                         placeholder="Real facts about Napnix the writer may use (products, audience, real customer stories) plus any extra instructions. Leave empty to use the default Napnix context."
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
-                                    <p className="text-[11px] text-slate-500 mt-1">
+                                    <p className="text-[11px] text-fg-muted mt-1">
                                         Passed to AI Write Blog too. The AI only states facts written here; it never invents stats, quotes or clients.
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         AI Model
                                     </label>
                                     <select
                                         value={localConfig?.model || 'llama-3.3-70b-versatile'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     >
                                         <optgroup label="Groq / Open Source (Fast)">
                                             <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Default)</option>
@@ -2245,7 +1895,7 @@ const WorkflowEditor = () => {
                                         </optgroup>
                                     </select>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Outputs:</strong> blog_topic, blog_keywords[], blog_image_query, blog_outline[]
                                 </div>
                             </>
@@ -2267,24 +1917,24 @@ const WorkflowEditor = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Word Count
                                         </label>
                                         <input
                                             type="number"
                                             value={localConfig?.word_count || 1000}
                                             onChange={(e) => setLocalConfig({ ...localConfig, word_count: parseInt(e.target.value) || 1000 })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                            className={CONTROL_CLS}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Tone
                                         </label>
                                         <select
                                             value={localConfig?.tone || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, tone: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                            className={CONTROL_CLS}
                                         >
                                             <option value="">Auto (rotate styles)</option>
                                             <option value="professional">Professional</option>
@@ -2295,13 +1945,13 @@ const WorkflowEditor = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         AI Model
                                     </label>
                                     <select
                                         value={localConfig?.model || 'llama-3.3-70b-versatile'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     >
                                         <optgroup label="Groq / Open Source (Fast)">
                                             <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Default)</option>
@@ -2322,7 +1972,7 @@ const WorkflowEditor = () => {
                                         </optgroup>
                                     </select>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Uses:</strong> blog_topic, blog_keywords, blog_outline<br />
                                     <strong>Outputs:</strong> blog_title, blog_excerpt, blog_content
                                 </div>
@@ -2344,7 +1994,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Query Override (Optional)
                                     </label>
                                     <input
@@ -2352,10 +2002,10 @@ const WorkflowEditor = () => {
                                         value={localConfig?.query || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, query: e.target.value })}
                                         placeholder="Leave empty to use AI-generated query"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Uses:</strong> blog_image_query<br />
                                     <strong>Outputs:</strong> blog_image, blog_image_credit
                                 </div>
@@ -2377,7 +2027,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Category
                                     </label>
                                     <input
@@ -2385,11 +2035,11 @@ const WorkflowEditor = () => {
                                         value={localConfig?.category || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, category: e.target.value })}
                                         placeholder="General"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Author
                                     </label>
                                     <input
@@ -2397,23 +2047,23 @@ const WorkflowEditor = () => {
                                         value={localConfig?.author || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, author: e.target.value })}
                                         placeholder="AI Writer"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Publish Status
                                     </label>
                                     <select
                                         value={localConfig?.status || 'draft'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, status: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="draft">Draft (Review First)</option>
                                         <option value="published">Published (Auto-Publish)</option>
                                     </select>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Uses:</strong> blog_title, blog_excerpt, blog_content, blog_image<br />
                                     <strong>Outputs:</strong> blog_posted, blog_id, blog_slug
                                 </div>
@@ -2429,11 +2079,11 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Goal</label>
-                                    <textarea rows={5} value={localConfig?.goal || ''} onChange={(e) => setLocalConfig({ ...localConfig, goal: e.target.value })} placeholder="Find one keyword clinic owners search that we rank 8-20 for or don't cover yet, check our existing posts to avoid duplicates, then write one draft targeting it." className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    <label className={LABEL_CLS}>Goal</label>
+                                    <textarea rows={5} value={localConfig?.goal || ''} onChange={(e) => setLocalConfig({ ...localConfig, goal: e.target.value })} placeholder="Find one keyword clinic owners search that we rank 8-20 for or don't cover yet, check our existing posts to avoid duplicates, then write one draft targeting it." className={CONTROL_CLS} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tools</label>
+                                    <label className={LABEL_CLS}>Tools</label>
                                     {[
                                         ['keyword_research', 'Keyword research (Google Autocomplete)'],
                                         ['gsc_opportunities', 'Search Console opportunities'],
@@ -2444,7 +2094,7 @@ const WorkflowEditor = () => {
                                         const tools = localConfig?.tools || ['keyword_research', 'gsc_opportunities', 'list_blog_posts', 'write_blog_draft'];
                                         const required = localConfig?.require_tools || [];
                                         return (
-                                            <div key={id} className="flex items-center justify-between gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                            <div key={id} className="flex items-center justify-between gap-2 text-sm text-fg">
                                                 <label className="flex items-center gap-2">
                                                     <input
                                                         type="checkbox"
@@ -2454,7 +2104,7 @@ const WorkflowEditor = () => {
                                                     {label}
                                                 </label>
                                                 {tools.includes(id) && (
-                                                    <label className="flex items-center gap-1 text-xs text-slate-500" title="The agent cannot finish until this tool has run successfully">
+                                                    <label className="flex items-center gap-1 text-xs text-fg-muted" title="The agent cannot finish until this tool has run successfully">
                                                         <input
                                                             type="checkbox"
                                                             checked={required.includes(id)}
@@ -2469,43 +2119,43 @@ const WorkflowEditor = () => {
                                 </div>
                                 {(localConfig?.tools || []).includes('http_get') && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Allowed Hosts</label>
-                                        <input type="text" value={localConfig?.allowed_hosts || ''} onChange={(e) => setLocalConfig({ ...localConfig, allowed_hosts: e.target.value })} placeholder="api.napnix.in, napnix.in" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">Fetched pages can contain instructions aimed at the agent; only list sites you trust.</p>
+                                        <label className={LABEL_CLS}>Allowed Hosts</label>
+                                        <input type="text" value={localConfig?.allowed_hosts || ''} onChange={(e) => setLocalConfig({ ...localConfig, allowed_hosts: e.target.value })} placeholder="api.napnix.in, napnix.in" className={CONTROL_CLS} />
+                                        <p className="text-xs text-fg-muted mt-1">Fetched pages can contain instructions aimed at the agent; only list sites you trust.</p>
                                     </div>
                                 )}
                                 {(localConfig?.tools || ['write_blog_draft']).includes('write_blog_draft') && (
-                                    <label className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                    <label className="flex items-start gap-2 text-sm text-fg">
                                         <input type="checkbox" className="mt-0.5" checked={localConfig?.publish === true} onChange={(e) => setLocalConfig({ ...localConfig, publish: e.target.checked })} />
                                         <span>
                                             Publish blog posts automatically
-                                            <span className="block text-xs text-slate-500">Off = saved as drafts for review. On = live on the website immediately and submitted for indexing.</span>
+                                            <span className="block text-xs text-fg-muted">Off = saved as drafts for review. On = live on the website immediately and submitted for indexing.</span>
                                         </span>
                                     </label>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Context (for blog posts)</label>
-                                    <textarea rows={4} value={localConfig?.brand_context || ''} onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })} placeholder="Leave empty to use the default Napnix context." className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    <label className={LABEL_CLS}>Brand Context (for blog posts)</label>
+                                    <textarea rows={4} value={localConfig?.brand_context || ''} onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })} placeholder="Leave empty to use the default Napnix context." className={CONTROL_CLS} />
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Steps</label>
-                                        <input type="number" min={1} max={15} value={localConfig?.max_steps || 6} onChange={(e) => setLocalConfig({ ...localConfig, max_steps: parseInt(e.target.value) || 6 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Max Steps</label>
+                                        <input type="number" min={1} max={15} value={localConfig?.max_steps || 6} onChange={(e) => setLocalConfig({ ...localConfig, max_steps: parseInt(e.target.value) || 6 })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Posts</label>
-                                        <input type="number" min={1} max={5} value={localConfig?.max_drafts || 1} onChange={(e) => setLocalConfig({ ...localConfig, max_drafts: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Max Posts</label>
+                                        <input type="number" min={1} max={5} value={localConfig?.max_drafts || 1} onChange={(e) => setLocalConfig({ ...localConfig, max_drafts: parseInt(e.target.value) || 1 })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Save As</label>
-                                        <input type="text" value={localConfig?.output_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, output_variable: e.target.value })} placeholder="agent_result" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Save As</label>
+                                        <input type="text" value={localConfig?.output_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, output_variable: e.target.value })} placeholder="agent_result" className={CONTROL_CLS} />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">AI Model (optional)</label>
-                                    <input type="text" value={localConfig?.model || ''} onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })} placeholder="Default model with provider fallback" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    <label className={LABEL_CLS}>AI Model (optional)</label>
+                                    <input type="text" value={localConfig?.model || ''} onChange={(e) => setLocalConfig({ ...localConfig, model: e.target.value })} placeholder="Default model with provider fallback" className={CONTROL_CLS} />
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Outputs:</strong> {'{{agent_result}}'} (final answer), {'{{agent_result_steps}}'} (every tool call and result, also in the run log)
                                 </div>
                             </>
@@ -2521,48 +2171,48 @@ const WorkflowEditor = () => {
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Method</label>
-                                        <select value={localConfig?.method || 'GET'} onChange={(e) => setLocalConfig({ ...localConfig, method: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                        <label className={LABEL_CLS}>Method</label>
+                                        <select value={localConfig?.method || 'GET'} onChange={(e) => setLocalConfig({ ...localConfig, method: e.target.value })} className={CONTROL_CLS}>
                                             {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => <option key={m} value={m}>{m}</option>)}
                                         </select>
                                     </div>
                                     <div className="col-span-2">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">URL</label>
-                                        <input type="text" value={localConfig?.url || ''} onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })} placeholder="https://api.example.com/items?q={{company}}" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>URL</label>
+                                        <input type="text" value={localConfig?.url || ''} onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })} placeholder="https://api.example.com/items?q={{company}}" className={CONTROL_CLS} />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Headers (one per line)</label>
-                                    <textarea rows={3} value={typeof localConfig?.headers === 'string' ? localConfig.headers : ''} onChange={(e) => setLocalConfig({ ...localConfig, headers: e.target.value })} placeholder="Authorization: Bearer YOUR_TOKEN" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                    <label className={LABEL_CLS}>Headers (one per line)</label>
+                                    <textarea rows={3} value={typeof localConfig?.headers === 'string' ? localConfig.headers : ''} onChange={(e) => setLocalConfig({ ...localConfig, headers: e.target.value })} placeholder="Authorization: Bearer YOUR_TOKEN" className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
                                     <p className="text-xs text-amber-600 mt-1">Stored in the workflow config as plain text. Use a scoped, revocable token.</p>
                                 </div>
                                 {(localConfig?.method || 'GET') !== 'GET' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Body</label>
-                                        <select value={localConfig?.body_mode || 'custom'} onChange={(e) => setLocalConfig({ ...localConfig, body_mode: e.target.value })} className="w-full mb-2 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                        <label className={LABEL_CLS}>Body</label>
+                                        <select value={localConfig?.body_mode || 'custom'} onChange={(e) => setLocalConfig({ ...localConfig, body_mode: e.target.value })} className="w-full mb-2 px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-sm">
                                             <option value="custom">Custom body</option>
                                             <option value="context">Send all workflow data as JSON</option>
                                         </select>
                                         {(localConfig?.body_mode || 'custom') === 'custom' && (
-                                            <textarea rows={5} value={localConfig?.body || ''} onChange={(e) => setLocalConfig({ ...localConfig, body: e.target.value })} placeholder={'{"email": "{{email}}", "name": "{{name}}"}'} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                            <textarea rows={5} value={localConfig?.body || ''} onChange={(e) => setLocalConfig({ ...localConfig, body: e.target.value })} placeholder={'{"email": "{{email}}", "name": "{{name}}"}'} className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
                                         )}
                                     </div>
                                 )}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Save Response As</label>
-                                        <input type="text" value={localConfig?.response_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, response_variable: e.target.value })} placeholder="http_response" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Save Response As</label>
+                                        <input type="text" value={localConfig?.response_variable || ''} onChange={(e) => setLocalConfig({ ...localConfig, response_variable: e.target.value })} placeholder="http_response" className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Timeout (sec)</label>
-                                        <input type="number" value={localConfig?.timeout_seconds || 30} onChange={(e) => setLocalConfig({ ...localConfig, timeout_seconds: parseInt(e.target.value) || 30 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Timeout (sec)</label>
+                                        <input type="number" value={localConfig?.timeout_seconds || 30} onChange={(e) => setLocalConfig({ ...localConfig, timeout_seconds: parseInt(e.target.value) || 30 })} className={CONTROL_CLS} />
                                     </div>
                                 </div>
-                                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                <label className="flex items-center gap-2 text-sm text-fg">
                                     <input type="checkbox" checked={localConfig?.fail_on_error !== false} onChange={(e) => setLocalConfig({ ...localConfig, fail_on_error: e.target.checked })} />
                                     Stop workflow on non-2xx response
                                 </label>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Outputs:</strong> {'{{<name>}}'} (parsed JSON or text), {'{{<name>_status}}'}
                                 </div>
                             </>
@@ -2577,26 +2227,26 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Seed Keywords (one per line)</label>
+                                    <label className={LABEL_CLS}>Seed Keywords (one per line)</label>
                                     <textarea
                                         rows={5}
                                         value={localConfig?.seeds || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, seeds: e.target.value })}
                                         placeholder={'crm for clinic\nlead follow up\nrestaurant billing software'}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Country</label>
-                                        <input type="text" value={localConfig?.country || 'in'} onChange={(e) => setLocalConfig({ ...localConfig, country: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Country</label>
+                                        <input type="text" value={localConfig?.country || 'in'} onChange={(e) => setLocalConfig({ ...localConfig, country: e.target.value })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Ideas</label>
-                                        <input type="number" value={localConfig?.limit || 40} onChange={(e) => setLocalConfig({ ...localConfig, limit: parseInt(e.target.value) || 40 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Max Ideas</label>
+                                        <input type="number" value={localConfig?.limit || 40} onChange={(e) => setLocalConfig({ ...localConfig, limit: parseInt(e.target.value) || 40 })} className={CONTROL_CLS} />
                                     </div>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Outputs:</strong> keyword_suggestions[], seo_keyword_ideas[] (used by AI Pick Topic)
                                 </div>
                             </>
@@ -2611,24 +2261,24 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Property</label>
-                                    <input type="text" value={localConfig?.property || ''} onChange={(e) => setLocalConfig({ ...localConfig, property: e.target.value })} placeholder="Default: sc-domain:<website host>" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    <label className={LABEL_CLS}>Property</label>
+                                    <input type="text" value={localConfig?.property || ''} onChange={(e) => setLocalConfig({ ...localConfig, property: e.target.value })} placeholder="Default: sc-domain:<website host>" className={CONTROL_CLS} />
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Days</label>
-                                        <input type="number" value={localConfig?.days || 28} onChange={(e) => setLocalConfig({ ...localConfig, days: parseInt(e.target.value) || 28 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Days</label>
+                                        <input type="number" value={localConfig?.days || 28} onChange={(e) => setLocalConfig({ ...localConfig, days: parseInt(e.target.value) || 28 })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Min Impr.</label>
-                                        <input type="number" value={localConfig?.min_impressions || 5} onChange={(e) => setLocalConfig({ ...localConfig, min_impressions: parseInt(e.target.value) || 5 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Min Impr.</label>
+                                        <input type="number" value={localConfig?.min_impressions || 5} onChange={(e) => setLocalConfig({ ...localConfig, min_impressions: parseInt(e.target.value) || 5 })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Pos.</label>
-                                        <input type="number" value={localConfig?.max_position || 20} onChange={(e) => setLocalConfig({ ...localConfig, max_position: parseInt(e.target.value) || 20 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Max Pos.</label>
+                                        <input type="number" value={localConfig?.max_position || 20} onChange={(e) => setLocalConfig({ ...localConfig, max_position: parseInt(e.target.value) || 20 })} className={CONTROL_CLS} />
                                     </div>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Outputs:</strong> gsc_opportunities[] (query, page, impressions, position), seo_keyword_ideas[]
                                 </div>
                             </>
@@ -2648,7 +2298,7 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         URL to Index (Optional)
                                     </label>
                                     <input
@@ -2656,12 +2306,12 @@ const WorkflowEditor = () => {
                                         value={localConfig?.url || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, url: e.target.value })}
                                         placeholder="https://yoursite.com/page or {{blog_slug}}"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">Leave blank to auto-detect from previous nodes (blog_slug, page_slug).</p>
+                                    <p className="text-xs text-fg-muted mt-1">Leave blank to auto-detect from previous nodes (blog_slug, page_slug).</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Search Engines
                                     </label>
                                     <div className="space-y-2 mt-1">
@@ -2681,30 +2331,30 @@ const WorkflowEditor = () => {
                                                     }}
                                                     className="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
                                                 />
-                                                <span className="text-sm text-slate-700 dark:text-slate-300">{engine.label}</span>
+                                                <span className="text-sm text-fg">{engine.label}</span>
                                             </label>
                                         ))}
                                     </div>
                                 </div>
-                                <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs text-slate-500">
+                                <div className="p-2 bg-surface-2 rounded text-xs text-fg-muted">
                                     <strong>Auto-detects:</strong> blog_slug, page_slug, product_id<br />
                                     <strong>Best after:</strong> Post Blog
                                 </div>
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 mt-1">
-                                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Credentials (optional — falls back to global settings)</label>
+                                <div className="border-t border-border pt-3 mt-1">
+                                    <label className="block text-xs font-semibold text-fg-muted mb-2 uppercase tracking-wider">Credentials (optional — falls back to global settings)</label>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Website URL</label>
-                                            <input type="text" value={localConfig?.websiteUrl || ''} onChange={(e) => setLocalConfig({ ...localConfig, websiteUrl: e.target.value })} placeholder="https://yoursite.com (uses global if empty)" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                            <label className={LABEL_CLS}>Website URL</label>
+                                            <input type="text" value={localConfig?.websiteUrl || ''} onChange={(e) => setLocalConfig({ ...localConfig, websiteUrl: e.target.value })} placeholder="https://yoursite.com (uses global if empty)" className={CONTROL_CLS} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">IndexNow API Key</label>
-                                            <input type="text" value={localConfig?.indexnowKey || ''} onChange={(e) => setLocalConfig({ ...localConfig, indexnowKey: e.target.value })} placeholder="Uses global key if empty" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                            <label className={LABEL_CLS}>IndexNow API Key</label>
+                                            <input type="text" value={localConfig?.indexnowKey || ''} onChange={(e) => setLocalConfig({ ...localConfig, indexnowKey: e.target.value })} placeholder="Uses global key if empty" className={CONTROL_CLS} />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Google Service Account JSON</label>
-                                            <textarea value={localConfig?.googleServiceAccountJson || ''} onChange={(e) => setLocalConfig({ ...localConfig, googleServiceAccountJson: e.target.value })} placeholder='Paste service account JSON (uses global if empty)' rows={3} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
-                                            <p className="text-xs text-slate-500 mt-1">Required for Google Indexing API. Add the service account as a site owner in Google Search Console.</p>
+                                            <label className={LABEL_CLS}>Google Service Account JSON</label>
+                                            <textarea value={localConfig?.googleServiceAccountJson || ''} onChange={(e) => setLocalConfig({ ...localConfig, googleServiceAccountJson: e.target.value })} placeholder='Paste service account JSON (uses global if empty)' rows={3} className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-xs font-mono" />
+                                            <p className="text-xs text-fg-muted mt-1">Required for Google Indexing API. Add the service account as a site owner in Google Search Console.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -2721,13 +2371,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Delay Type
                                     </label>
                                     <select
                                         value={localConfig?.delay_type || 'duration'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, delay_type: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="duration">Wait for duration</option>
                                         <option value="until_time">Wait until specific time</option>
@@ -2738,7 +2388,7 @@ const WorkflowEditor = () => {
                                 {(!localConfig?.delay_type || localConfig?.delay_type === 'duration') && (
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            <label className={LABEL_CLS}>
                                                 Duration
                                             </label>
                                             <input
@@ -2746,17 +2396,17 @@ const WorkflowEditor = () => {
                                                 min="1"
                                                 value={localConfig?.value || 1}
                                                 onChange={(e) => setLocalConfig({ ...localConfig, value: parseInt(e.target.value) })}
-                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                className={CONTROL_CLS}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            <label className={LABEL_CLS}>
                                                 Unit
                                             </label>
                                             <select
                                                 value={localConfig?.unit || 'hours'}
                                                 onChange={(e) => setLocalConfig({ ...localConfig, unit: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                className={CONTROL_CLS}
                                             >
                                                 <option value="minutes">Minutes</option>
                                                 <option value="hours">Hours</option>
@@ -2769,29 +2419,29 @@ const WorkflowEditor = () => {
 
                                 {localConfig?.delay_type === 'until_time' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Wait Until Time
                                         </label>
                                         <input
                                             type="time"
                                             value={localConfig?.until_time || '09:00'}
                                             onChange={(e) => setLocalConfig({ ...localConfig, until_time: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                         />
-                                        <p className="text-xs text-slate-400 mt-1">Wait until this time (next occurrence if already passed)</p>
+                                        <p className={HINT_CLS}>Wait until this time (next occurrence if already passed)</p>
                                     </div>
                                 )}
 
                                 {localConfig?.delay_type === 'until_day' && (
                                     <>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            <label className={LABEL_CLS}>
                                                 Wait Until Day
                                             </label>
                                             <select
                                                 value={localConfig?.until_day || 'monday'}
                                                 onChange={(e) => setLocalConfig({ ...localConfig, until_day: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                className={CONTROL_CLS}
                                             >
                                                 <option value="monday">Monday</option>
                                                 <option value="tuesday">Tuesday</option>
@@ -2803,20 +2453,20 @@ const WorkflowEditor = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                            <label className={LABEL_CLS}>
                                                 At Time
                                             </label>
                                             <input
                                                 type="time"
                                                 value={localConfig?.at_time || '09:00'}
                                                 onChange={(e) => setLocalConfig({ ...localConfig, at_time: e.target.value })}
-                                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                                className={CONTROL_CLS}
                                             />
                                         </div>
                                     </>
                                 )}
 
-                                <div className="flex items-center gap-2 p-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                <div className="flex items-center gap-2 p-2 bg-surface-3 rounded">
                                     <input
                                         type="checkbox"
                                         id="skip_weekends"
@@ -2824,7 +2474,7 @@ const WorkflowEditor = () => {
                                         onChange={(e) => setLocalConfig({ ...localConfig, skip_weekends: e.target.checked })}
                                         className="w-4 h-4 rounded border-slate-300"
                                     />
-                                    <label htmlFor="skip_weekends" className="text-sm text-slate-600 dark:text-slate-300">
+                                    <label htmlFor="skip_weekends" className="text-sm text-fg-muted">
                                         Skip weekends (resume on Monday)
                                     </label>
                                 </div>
@@ -2842,13 +2492,13 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Field to Check
                                     </label>
                                     <select
                                         value={localConfig?.field || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, field: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">-- Select Field --</option>
                                         <optgroup label="Lead/Client Fields">
@@ -2873,26 +2523,26 @@ const WorkflowEditor = () => {
                                 </div>
                                 {localConfig?.field === 'custom' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             Custom Field Name
                                         </label>
                                         <input
                                             type="text"
                                             value={localConfig?.custom_field || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, custom_field: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                             placeholder="custom_field_name"
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Operator
                                     </label>
                                     <select
                                         value={localConfig?.operator || 'equals'}
                                         onChange={(e) => setLocalConfig({ ...localConfig, operator: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                        className={CONTROL_CLS}
                                     >
                                         <optgroup label="Text Comparisons">
                                             <option value="equals">Equals</option>
@@ -2922,7 +2572,7 @@ const WorkflowEditor = () => {
                                 </div>
                                 {!['is_empty', 'is_not_empty', 'is_null', 'is_not_null'].includes(localConfig?.operator) && (
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        <label className={LABEL_CLS}>
                                             {['in_list', 'not_in_list'].includes(localConfig?.operator)
                                                 ? 'Values (comma-separated)'
                                                 : 'Value'}
@@ -2931,14 +2581,14 @@ const WorkflowEditor = () => {
                                             type="text"
                                             value={localConfig?.value || ''}
                                             onChange={(e) => setLocalConfig({ ...localConfig, value: e.target.value })}
-                                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                            className={CONTROL_CLS}
                                             placeholder={['in_list', 'not_in_list'].includes(localConfig?.operator)
                                                 ? 'qualified, proposal_sent, won'
                                                 : 'qualified'}
                                         />
                                     </div>
                                 )}
-                                <div className="flex items-center gap-2 p-2 bg-slate-100 dark:bg-slate-700 rounded">
+                                <div className="flex items-center gap-2 p-2 bg-surface-3 rounded">
                                     <input
                                         type="checkbox"
                                         id="case_insensitive"
@@ -2946,29 +2596,29 @@ const WorkflowEditor = () => {
                                         onChange={(e) => setLocalConfig({ ...localConfig, case_insensitive: e.target.checked })}
                                         className="w-4 h-4 rounded border-slate-300"
                                     />
-                                    <label htmlFor="case_insensitive" className="text-sm text-slate-600 dark:text-slate-300">
+                                    <label htmlFor="case_insensitive" className="text-sm text-fg-muted">
                                         Case insensitive comparison
                                     </label>
                                 </div>
-                                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 mt-2">
-                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Branch Paths:</p>
+                                <div className="p-3 bg-surface-2 rounded-lg border border-border mt-2">
+                                    <p className="text-xs font-medium text-fg-muted mb-2">Branch Paths:</p>
                                     <div className="flex gap-4">
                                         <div className="flex items-center gap-1">
                                             <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                            <span className="text-xs text-slate-600 dark:text-slate-400">TRUE - Condition met</span>
+                                            <span className="text-xs text-fg-muted">TRUE - Condition met</span>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                            <span className="text-xs text-slate-600 dark:text-slate-400">FALSE - Not met</span>
+                                            <span className="text-xs text-fg-muted">FALSE - Not met</span>
                                         </div>
                                     </div>
                                 </div>
                             </>
                         )}
 
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-4">
+                        <div className="text-xs text-fg-muted mt-4">
                             <p className="font-medium mb-1">Available Variables:</p>
-                            <code className="block bg-slate-100 dark:bg-slate-700 p-2 rounded text-xs">
+                            <code className="block bg-surface-3 p-2 rounded text-xs">
                                 {'{{id}}, {{email}}, {{contact_name}}, {{company}}, {{status}}, {{source}}, {{last_email_subject}}, {{last_email_body}}'}
                             </code>
                         </div>
@@ -2993,13 +2643,13 @@ const WorkflowEditor = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         WhatsApp Account
                                     </label>
                                     <select
                                         value={localConfig?.account_id || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, account_id: parseInt(e.target.value) || '' })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                     >
                                         <option value="">Select connected account…</option>
                                         {waAccounts.map(a => (
@@ -3014,17 +2664,17 @@ const WorkflowEditor = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         To Phone Number
                                     </label>
                                     <input
                                         type="text"
                                         value={localConfig?.to_phone || (selectedNode.data.actionType === 'send_whatsapp_reply' ? '{{from_phone}}' : '{{phone}}')}
                                         onChange={(e) => setLocalConfig({ ...localConfig, to_phone: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm font-mono"
+                                        className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-sm font-mono"
                                         placeholder={selectedNode.data.actionType === 'send_whatsapp_reply' ? '{{from_phone}}' : '{{phone}} or +919876543210'}
                                     />
-                                    <p className="text-[10px] text-slate-400 mt-1">
+                                    <p className="text-[10px] text-fg-subtle mt-1">
                                         {selectedNode.data.actionType === 'send_whatsapp_reply'
                                             ? 'Use {{from_phone}} to reply to the sender'
                                             : 'Lead variables: {{phone}}, {{contact_phone}}'}
@@ -3032,28 +2682,28 @@ const WorkflowEditor = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    <label className={LABEL_CLS}>
                                         Message
                                     </label>
                                     <textarea
                                         rows={5}
                                         value={localConfig?.message || ''}
                                         onChange={(e) => setLocalConfig({ ...localConfig, message: e.target.value })}
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm"
+                                        className={CONTROL_CLS}
                                         placeholder={selectedNode.data.actionType === 'send_whatsapp_reply'
                                             ? 'Hi {{from_name}}, {{ai_reply}}'
                                             : 'Hi {{name}}, {{wa_message}}'}
                                     />
-                                    <div className="mt-1.5 p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-[10px] text-slate-500 space-y-0.5">
+                                    <div className="mt-1.5 p-2 bg-surface-2 rounded text-[10px] text-fg-muted space-y-0.5">
                                         {selectedNode.data.actionType === 'send_whatsapp_reply' ? (
                                             <>
-                                                <div><strong className="text-slate-600 dark:text-slate-400">Incoming message:</strong> {'{{from_name}}'}, {'{{from_phone}}'}, {'{{message_text}}'}</div>
-                                                <div><strong className="text-slate-600 dark:text-slate-400">AI output:</strong> {'{{ai_reply}}'} (set in AI node's "Store Result In" field)</div>
+                                                <div><strong className="text-fg-muted">Incoming message:</strong> {'{{from_name}}'}, {'{{from_phone}}'}, {'{{message_text}}'}</div>
+                                                <div><strong className="text-fg-muted">AI output:</strong> {'{{ai_reply}}'} (set in AI node's "Store Result In" field)</div>
                                             </>
                                         ) : (
                                             <>
-                                                <div><strong className="text-slate-600 dark:text-slate-400">Lead variables:</strong> {'{{name}}'}, {'{{email}}'}, {'{{phone}}'}, {'{{company}}'}</div>
-                                                <div><strong className="text-slate-600 dark:text-slate-400">AI output:</strong> {'{{wa_message}}'}, {'{{wa_followup}}'}, {'{{ai_response}}'}</div>
+                                                <div><strong className="text-fg-muted">Lead variables:</strong> {'{{name}}'}, {'{{email}}'}, {'{{phone}}'}, {'{{company}}'}</div>
+                                                <div><strong className="text-fg-muted">AI output:</strong> {'{{wa_message}}'}, {'{{wa_followup}}'}, {'{{ai_response}}'}</div>
                                             </>
                                         )}
                                     </div>
@@ -3071,39 +2721,39 @@ const WorkflowEditor = () => {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Items</label>
-                                    <input type="text" value={localConfig?.items || ''} onChange={(e) => setLocalConfig({ ...localConfig, items: e.target.value })} placeholder="{{keyword_suggestions}}" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm font-mono" />
-                                    <p className="text-xs text-slate-500 mt-1">A list from an earlier node, or one value per line.</p>
+                                    <label className={LABEL_CLS}>Items</label>
+                                    <input type="text" value={localConfig?.items || ''} onChange={(e) => setLocalConfig({ ...localConfig, items: e.target.value })} placeholder="{{keyword_suggestions}}" className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 text-sm font-mono" />
+                                    <p className="text-xs text-fg-muted mt-1">A list from an earlier node, or one value per line.</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Items</label>
-                                    <input type="number" min={1} max={200} value={localConfig?.max_items || 50} onChange={(e) => setLocalConfig({ ...localConfig, max_items: parseInt(e.target.value) || 50 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                    <label className={LABEL_CLS}>Max Items</label>
+                                    <input type="number" min={1} max={200} value={localConfig?.max_items || 50} onChange={(e) => setLocalConfig({ ...localConfig, max_items: parseInt(e.target.value) || 50 })} className={CONTROL_CLS} />
                                 </div>
                             </>
                         )}
 
                         {/* Node settings shared by every action: retry + error handling */}
                         {(selectedNode.type === 'action' || selectedNode.type === 'whatsapp') && (
-                            <div className="pt-3 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">If this step fails</p>
+                            <div className="pt-3 mt-1 border-t border-border space-y-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">If this step fails</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Retries</label>
-                                        <input type="number" min={0} max={5} value={localConfig?.retry_count || 0} onChange={(e) => setLocalConfig({ ...localConfig, retry_count: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Retries</label>
+                                        <input type="number" min={0} max={5} value={localConfig?.retry_count || 0} onChange={(e) => setLocalConfig({ ...localConfig, retry_count: parseInt(e.target.value) || 0 })} className={CONTROL_CLS} />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Wait (sec)</label>
-                                        <input type="number" min={1} max={60} value={localConfig?.retry_delay_seconds || 5} onChange={(e) => setLocalConfig({ ...localConfig, retry_delay_seconds: parseInt(e.target.value) || 5 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
+                                        <label className={LABEL_CLS}>Wait (sec)</label>
+                                        <input type="number" min={1} max={60} value={localConfig?.retry_delay_seconds || 5} onChange={(e) => setLocalConfig({ ...localConfig, retry_delay_seconds: parseInt(e.target.value) || 5 })} className={CONTROL_CLS} />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">After retries run out</label>
-                                    <select value={localConfig?.on_error || 'stop'} onChange={(e) => setLocalConfig({ ...localConfig, on_error: e.target.value })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm">
+                                    <label className={LABEL_CLS}>After retries run out</label>
+                                    <select value={localConfig?.on_error || 'stop'} onChange={(e) => setLocalConfig({ ...localConfig, on_error: e.target.value })} className={CONTROL_CLS}>
                                         <option value="stop">Stop the workflow</option>
                                         <option value="continue">Continue to next steps</option>
                                         <option value="branch">Follow the red "error" connection</option>
                                     </select>
-                                    <p className="text-xs text-slate-500 mt-1">The error message is available as {'{{last_error.message}}'}.</p>
+                                    <p className="text-xs text-fg-muted mt-1">The error message is available as {'{{last_error.message}}'}.</p>
                                 </div>
                             </div>
                         )}
@@ -3111,46 +2761,31 @@ const WorkflowEditor = () => {
                         {/* Generic / No Settings Fallback */}
                         {!['trigger', 'action', 'condition', 'delay', 'whatsapp'].includes(selectedNode.type) ||
                             (selectedNode.type === 'action' && !['send_email', 'update_lead', 'update_client', 'update_inquiry', 'create_task', 'assign_user', 'assign_inquiry', 'add_note', 'send_notification', 'webhook', 'ai_assistant', 'ai_pick_topic', 'ai_write_blog', 'ai_fetch_image', 'ai_post_blog', 'index_url', 'keyword_research', 'gsc_opportunities', 'http_request', 'ai_agent', 'loop_items'].includes(selectedNode.data.actionType)) ? (
-                            <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center">
-                                <p className="text-sm text-slate-500">No specific configuration available for this node type.</p>
-                                <p className="text-[10px] text-slate-400 mt-2">ID: {selectedNode.id}</p>
+                            <div className="p-4 border border-dashed border-border-strong rounded-lg text-center">
+                                <p className="text-sm text-fg-muted">No specific configuration available for this node type.</p>
+                                <p className="text-[10px] text-fg-subtle mt-2">ID: {selectedNode.id}</p>
                             </div>
                         ) : null}
 
-                        <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
-                            <button
-                                onClick={applyNodeConfig}
-                                disabled={isApplyingConfig}
-                                className="w-full px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
-                            >
-                                {isApplyingConfig ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>Applying...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span>Apply Configuration</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-
                     </div>
-                </div>
+                </aside>
             )}
 
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => { setConfirmState({ isOpen: false }); }}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
+            <ConfirmDialog
+                open={deletingNode}
+                onClose={() => setDeletingNode(false)}
+                onConfirm={deleteSelectedNode}
+                title="Delete this node?"
+                message={selectedNode && `${selectedNode.data.label || 'This node'} and its connections are removed. Save to make it permanent.`}
+                confirmText="Delete node"
+            />
+            <ConfirmDialog
+                open={!!leaveTo}
+                onClose={() => setLeaveTo(null)}
+                onConfirm={() => navigate(leaveTo)}
+                title="Discard unsaved changes?"
+                message="You have changes that haven't been saved."
+                confirmText="Discard"
             />
         </div>
     );

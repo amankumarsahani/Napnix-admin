@@ -85,7 +85,7 @@ export default function Workflows() {
                     error={query.error}
                     onRetry={query.refetch}
                     rows={workflows}
-                    onRowClick={wf => navigate(`/workflows/${wf.id}/edit`)}
+                    onRowClick={wf => navigate(`/workflows/${wf.id}`)}
                     empty={
                         <EmptyState
                             title={search ? `No workflows match “${search}”` : 'No workflows yet'}

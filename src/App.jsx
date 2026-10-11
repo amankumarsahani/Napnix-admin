@@ -37,6 +37,7 @@ const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail
 const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
 const Workflows = React.lazy(() => import('./pages/marketing/Workflows'));
 const WorkflowEditor = React.lazy(() => import('./pages/marketing/WorkflowEditor'));
+const WorkflowDetail = React.lazy(() => import('./pages/marketing/WorkflowDetail'));
 const PricingPage = React.lazy(() => import('./pages/marketing/PricingPage'));
 const BlogsList = React.lazy(() => import('./pages/blogs/BlogsList'));
 const BlogEditor = React.lazy(() => import('./pages/blogs/BlogEditor'));
@@ -107,7 +108,7 @@ function AppRoutes() {
             <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />
             <Route path="workflows" element={<LazyRoute element={<Workflows />} />} />
             <Route path="workflows/new" element={<LazyRoute element={<WorkflowEditor />} />} />
-            <Route path="workflows/:id" element={<LazyRoute element={<Workflows />} />} />
+            <Route path="workflows/:id" element={<LazyRoute element={<WorkflowDetail />} />} />
             <Route path="workflows/:id/edit" element={<LazyRoute element={<WorkflowEditor />} />} />
             <Route path="api-docs" element={<LazyRoute element={<ApiDocumentation />} />} />
             <Route path="mobile-app" element={<LazyRoute element={<MobileApp />} />} />
