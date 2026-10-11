@@ -41,8 +41,11 @@ function useFieldProps(props) {
     };
 }
 
+// Full width unless the caller sets a width (cx can't resolve conflicting utilities)
+const width = className => (/(^|\s)(w-|min-w-|flex-1)/.test(className || '') ? '' : 'w-full');
+
 const CONTROL = cx(
-    'w-full rounded-sm border bg-surface text-fg text-base placeholder:text-fg-subtle',
+    'rounded-sm border bg-surface text-fg text-base placeholder:text-fg-subtle',
     'transition-colors duration-[120ms] disabled:opacity-60 disabled:cursor-not-allowed',
     'focus:outline-none focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-0'
 );
@@ -50,18 +53,18 @@ const borderFor = invalid => (invalid ? 'border-danger' : 'border-border-strong'
 
 export const Input = forwardRef(function Input({ className, ...props }, ref) {
     const p = useFieldProps(props);
-    return <input ref={ref} className={cx(CONTROL, 'h-9 px-3', borderFor(p['aria-invalid']), className)} {...p} />;
+    return <input ref={ref} className={cx(CONTROL, width(className), 'h-9 px-3', borderFor(p['aria-invalid']), className)} {...p} />;
 });
 
 export const Textarea = forwardRef(function Textarea({ className, rows = 4, ...props }, ref) {
     const p = useFieldProps(props);
-    return <textarea ref={ref} rows={rows} className={cx(CONTROL, 'px-3 py-2', borderFor(p['aria-invalid']), className)} {...p} />;
+    return <textarea ref={ref} rows={rows} className={cx(CONTROL, width(className), 'px-3 py-2', borderFor(p['aria-invalid']), className)} {...p} />;
 });
 
 export const Select = forwardRef(function Select({ className, children, ...props }, ref) {
     const p = useFieldProps(props);
     return (
-        <select ref={ref} className={cx(CONTROL, 'h-9 pl-3 pr-8', borderFor(p['aria-invalid']), className)} {...p}>
+        <select ref={ref} className={cx(CONTROL, width(className), 'h-9 pl-3 pr-8', borderFor(p['aria-invalid']), className)} {...p}>
             {children}
         </select>
     );
