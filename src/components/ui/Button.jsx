@@ -8,6 +8,12 @@ const VARIANTS = {
     danger: 'bg-surface text-danger border border-border-strong hover:bg-danger-soft',
 };
 
+// Icon buttons sit in dense rows: no resting border/fill, the tone shows on hover
+const ICON_VARIANTS = {
+    ...VARIANTS,
+    danger: 'bg-transparent text-fg-muted border border-transparent hover:bg-danger-soft hover:text-danger',
+};
+
 const SIZES = {
     sm: 'h-8 px-2.5 text-sm gap-1.5',
     md: 'h-9 px-3.5 text-sm gap-2',
@@ -59,7 +65,7 @@ export const IconButton = forwardRef(function IconButton(
                 'inline-flex items-center justify-center rounded-sm transition-colors duration-[120ms]',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
                 size === 'sm' ? 'size-8' : 'size-9',
-                VARIANTS[variant], className
+                ICON_VARIANTS[variant], className
             )}
             {...rest}
         >

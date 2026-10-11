@@ -178,7 +178,9 @@ export default function LeadsList() {
                                         <Avatar name={lead.company || lead.contactName} />
                                         <span className="min-w-0">
                                             <span className="block font-medium truncate">{lead.company || lead.companyName || '—'}</span>
-                                            <span className="block text-xs text-fg-muted truncate">{lead.contactName}</span>
+                                            {lead.contactName !== (lead.company || lead.companyName) && (
+                                                <span className="block text-xs text-fg-muted truncate">{lead.contactName}</span>
+                                            )}
                                         </span>
                                     </span>
                                 ),

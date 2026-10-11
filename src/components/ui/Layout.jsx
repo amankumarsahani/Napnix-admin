@@ -66,7 +66,7 @@ export function StatCard({ label, value, hint, delta, icon, className }) {
 
 /** Initials avatar on a neutral background. */
 export function Avatar({ name = '', size = 'md', className }) {
-    const initials = name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?';
+    const initials = name.replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '?';
     return (
         <span
             aria-hidden="true"
