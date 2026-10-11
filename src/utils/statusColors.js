@@ -1,6 +1,6 @@
 // Semantic tones on design tokens (index.css), so badges work in light and dark with one class.
 // Meaning is carried by the badge label too; colour is never the only signal.
-const TONE = {
+export const TONE = {
   neutral: 'bg-surface-3 text-fg-muted border-border',
   info: 'bg-accent-soft text-accent border-accent/25',
   success: 'bg-success-soft text-success border-success/25',

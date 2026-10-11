@@ -85,7 +85,7 @@ const PAGE_TITLES = {
     'smtp-accounts': 'SMTP Accounts', workflows: 'Workflows', 'api-docs': 'API Docs',
     'mobile-app': 'Mobile App', telemetry: 'Telemetry', 'site-analytics': 'Site Analytics',
     pricing: 'Pricing', blogs: 'Blog', portfolio: 'Portfolio', 'case-studies': 'Case Studies',
-    tools: 'Tools', expenses: 'Expenses', support: 'Support Tickets', whatsapp: 'WhatsApp',
+    tools: 'Tools', expenses: 'Expenses', support: 'Support Tickets', whatsapp: 'WhatsApp', dev: 'UI kit',
 };
 const EMAIL_MARKETING_TITLES = {
     contacts: 'Contacts', templates: 'Email Templates', campaigns: 'Email Campaigns',
