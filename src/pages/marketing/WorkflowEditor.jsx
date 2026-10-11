@@ -574,6 +574,7 @@ const WorkflowEditor = () => {
                         nodeTypes={nodeTypes}
                         colorMode={theme === 'dark' ? 'dark' : 'light'}
                         fitView
+                        fitViewOptions={{ maxZoom: 1, padding: 0.3 }}
                         className="!bg-surface-2"
                     >
                         <Controls showInteractive={false} />
@@ -585,7 +586,7 @@ const WorkflowEditor = () => {
 
             {/* Node settings */}
             {showNodeConfig && selectedNode && (
-                <aside aria-label="Node settings" className="w-80 shrink-0 overflow-y-auto border-l border-border bg-surface">
+                <aside aria-label="Node settings" className="w-80 shrink-0 overflow-y-auto border-l border-border bg-surface [&_input[type=checkbox]]:accent-accent [&_input[type=radio]]:accent-accent">
                     <div className="sticky top-0 z-10 flex h-12 items-center justify-between gap-2 border-b border-border bg-surface px-4">
                         <div className="min-w-0">
                             <p className="text-2xs font-medium uppercase tracking-wide text-fg-subtle">{selectedNode.type}</p>

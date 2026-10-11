@@ -40,7 +40,8 @@ function summarize(kind, data) {
 function NodeCard({ kind, data, selected }) {
     const k = KINDS[kind] || KINDS.action;
     const { Icon } = k;
-    const summary = summarize(kind, data);
+    const raw = summarize(kind, data);
+    const summary = raw && raw !== data.label ? raw : '';
     return (
         <div className={cx(
             'w-52 rounded-md border bg-surface px-3 py-2.5 shadow-pop',
