@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { smtpAccountsAPI } from '../../api';
 import toast from 'react-hot-toast';
+import { Dialog } from '../../components/ui';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 // Provider presets with SMTP settings
@@ -29,6 +30,7 @@ const SmtpAccounts = () => {
     const [confirmState, setConfirmState] = useState({ isOpen: false });
     const [searchTerm, setSearchTerm] = useState('');
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { fetchAccounts(); }, [searchTerm]);
 
     const fetchAccounts = async () => {
@@ -38,7 +40,7 @@ const SmtpAccounts = () => {
             if (searchTerm) params.search = searchTerm;
             const res = await smtpAccountsAPI.getAll(params);
             setAccounts(res.data || []);
-        } catch (error) {
+        } catch {
             toast.error('Failed to fetch SMTP accounts');
         } finally {
             setLoading(false);
@@ -58,7 +60,7 @@ const SmtpAccounts = () => {
                     await smtpAccountsAPI.delete(id);
                     toast.success('Account deleted');
                     fetchAccounts();
-                } catch (error) {
+                } catch {
                     toast.error('Failed to delete account');
                 }
             },
@@ -82,7 +84,7 @@ const SmtpAccounts = () => {
             await smtpAccountsAPI.update(account.id, { is_active: !account.is_active });
             toast.success(account.is_active ? 'Account disabled' : 'Account enabled');
             fetchAccounts();
-        } catch (error) {
+        } catch {
             toast.error('Failed to update account');
         }
     };
@@ -99,8 +101,8 @@ const SmtpAccounts = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">SMTP Accounts</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Configure email sending accounts</p>
+                    <h1 className="text-2xl font-bold text-fg">SMTP Accounts</h1>
+                    <p className="text-fg-muted">Configure email sending accounts</p>
                 </div>
                 <button onClick={() => { setSelectedAccount(null); setShowModal(true); }}
                     className="px-4 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 flex items-center gap-2">
@@ -117,9 +119,9 @@ const SmtpAccounts = () => {
                     placeholder="Search SMTP accounts..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-surface border border-border rounded-md text-sm text-fg placeholder:text-fg-subtle focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
                 />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <svg className="w-4 h-4 text-fg-subtle absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
 
             {/* Info about .env fallback */}
@@ -131,22 +133,22 @@ const SmtpAccounts = () => {
                 </div>
             )}
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="bg-surface rounded-md border border-border">
                 {accounts.length === 0 ? (
-                    <div className="p-12 text-center text-slate-500">No SMTP accounts configured.</div>
+                    <div className="p-12 text-center text-fg-muted">No SMTP accounts configured.</div>
                 ) : (
-                    <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                    <div className="divide-y divide-border">
                         {accounts.map((account) => (
                             <div key={account.id} className="p-4 flex items-center justify-between">
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-slate-900 dark:text-white">{account.name}</span>
-                                        <span className={`px-2 py-0.5 text-xs rounded ${account.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        <span className="font-semibold text-fg">{account.name}</span>
+                                        <span className={`px-2 py-0.5 text-xs rounded ${account.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-fg-muted'}`}>
                                             {account.is_active ? 'Active' : 'Disabled'}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-slate-500">{account.from_email} | {account.host}:{account.port}</p>
-                                    <p className="text-xs text-slate-400">Hourly: {account.sent_this_hour || 0}/{account.hourly_limit}</p>
+                                    <p className="text-sm text-fg-muted">{account.from_email} | {account.host}:{account.port}</p>
+                                    <p className="text-xs text-fg-subtle">Hourly: {account.sent_this_hour || 0}/{account.hourly_limit}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => handleTest(account.id)} disabled={testingId === account.id}
@@ -173,7 +175,7 @@ const SmtpAccounts = () => {
                                         </svg>
                                     </button>
                                     <button onClick={() => { setSelectedAccount(account); setShowModal(true); }}
-                                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg" title="Edit">
+                                        className="p-2 text-fg-muted hover:bg-slate-100 rounded-lg" title="Edit">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
@@ -250,7 +252,7 @@ const SmtpModal = ({ account, onClose, onSaved }) => {
         e.preventDefault();
 
         // Client-side validation
-        const hostRegex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])|(\d{1,3}\.){3}\d{1,3}$/;
+        const hostRegex = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])|(\d{1,3}\.){3}\d{1,3}$/;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!hostRegex.test(formData.host)) {
@@ -282,27 +284,18 @@ const SmtpModal = ({ account, onClose, onSaved }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between">
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{account?.id ? 'Edit' : 'Add'} SMTP Account</h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <Dialog open onClose={onClose} title={`${account?.id ? 'Edit' : 'Add'} SMTP account`}>
+                <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Provider Preset Selector */}
                     {!account?.id && (
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-sm font-medium text-fg mb-1">
                                 Email Provider
                             </label>
                             <select
                                 value={selectedProvider}
                                 onChange={(e) => handleProviderSelect(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg"
                             >
                                 {PROVIDER_PRESETS.map(provider => (
                                     <option key={provider.id} value={provider.id}>{provider.name}</option>
@@ -315,55 +308,55 @@ const SmtpModal = ({ account, onClose, onSaved }) => {
                     )}
 
                     <input name="name" value={formData.name} onChange={handleChange} required placeholder="Account Name"
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                        className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
 
                     <div className="grid grid-cols-2 gap-4">
                         <input name="host" value={formData.host} onChange={handleChange} required placeholder="SMTP Host"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         <input name="port" type="number" value={formData.port} onChange={handleChange} placeholder="Port"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                     </div>
 
                     <label className="flex items-center gap-2">
                         <input type="checkbox" name="secure" checked={formData.secure} onChange={handleChange} className="rounded" />
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Use SSL/TLS (port 465)</span>
+                        <span className="text-sm text-fg-muted">Use SSL/TLS (port 465)</span>
                     </label>
 
                     <div className="grid grid-cols-2 gap-4">
                         <input name="username" value={formData.username} onChange={handleChange} required placeholder="Username / Email"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         <input name="password" type="password" value={formData.password} onChange={handleChange}
                             required={!account?.id} placeholder={account?.id ? '••••••••' : 'Password / App Password'}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <input name="from_name" value={formData.from_name} onChange={handleChange} required placeholder="From Name"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         <input name="from_email" type="email" value={formData.from_email} onChange={handleChange} required placeholder="From Email"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <label className="block text-xs text-slate-500 mb-1">Hourly Limit</label>
+                            <label className="block text-xs text-fg-muted mb-1">Hourly Limit</label>
                             <input name="hourly_limit" type="number" value={formData.hourly_limit} onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         </div>
                         <div>
-                            <label className="block text-xs text-slate-500 mb-1">Daily Limit</label>
+                            <label className="block text-xs text-fg-muted mb-1">Daily Limit</label>
                             <input name="daily_limit" type="number" value={formData.daily_limit} onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         </div>
                         <div>
-                            <label className="block text-xs text-slate-500 mb-1">Priority</label>
+                            <label className="block text-xs text-fg-muted mb-1">Priority</label>
                             <input name="priority" type="number" value={formData.priority} onChange={handleChange}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white" />
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg" />
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">Cancel</button>
+                    <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-fg-muted hover:bg-surface-2 rounded-lg">Cancel</button>
                         <button type="submit" disabled={loading} className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-2">
                             {loading && (
                                 <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -375,8 +368,7 @@ const SmtpModal = ({ account, onClose, onSaved }) => {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </Dialog>
     );
 };
 

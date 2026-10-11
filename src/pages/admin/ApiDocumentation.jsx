@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
 
 // Inline SVG Icons (Heroicons style - matching existing project components)
 const Icons = {
@@ -124,7 +123,6 @@ const Icons = {
 
 const ApiDocumentation = () => {
     const domain = import.meta.env.VITE_APP_BASE_DOMAIN || 'napnix.in';
-    const { isDark } = useTheme();
     const [expandedCategories, setExpandedCategories] = useState(['Core']);
     const [expandedEndpoints, setExpandedEndpoints] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
@@ -323,11 +321,11 @@ const ApiDocumentation = () => {
 
     const MethodBadge = ({ method }) => {
         const styles = {
-            GET: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-            POST: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
-            PUT: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-            PATCH: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
-            DELETE: 'bg-red-500/20 text-red-400 border-red-500/40',
+            GET: 'bg-success-soft text-success border-success/30',
+            POST: 'bg-accent-soft text-accent border-accent/30',
+            PUT: 'bg-warning-soft text-warning border-warning/30',
+            PATCH: 'bg-surface-3 text-fg-muted border-border-strong',
+            DELETE: 'bg-danger-soft text-danger border-danger/30',
         };
         return (
             <span className={`inline-flex items-center justify-center w-16 px-2 py-1 rounded text-xs font-mono font-bold border ${styles[method]}`}>
@@ -337,14 +335,14 @@ const ApiDocumentation = () => {
     };
 
     const CodeBlock = ({ title, code }) => (
-        <div className={`${isDark ? 'bg-slate-900' : 'bg-gray-900'} rounded-lg overflow-hidden`}>
-            <div className="flex items-center justify-between px-3 py-2 bg-black/20">
-                <span className="text-xs text-gray-400">{title}</span>
-                <button onClick={() => copyToClipboard(JSON.stringify(code, null, 2), title)} className="text-gray-400 hover:text-white">
-                    {copiedPath === title ? <span className="text-green-400">{Icons.check}</span> : Icons.copy}
+        <div className="bg-surface-2 border border-border rounded-md overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                <span className="text-xs text-fg-muted">{title}</span>
+                <button onClick={() => copyToClipboard(JSON.stringify(code, null, 2), title)} className="text-fg-muted hover:text-fg">
+                    {copiedPath === title ? <span className="text-success">{Icons.check}</span> : Icons.copy}
                 </button>
             </div>
-            <pre className="p-3 text-xs text-gray-300 overflow-x-auto font-mono">{JSON.stringify(code, null, 2)}</pre>
+            <pre className="p-3 text-xs text-fg overflow-x-auto font-mono">{JSON.stringify(code, null, 2)}</pre>
         </div>
     );
 
@@ -358,27 +356,27 @@ const ApiDocumentation = () => {
     })).filter(cat => cat.endpoints.length > 0);
 
     return (
-        <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
+        <div className={`bg-surface-2`}>
             {/* Header */}
-            <div className={`${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-gray-200'} border-b px-6 py-5 sticky top-0 z-10 backdrop-blur-sm`}>
+            <div className={`bg-surface border-border border-b px-6 py-5 sticky top-0 z-10 backdrop-blur-sm`}>
                 <div className="flex items-center justify-between max-w-7xl mx-auto">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg ${isDark ? 'bg-brand-500/20' : 'bg-brand-50'} flex items-center justify-center text-brand-500`}>
+                        <div className={`w-10 h-10 rounded-lg bg-accent-soft flex items-center justify-center text-accent`}>
                             {Icons.code}
                         </div>
                         <div>
-                            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>API Documentation</h1>
-                            <p className={`${isDark ? 'text-slate-400' : 'text-gray-500'} text-sm`}>NapCRM v1.0 • 13 Industries • REST API</p>
+                            <h1 className={`text-xl font-bold text-fg`}>API Documentation</h1>
+                            <p className={`text-fg-muted text-sm`}>NapCRM v1.0 • 13 Industries • REST API</p>
                         </div>
                     </div>
                     <div className="relative">
-                        <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>{Icons.search}</span>
+                        <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle`}>{Icons.search}</span>
                         <input
                             type="text"
                             placeholder="Search endpoints..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`${isDark ? 'bg-slate-700 border-slate-600 text-white placeholder-slate-400' : 'bg-gray-100 border-gray-200 text-gray-900 placeholder-gray-400'} border pl-10 pr-4 py-2 rounded-lg w-64 focus:ring-2 focus:ring-brand-500 text-sm`}
+                            className={`bg-surface-2 border-border text-fg placeholder:text-fg-subtle border pl-10 pr-4 py-2 rounded-lg w-64 focus:ring-2 focus:ring-brand-500 text-sm`}
                         />
                     </div>
                 </div>
@@ -386,23 +384,23 @@ const ApiDocumentation = () => {
 
             <div className="max-w-7xl mx-auto p-6">
                 {/* Quick Start */}
-                <div className="bg-gradient-to-br from-brand-600 via-purple-600 to-brand-700 rounded-xl p-6 mb-6 text-white shadow-xl">
+                <div className="bg-gradient-to-br from-brand-600 via-purple-600 to-brand-700 rounded-md p-6 mb-6 text-white shadow-xl">
                     <div className="flex items-center gap-2 mb-4">
                         <span>{Icons.rocket}</span>
                         <h2 className="text-lg font-bold">Quick Start</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-md p-4">
                             <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold mb-2">1</div>
                             <h4 className="font-semibold">Lookup Tenant</h4>
                             <code className="text-xs bg-black/20 px-2 py-1 rounded block mt-1 font-mono">POST /lookup</code>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-md p-4">
                             <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold mb-2">2</div>
                             <h4 className="font-semibold">Authenticate</h4>
                             <code className="text-xs bg-black/20 px-2 py-1 rounded block mt-1 font-mono">POST /api/auth/login</code>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-md p-4">
                             <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-sm font-bold mb-2">3</div>
                             <h4 className="font-semibold">Make Requests</h4>
                             <code className="text-xs bg-black/20 px-2 py-1 rounded block mt-1 font-mono">Bearer {'{token}'}</code>
@@ -412,30 +410,30 @@ const ApiDocumentation = () => {
 
                 {/* Connection Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-xl p-4 flex items-center gap-4`}>
-                        <div className={`w-12 h-12 rounded-lg ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-500'} flex items-center justify-center`}>
+                    <div className={`bg-surface border-border border rounded-md p-4 flex items-center gap-4`}>
+                        <div className={`w-12 h-12 rounded-lg bg-accent-soft text-accent flex items-center justify-center`}>
                             {Icons.globe}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>BASE URL</span>
-                            <code className={`block font-mono text-sm truncate ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                            <span className={`text-xs font-medium text-fg-muted`}>BASE URL</span>
+                            <code className={`block font-mono text-sm truncate text-accent`}>
                                 https://{'{tenant}'}-crm-api.{domain}
                             </code>
                         </div>
-                        <button onClick={() => copyToClipboard(`https://{tenant}-crm-api.${domain}`, 'baseurl')} className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}>
-                            {copiedPath === 'baseurl' ? <span className="text-green-400">{Icons.check}</span> : Icons.copy}
+                        <button onClick={() => copyToClipboard(`https://{tenant}-crm-api.${domain}`, 'baseurl')} className={`p-2 rounded-lg hover:bg-surface-2 text-fg-subtle`}>
+                            {copiedPath === 'baseurl' ? <span className="text-success">{Icons.check}</span> : Icons.copy}
                         </button>
                     </div>
-                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-xl p-4 flex items-center gap-4`}>
-                        <div className={`w-12 h-12 rounded-lg ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-500'} flex items-center justify-center`}>
+                    <div className={`bg-surface border-border border rounded-md p-4 flex items-center gap-4`}>
+                        <div className={`w-12 h-12 rounded-lg bg-warning-soft text-warning flex items-center justify-center`}>
                             {Icons.key}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>AUTHORIZATION</span>
-                            <code className={`block font-mono text-sm truncate ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Bearer {'{jwt_token}'}</code>
+                            <span className={`text-xs font-medium text-fg-muted`}>AUTHORIZATION</span>
+                            <code className={`block font-mono text-sm truncate text-warning`}>Bearer {'{jwt_token}'}</code>
                         </div>
-                        <button onClick={() => copyToClipboard('Authorization: Bearer {token}', 'auth')} className={`p-2 rounded-lg ${isDark ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-gray-100 text-gray-400'}`}>
-                            {copiedPath === 'auth' ? <span className="text-green-400">{Icons.check}</span> : Icons.copy}
+                        <button onClick={() => copyToClipboard('Authorization: Bearer {token}', 'auth')} className={`p-2 rounded-lg hover:bg-surface-2 text-fg-subtle`}>
+                            {copiedPath === 'auth' ? <span className="text-success">{Icons.check}</span> : Icons.copy}
                         </button>
                     </div>
                 </div>
@@ -443,46 +441,46 @@ const ApiDocumentation = () => {
                 {/* Categories */}
                 <div className="space-y-4">
                     {filteredCategories.map((category) => (
-                        <div key={category.name} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} border rounded-xl overflow-hidden shadow-sm`}>
-                            <button onClick={() => toggleCategory(category.name)} className={`w-full px-5 py-4 flex items-center justify-between ${isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'} transition-colors`}>
+                        <div key={category.name} className={`bg-surface border-border border rounded-md overflow-hidden shadow-sm`}>
+                            <button onClick={() => toggleCategory(category.name)} className={`w-full px-5 py-4 flex items-center justify-between hover:bg-surface-2 transition-colors`}>
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-lg ${isDark ? 'bg-brand-500/20 text-brand-400' : 'bg-brand-50 text-brand-500'} flex items-center justify-center`}>
+                                    <div className={`w-10 h-10 rounded-lg bg-accent-soft text-accent flex items-center justify-center`}>
                                         {Icons[category.icon]}
                                     </div>
                                     <div className="text-left">
                                         <div className="flex items-center gap-2">
-                                            <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{category.name}</span>
-                                            {category.industry && <span className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-brand-500/20 text-brand-400' : 'bg-brand-50 text-brand-600'}`}>{category.industry}</span>}
+                                            <span className={`font-semibold text-fg`}>{category.name}</span>
+                                            {category.industry && <span className={`text-xs px-2 py-0.5 rounded bg-accent-soft text-accent`}>{category.industry}</span>}
                                         </div>
-                                        <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{category.description} • {category.endpoints.length} endpoints</p>
+                                        <p className={`text-xs text-fg-muted`}>{category.description} • {category.endpoints.length} endpoints</p>
                                     </div>
                                 </div>
-                                <span className={`transition-transform ${expandedCategories.includes(category.name) ? 'rotate-180' : ''} ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>{Icons.chevronDown}</span>
+                                <span className={`transition-transform ${expandedCategories.includes(category.name) ? 'rotate-180' : ''} text-fg-subtle`}>{Icons.chevronDown}</span>
                             </button>
 
                             {expandedCategories.includes(category.name) && (
-                                <div className={`border-t ${isDark ? 'border-slate-700' : 'border-gray-100'}`}>
+                                <div className={`border-t border-border`}>
                                     {category.endpoints.map((ep, idx) => {
                                         const key = `${category.name}-${idx}`;
                                         const isExpanded = expandedEndpoints[key];
                                         return (
-                                            <div key={idx} className={`border-b last:border-b-0 ${isDark ? 'border-slate-700/50' : 'border-gray-50'}`}>
-                                                <button onClick={() => toggleEndpoint(key)} className={`w-full px-5 py-3 flex items-center gap-4 ${isDark ? 'hover:bg-slate-700/30' : 'hover:bg-gray-50'} transition-colors`}>
+                                            <div key={idx} className={`border-b last:border-b-0 border-border`}>
+                                                <button onClick={() => toggleEndpoint(key)} className={`w-full px-5 py-3 flex items-center gap-4 hover:bg-surface-2 transition-colors`}>
                                                     <MethodBadge method={ep.method} />
-                                                    <code className={`font-mono text-sm flex-1 text-left ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{ep.path}</code>
-                                                    <span className={`text-sm hidden md:block ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{ep.desc}</span>
-                                                    {ep.auth && <span className={isDark ? 'text-amber-400' : 'text-amber-500'}>{Icons.lock}</span>}
-                                                    <span className={`transition-transform ${isExpanded ? 'rotate-180' : ''} ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{Icons.chevronDown}</span>
+                                                    <code className={`font-mono text-sm flex-1 text-left text-fg`}>{ep.path}</code>
+                                                    <span className={`text-sm hidden md:block text-fg-subtle`}>{ep.desc}</span>
+                                                    {ep.auth && <span className="text-warning">{Icons.lock}</span>}
+                                                    <span className={`transition-transform ${isExpanded ? 'rotate-180' : ''} text-fg-subtle`}>{Icons.chevronDown}</span>
                                                 </button>
                                                 {isExpanded && (
-                                                    <div className={`px-5 py-4 ${isDark ? 'bg-slate-900/50' : 'bg-gray-50'} space-y-4`}>
-                                                        <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{ep.desc}</p>
-                                                        {ep.server && <div className={`text-xs ${isDark ? 'text-slate-500' : 'text-gray-500'}`}><span className="font-medium">Server:</span> {ep.server}</div>}
+                                                    <div className={`px-5 py-4 bg-surface-2 space-y-4`}>
+                                                        <p className={`text-sm text-fg-muted`}>{ep.desc}</p>
+                                                        {ep.server && <div className={`text-xs text-fg-muted`}><span className="font-medium">Server:</span> {ep.server}</div>}
                                                         {ep.params && (
                                                             <div>
-                                                                <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Query Parameters:</span>
+                                                                <span className={`text-xs font-medium text-fg-muted`}>Query Parameters:</span>
                                                                 <div className="flex flex-wrap gap-2 mt-1">
-                                                                    {ep.params.map(p => <span key={p} className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-slate-800 text-slate-400' : 'bg-gray-200 text-gray-600'}`}>{p}</span>)}
+                                                                    {ep.params.map(p => <span key={p} className={`text-xs px-2 py-1 rounded bg-surface-3 text-fg-muted`}>{p}</span>)}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -502,8 +500,8 @@ const ApiDocumentation = () => {
                 </div>
 
                 {/* Footer */}
-                <div className={`mt-8 p-6 text-center text-sm rounded-xl ${isDark ? 'bg-slate-800/50 text-slate-500 border-slate-700' : 'bg-white text-gray-400 border-gray-200'} border`}>
-                    <p>Need help? Contact <a href={`mailto:support@${domain}`} className="text-brand-400 hover:underline">support@{domain}</a></p>
+                <div className={`mt-8 p-6 text-center text-sm rounded-md bg-surface text-fg-subtle border-border border`}>
+                    <p>Need help? Contact <a href={`mailto:support@${domain}`} className="text-accent hover:underline">support@{domain}</a></p>
                     <p className="mt-1 text-xs">© 2024 Napnix</p>
                 </div>
             </div>

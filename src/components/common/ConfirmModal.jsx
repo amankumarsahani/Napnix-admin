@@ -98,7 +98,7 @@ export default function ConfirmModal({
             {/* Panel */}
             <div
                 ref={modalRef}
-                className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 animate-[modalIn_200ms_ease-out]"
+                className="relative w-full max-w-md bg-surface rounded-md shadow-lg border border-border animate-[modalIn_200ms_ease-out]"
             >
                 <div className="p-6">
                             <div className="flex items-start gap-4">
@@ -108,11 +108,11 @@ export default function ConfirmModal({
                         <div className="flex-1 min-w-0">
                             <h3
                                 id="confirm-modal-title"
-                                className="text-lg font-semibold text-slate-900 dark:text-white"
+                                className="text-lg font-semibold text-fg"
                             >
                                 {title}
                             </h3>
-                            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <p className="mt-2 text-sm text-fg-muted leading-relaxed">
                                 {message}
                             </p>
                         </div>
@@ -120,11 +120,11 @@ export default function ConfirmModal({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50 rounded-b-xl">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-slate-50/50 dark:bg-slate-800/50 rounded-b-xl">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        className="px-4 py-2 text-sm font-medium text-fg bg-surface border border-border-strong rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
                     >
                         {cancelText}
                     </button>

@@ -8,7 +8,7 @@ export default function PlaceholderPage({ title }) {
                 </svg>
             </div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">{title}</h1>
-            <p className="text-slate-500 max-w-md">
+            <p className="text-fg-muted max-w-md">
                 This feature is currently under development. Check back soon for updates!
             </p>
         </div>

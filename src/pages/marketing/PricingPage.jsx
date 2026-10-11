@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { billingAPI, settingsAPI } from '../../api';
 import toast from 'react-hot-toast';
 
@@ -35,7 +34,6 @@ export default function PricingPage() {
     const [billingCycle, setBillingCycle] = useState('monthly');
     const [contactEmail, setContactEmail] = useState('sales@napnix.com');
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchPricingMode = async () => {
@@ -49,7 +47,7 @@ export default function PricingPage() {
                         setContactEmail(response.data.contact_sales_email);
                     }
                 }
-            } catch (err) {
+            } catch {
                 // silently ignore
             } finally {
                 setLoading(false);
@@ -82,42 +80,42 @@ export default function PricingPage() {
             } else {
                 toast.error('Failed to generate checkout link', { id });
             }
-        } catch (err) {
+        } catch {
             toast.error('Payment gateway error', { id });
         }
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+            <div className="flex items-center justify-center min-h-screen bg-surface-2">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-surface-2 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h1 className="text-base font-semibold text-brand-600 dark:text-brand-400 tracking-wide uppercase">Pricing Plans</h1>
-                    <p className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-white sm:text-5xl lg:text-6xl tracking-tight">
+                    <p className="mt-2 text-4xl font-extrabold text-fg sm:text-5xl lg:text-6xl tracking-tight">
                         Scale your business with <span className="text-brand-600">Napnix</span>
                     </p>
-                    <p className="mt-4 max-w-2xl text-xl text-slate-500 dark:text-slate-400 mx-auto">
+                    <p className="mt-4 max-w-2xl text-xl text-fg-muted mx-auto">
                         Choose the perfect plan for your business needs. No hidden fees.
                     </p>
 
                     <div className="mt-8 flex flex-col items-center gap-6">
-                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-md border border-border">
                             <button
                                 onClick={() => setBillingCycle('monthly')}
-                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-lg' : 'text-slate-500'}`}
+                                className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-surface text-brand-600 dark:text-brand-400 shadow-lg' : 'text-fg-muted'}`}
                             >
                                 Monthly
                             </button>
                             <button
                                 onClick={() => setBillingCycle('yearly')}
-                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-lg' : 'text-slate-500'}`}
+                                className={`px-6 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-surface text-brand-600 dark:text-brand-400 shadow-lg' : 'text-fg-muted'}`}
                             >
                                 Yearly
                                 <span className="bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 text-[10px] px-2 py-0.5 rounded-full">Save 15%</span>
@@ -125,7 +123,7 @@ export default function PricingPage() {
                         </div>
 
                         <div className="flex justify-center items-center gap-4">
-                            <span className={`text-sm font-medium ${!usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Consultation Mode</span>
+                            <span className={`text-sm font-medium ${!usePaymentLink ? 'text-brand-600' : 'text-fg-muted font-normal'}`}>Consultation Mode</span>
                             <button
                                 onClick={() => setUsePaymentLink(!usePaymentLink)}
                                 className="relative inline-flex items-center cursor-pointer focus:outline-none"
@@ -134,7 +132,7 @@ export default function PricingPage() {
                                     <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${usePaymentLink ? 'translate-x-6' : 'translate-x-0'}`} />
                                 </div>
                             </button>
-                            <span className={`text-sm font-medium ${usePaymentLink ? 'text-brand-600' : 'text-slate-500 font-normal'}`}>Instant Access</span>
+                            <span className={`text-sm font-medium ${usePaymentLink ? 'text-brand-600' : 'text-fg-muted font-normal'}`}>Instant Access</span>
                         </div>
                     </div>
                 </div>
@@ -143,7 +141,7 @@ export default function PricingPage() {
                     {plans.map((plan) => (
                         <div
                             key={plan.id}
-                            className={`relative flex flex-col bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border-2 transition-colors ${plan.id === 'growth' ? 'border-brand-500' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                            className={`relative flex flex-col bg-surface rounded-md p-8 shadow-sm border-2 transition-colors ${plan.id === 'growth' ? 'border-brand-500' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
                                 }`}
                         >
                             {plan.id === 'growth' && (
@@ -152,18 +150,18 @@ export default function PricingPage() {
                                 </div>
                             )}
                             <div className="mb-8">
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{plan.name}</h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{plan.description}</p>
+                                <h3 className="text-2xl font-bold text-fg mb-2">{plan.name}</h3>
+                                <p className="text-fg-muted text-sm leading-relaxed">{plan.description}</p>
                             </div>
                             <div className="mb-8">
-                                <span className="text-5xl font-extrabold text-slate-900 dark:text-white">
+                                <span className="text-5xl font-extrabold text-fg">
                                     {plan.id === 'starter' ? 'Free' : (billingCycle === 'monthly' ? plan.price : `$${Math.round(plan.monthly * 12 * 0.85)}`)}
                                 </span>
-                                {plan.monthly > 0 && <span className="text-slate-500 dark:text-slate-400 font-medium tracking-wide">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>}
+                                {plan.monthly > 0 && <span className="text-fg-muted font-medium tracking-wide">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>}
                             </div>
                             <ul className="flex-1 space-y-4 mb-8">
                                 {plan.features.map((feature, i) => (
-                                    <li key={i} className="flex items-center text-slate-600 dark:text-slate-300 text-sm">
+                                    <li key={i} className="flex items-center text-fg-muted text-sm">
                                         <svg className="w-5 h-5 text-brand-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
@@ -173,9 +171,9 @@ export default function PricingPage() {
                             </ul>
                             <button
                                 onClick={() => handleBuy(plan.id)}
-                                className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
+                                className={`w-full py-4 rounded-md font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
                                     ? 'bg-brand-600 text-white hover:bg-brand-700'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
+                                    : 'bg-surface-3 text-fg hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                             >
                                 {usePaymentLink ? (plan.id === 'starter' ? 'Get Started' : 'Buy Now') : 'Contact Sales'}
@@ -184,7 +182,7 @@ export default function PricingPage() {
                     ))}
                 </div>
 
-                <p className="mt-12 text-center text-slate-500 dark:text-slate-400 text-sm">
+                <p className="mt-12 text-center text-fg-muted text-sm">
                     All plans include a 30-day money back guarantee. Prices are in USD.
                 </p>
             </div>

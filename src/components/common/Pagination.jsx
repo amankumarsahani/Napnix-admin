@@ -34,24 +34,24 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
     };
 
     return (
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-sm text-slate-500 dark:text-slate-400">
-                Showing <span className="font-medium text-slate-900 dark:text-white">{startItem}</span> to{' '}
-                <span className="font-medium text-slate-900 dark:text-white">{endItem}</span> of{' '}
-                <span className="font-medium text-slate-900 dark:text-white">{totalItems}</span> results
+        <div className="px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-sm text-fg-muted">
+                Showing <span className="font-medium text-fg">{startItem}</span> to{' '}
+                <span className="font-medium text-fg">{endItem}</span> of{' '}
+                <span className="font-medium text-fg">{totalItems}</span> results
             </div>
             <div className="flex items-center gap-1">
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage <= 1}
-                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border text-fg-muted hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     Previous
                 </button>
 
                 {getPageNumbers().map((page, idx) =>
                     page === '...' ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-sm text-slate-400 dark:text-slate-500">
+                        <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-sm text-fg-subtle">
                             ...
                         </span>
                     ) : (
@@ -61,7 +61,7 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
                             className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                                 page === currentPage
                                     ? 'bg-brand-600 text-white shadow-sm'
-                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    : 'text-fg-muted hover:bg-surface-2'
                             }`}
                         >
                             {page}
@@ -72,7 +72,7 @@ export default function Pagination({ currentPage, totalPages, totalItems, pageSi
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage >= totalPages}
-                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border text-fg-muted hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     Next
                 </button>

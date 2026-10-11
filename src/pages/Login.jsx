@@ -54,13 +54,13 @@ export default function Login() {
                 }}
             >
                 <div className="relative z-10 flex flex-col items-center max-w-sm">
-                    <div className="w-16 h-16 bg-brand-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+                    <div className="w-16 h-16 bg-brand-600 rounded-md flex items-center justify-center mx-auto mb-6">
                         <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-3 text-center">Napnix <br></br> Admin Portal</h1>
-                    <p className="text-slate-400 text-base leading-relaxed text-center">
+                    <p className="text-fg-subtle text-base leading-relaxed text-center">
                         Multi-tenant business management platform.
                     </p>
 
@@ -104,7 +104,7 @@ export default function Login() {
                 </div>
 
                 <div className="absolute bottom-8 text-center">
-                    <p className="text-slate-500 text-xs">&copy; {new Date().getFullYear()} Napnix</p>
+                    <p className="text-fg-muted text-xs">&copy; {new Date().getFullYear()} Napnix</p>
                 </div>
             </div>
 
@@ -118,28 +118,28 @@ export default function Login() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Napnix</h1>
+                        <h1 className="text-xl font-bold text-fg">Napnix</h1>
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        <h2 className="text-2xl font-bold text-fg">
                             Sign in
                         </h2>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+                        <p className="text-fg-muted mt-1 text-sm">
                             Enter your credentials to access the admin panel.
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                            <label htmlFor="email" className="block text-sm font-medium text-fg mb-1.5">
                                 Email
                             </label>
                             <input
                                 id="email"
                                 type="email"
                                 {...register('email')}
-                                className={`block w-full px-3.5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:focus:border-brand-400 transition-colors ${errors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                                className={`block w-full px-3.5 py-3 bg-surface border border-border rounded-lg text-fg placeholder:text-fg-subtle text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:focus:border-brand-400 transition-colors ${errors.email ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                 placeholder="you@company.com"
                             />
                             {errors.email && (
@@ -149,7 +149,7 @@ export default function Login() {
 
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                <label htmlFor="password" className="block text-sm font-medium text-fg">
                                     Password
                                 </label>
                                 <a href="#" className="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 font-medium">
@@ -161,13 +161,13 @@ export default function Login() {
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     {...register('password')}
-                                    className={`block w-full px-3.5 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:focus:border-brand-400 transition-colors ${errors.password ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
+                                    className={`block w-full px-3.5 pr-10 py-3 bg-surface border border-border rounded-lg text-fg placeholder:text-fg-subtle text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 dark:focus:border-brand-400 transition-colors ${errors.password ? 'border-rose-500 ring-2 ring-rose-500/20' : ''}`}
                                     placeholder="Enter your password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-fg-subtle hover:text-fg"
                                     tabIndex={-1}
                                 >
                                     {showPassword ? (
@@ -191,9 +191,9 @@ export default function Login() {
                             <input
                                 id="remember"
                                 type="checkbox"
-                                className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-brand-600 focus:ring-brand-500 dark:bg-slate-800"
+                                className="h-4 w-4 rounded border-border-strong text-brand-600 focus:ring-brand-500 dark:bg-slate-800"
                             />
-                            <label htmlFor="remember" className="ml-2 text-sm text-slate-600 dark:text-slate-400">
+                            <label htmlFor="remember" className="ml-2 text-sm text-fg-muted">
                                 Remember me
                             </label>
                         </div>
@@ -217,7 +217,7 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <p className="text-center text-xs text-fg-subtle mt-8 pt-6 border-t border-border">
                         Napnix Admin Portal
                     </p>
                 </div>

@@ -29,25 +29,25 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
         <div ref={containerRef} className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white cursor-pointer flex items-center justify-between min-h-[38px]"
+                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg cursor-pointer flex items-center justify-between min-h-[38px]"
             >
-                <span className={selectedOption ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+                <span className={selectedOption ? 'text-fg' : 'text-fg-subtle'}>
                     {selectedOption ? getOptionLabel(selectedOption) : (emptyLabel || placeholder || 'Select...')}
                 </span>
-                <svg className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 text-fg-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
             </div>
 
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-hidden">
-                    <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div className="p-2 border-b border-border">
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search..."
-                            className="w-full px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-md bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            className="w-full px-2.5 py-1.5 text-sm border border-border rounded-md bg-surface-2 text-fg placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500"
                             autoFocus
                             onClick={(e) => e.stopPropagation()}
                         />
@@ -56,12 +56,12 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                         <button
                             type="button"
                             onClick={() => { onChange(''); setIsOpen(false); setSearch(''); }}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${!value ? 'bg-slate-50 dark:bg-slate-700 font-medium' : 'text-slate-500'}`}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors ${!value ? 'bg-surface-2 font-medium' : 'text-fg-muted'}`}
                         >
                             {emptyLabel || 'None'}
                         </button>
                         {filtered.length === 0 && (
-                            <div className="px-3 py-4 text-sm text-slate-400 text-center">No results found</div>
+                            <div className="px-3 py-4 text-sm text-fg-subtle text-center">No results found</div>
                         )}
                         {filtered.map((option) => {
                             const optValue = getOptionValue(option);
@@ -71,7 +71,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                                     type="button"
                                     key={optValue}
                                     onClick={() => { onChange(optValue, option); setIsOpen(false); setSearch(''); }}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-between ${isSelected ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-slate-700 dark:text-slate-300'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-2 transition-colors flex items-center justify-between ${isSelected ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 font-medium' : 'text-fg'}`}
                                 >
                                     <span>{renderOption ? renderOption(option) : getOptionLabel(option)}</span>
                                     {isSelected && (
@@ -85,7 +85,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, emptyLabel, r
                     </div>
                 </div>
             )}
-            {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
+            {hint && <p className="text-xs text-fg-subtle mt-1">{hint}</p>}
         </div>
     );
 };

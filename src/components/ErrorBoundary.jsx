@@ -13,7 +13,7 @@ export default class ErrorBoundary extends Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
+                <div className="min-h-screen flex items-center justify-center bg-surface-2 p-6">
                     <div className="max-w-md w-full text-center space-y-6">
                         <div className="w-16 h-16 mx-auto rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                             <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,8 +21,8 @@ export default class ErrorBoundary extends Component {
                             </svg>
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-slate-800 dark:text-white">Something went wrong</h1>
-                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                            <h1 className="text-xl font-bold text-fg">Something went wrong</h1>
+                            <p className="mt-2 text-sm text-fg-muted">
                                 An unexpected error occurred. Please refresh the page or contact support if the problem persists.
                             </p>
                         </div>
