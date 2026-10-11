@@ -213,6 +213,18 @@ const TenantDetail = () => {
         }
     };
 
+    // Stop/restart interrupt the customer's live CRM, so ask first (same wording as the list)
+    const confirmProcess = (action) => setConfirmState({
+        isOpen: true,
+        title: action === 'stop' ? 'Stop tenant?' : 'Restart tenant?',
+        message: action === 'stop'
+            ? `${tenant.name}'s CRM will be offline for its users until you start it again.`
+            : `${tenant.name}'s CRM will be unavailable for a few seconds while it restarts.`,
+        variant: action === 'stop' ? 'danger' : 'info',
+        confirmText: action === 'stop' ? 'Stop tenant' : 'Restart',
+        onConfirm: () => { setConfirmState({ isOpen: false }); handleAction(action); },
+    });
+
     const handleAction = async (action) => {
         setActionLoading(action);
         try {
@@ -658,14 +670,14 @@ const TenantDetail = () => {
                     {tenant.process_status === 'running' ? (
                         <>
                             <button
-                                onClick={() => handleAction('stop')}
+                                onClick={() => confirmProcess('stop')}
                                 disabled={actionLoading}
                                 className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                             >
                                 Stop
                             </button>
                             <button
-                                onClick={() => handleAction('restart')}
+                                onClick={() => confirmProcess('restart')}
                                 disabled={actionLoading}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                             >
