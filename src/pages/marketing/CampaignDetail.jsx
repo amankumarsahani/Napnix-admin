@@ -115,15 +115,15 @@ const CampaignDetail = () => {
                 <div>
                     <button
                         onClick={() => navigate('/campaigns')}
-                        className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                        className="flex items-center gap-1 text-sm text-fg-muted hover:text-slate-700 mb-2"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                         Back to Campaigns
                     </button>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{campaign.name}</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">{campaign.subject}</p>
+                    <h1 className="text-2xl font-bold text-fg">{campaign.name}</h1>
+                    <p className="text-fg-muted mt-1">{campaign.subject}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {campaign.status === 'sending' && (
@@ -154,14 +154,14 @@ const CampaignDetail = () => {
 
             {/* Progress Bar */}
             {campaign.total_recipients > 0 && (
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                <div className="bg-surface rounded-md p-4 border border-border">
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="text-slate-600 dark:text-slate-400">Sending Progress</span>
-                        <span className="font-medium text-slate-900 dark:text-white">
+                        <span className="text-fg-muted">Sending Progress</span>
+                        <span className="font-medium text-fg">
                             {campaign.sent_count} / {campaign.total_recipients}
                         </span>
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                    <div className="w-full bg-surface-3 rounded-full h-3">
                         <div
                             className="bg-brand-600 h-3 rounded-full transition-all duration-500"
                             style={{ width: `${(campaign.sent_count / campaign.total_recipients) * 100}%` }}
@@ -171,14 +171,14 @@ const CampaignDetail = () => {
             )}
 
             {/* Recipients List */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recipients</h2>
+            <div className="bg-surface rounded-md border border-border">
+                <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h2 className="text-lg font-semibold text-fg">Recipients</h2>
                     <div className="flex items-center gap-2">
                         <select
                             value={filter}
                             onChange={(e) => { setFilter(e.target.value); setPage(1); }}
-                            className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            className="px-3 py-1.5 text-sm border border-border-strong rounded-lg bg-surface text-fg"
                         >
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
@@ -188,7 +188,7 @@ const CampaignDetail = () => {
                         </select>
                         <button
                             onClick={fetchRecipients}
-                            className="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                            className="p-1.5 text-fg-muted hover:bg-surface-2 rounded"
                             title="Refresh"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,14 +203,14 @@ const CampaignDetail = () => {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
                     </div>
                 ) : recipients.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500">
+                    <div className="p-8 text-center text-fg-muted">
                         No recipients found
                     </div>
                 ) : (
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-500 uppercase">
+                                <thead className="bg-surface-2 text-xs font-semibold text-fg-muted uppercase">
                                     <tr>
                                         <th className="px-4 py-3 text-left">Recipient</th>
                                         <th className="px-4 py-3 text-left">Status</th>
@@ -219,15 +219,15 @@ const CampaignDetail = () => {
                                         <th className="px-4 py-3 text-left">Clicked / IP</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                <tbody className="divide-y divide-border">
                                     {recipients.map((recipient) => (
-                                        <tr key={recipient.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <tr key={recipient.id} className="hover:bg-surface-2">
                                             <td className="px-4 py-3">
                                                 <div>
-                                                    <div className="font-medium text-slate-900 dark:text-white">
+                                                    <div className="font-medium text-fg">
                                                         {recipient.recipient_name || '-'}
                                                     </div>
-                                                    <div className="text-sm text-slate-500">{recipient.recipient_email}</div>
+                                                    <div className="text-sm text-fg-muted">{recipient.recipient_email}</div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3">
@@ -235,7 +235,7 @@ const CampaignDetail = () => {
                                                     {recipient.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                                            <td className="px-4 py-3 text-sm text-fg-muted">
                                                 {recipient.sent_at ? new Date(recipient.sent_at).toLocaleString() : '-'}
                                             </td>
                                             <td className="px-4 py-3">
@@ -245,11 +245,11 @@ const CampaignDetail = () => {
                                                             {new Date(recipient.opened_at).toLocaleString()}
                                                         </div>
                                                         {recipient.open_ip && (
-                                                            <div className="text-xs text-slate-400 font-mono">{recipient.open_ip}</div>
+                                                            <div className="text-xs text-fg-subtle font-mono">{recipient.open_ip}</div>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-slate-400">-</span>
+                                                    <span className="text-fg-subtle">-</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -259,11 +259,11 @@ const CampaignDetail = () => {
                                                             {new Date(recipient.clicked_at).toLocaleString()}
                                                         </div>
                                                         {recipient.click_ip && (
-                                                            <div className="text-xs text-slate-400 font-mono">{recipient.click_ip}</div>
+                                                            <div className="text-xs text-fg-subtle font-mono">{recipient.click_ip}</div>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-slate-400">-</span>
+                                                    <span className="text-fg-subtle">-</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -274,7 +274,7 @@ const CampaignDetail = () => {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-center gap-2">
+                            <div className="p-4 border-t border-border flex justify-center gap-2">
                                 <button
                                     onClick={() => setPage(p => Math.max(1, p - 1))}
                                     disabled={page === 1}
@@ -304,7 +304,7 @@ const CampaignDetail = () => {
 // Stat Card Component
 const StatCard = ({ label, value, subtext, color = 'slate', onClick, active }) => {
     const colors = {
-        slate: 'text-slate-900 dark:text-white',
+        slate: 'text-fg',
         emerald: 'text-emerald-600',
         blue: 'text-blue-600',
         purple: 'text-purple-600',
@@ -316,14 +316,14 @@ const StatCard = ({ label, value, subtext, color = 'slate', onClick, active }) =
     return (
         <div
             onClick={onClick}
-            className={`cursor-pointer transition-all duration-200 bg-white dark:bg-slate-800 rounded-xl p-4 border ${active
+            className={`cursor-pointer transition-all duration-200 bg-surface rounded-md p-4 border ${active
                     ? 'border-brand-500 ring-1 ring-brand-500 shadow-md'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
+                    : 'border-border hover:border-slate-300 dark:hover:border-slate-600 shadow-sm'
                 }`}
         >
             <div className={`text-2xl font-bold ${colors[color]}`}>{value}</div>
-            {subtext && <span className="text-xs text-slate-400 ml-1">({subtext})</span>}
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{label}</div>
+            {subtext && <span className="text-xs text-fg-subtle ml-1">({subtext})</span>}
+            <div className="text-xs text-fg-muted mt-1">{label}</div>
         </div>
     );
 };

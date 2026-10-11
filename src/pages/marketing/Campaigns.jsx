@@ -6,6 +6,7 @@ import { createStatusColorFn } from '../../utils/statusColors';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../../components/common/Pagination';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { Dialog, SearchInput } from '../../components/ui';
 
 const Campaigns = () => {
     const navigate = useNavigate();
@@ -20,13 +21,14 @@ const Campaigns = () => {
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
     const intervalRef = useRef(null);
+    const lastUpdatedRef = useRef(false);
 
     const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
 
     // Fetch data function
     const fetchData = useCallback(async (showLoading = true) => {
         try {
-            if (showLoading) setLoading(true);
+            if (showLoading && !lastUpdatedRef.current) setLoading(true);
             const [campaignsRes, statsRes] = await Promise.all([
                 campaignsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
                 campaignsAPI.getDashboardStats()
@@ -35,6 +37,7 @@ const Campaigns = () => {
             if (campaignsRes.pagination) setPagination(campaignsRes.pagination);
             setStats(statsRes.data);
             setLastUpdated(new Date());
+            lastUpdatedRef.current = true;
         } catch (error) {
             if (showLoading) toast.error('Failed to fetch campaigns');
         } finally {
@@ -69,10 +72,31 @@ const Campaigns = () => {
         setActionLoading(prev => ({ ...prev, [campaignId]: action }));
         try {
             switch (action) {
-                case 'start':
-                    await campaignsAPI.start(campaignId);
-                    toast.success('Campaign started!');
-                    break;
+                case 'start': {
+                    const c = campaigns.find(x => x.id === campaignId);
+                    setActionLoading(prev => ({ ...prev, [campaignId]: null }));
+                    setConfirmState({
+                        isOpen: true,
+                        title: 'Start sending?',
+                        message: `This emails ${c?.total_recipients || 'all'} recipient${c?.total_recipients === 1 ? '' : 's'} of "${c?.name || 'this campaign'}". Sent emails can't be recalled.`,
+                        variant: 'warning',
+                        confirmText: 'Start sending',
+                        onConfirm: async () => {
+                            setConfirmState({ isOpen: false });
+                            setActionLoading(prev => ({ ...prev, [campaignId]: 'start' }));
+                            try {
+                                await campaignsAPI.start(campaignId);
+                                toast.success('Campaign started');
+                                fetchData(false);
+                            } catch {
+                                toast.error('Failed to start campaign');
+                            } finally {
+                                setActionLoading(prev => ({ ...prev, [campaignId]: null }));
+                            }
+                        },
+                    });
+                    return;
+                }
                 case 'pause':
                     await campaignsAPI.pause(campaignId);
                     toast.success('Campaign paused');
@@ -128,8 +152,8 @@ const Campaigns = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Email Campaigns</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Send bulk emails to leads and clients</p>
+                    <h1 className="text-2xl font-bold text-fg">Email Campaigns</h1>
+                    <p className="text-fg-muted">Send bulk emails to leads and clients</p>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Live indicator when campaigns are sending */}
@@ -143,13 +167,13 @@ const Campaigns = () => {
                         </div>
                     )}
                     {lastUpdated && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-fg-subtle">
                             Updated {lastUpdated.toLocaleTimeString()}
                         </span>
                     )}
                     <button
                         onClick={() => fetchData()}
-                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        className="p-2 text-fg-muted hover:text-slate-700 hover:bg-surface-2 rounded-lg transition-colors"
                         title="Refresh"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,49 +192,40 @@ const Campaigns = () => {
                 </div>
             </div>
 
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Search campaigns..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                />
-                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
+            <SearchInput value={searchTerm} onChange={t => { setSearchTerm(t); goToPage(1); }} placeholder="Search campaigns" label="Search campaigns" className="w-full sm:w-72" />
 
             {/* Stats Cards */}
             {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total_campaigns || 0}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Total Campaigns</div>
+                    <div className="bg-surface rounded-md p-4 border border-border">
+                        <div className="text-2xl font-bold text-fg">{stats.total_campaigns || 0}</div>
+                        <div className="text-sm text-fg-muted">Total Campaigns</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="bg-surface rounded-md p-4 border border-border">
                         <div className="text-2xl font-bold text-emerald-600">{stats.total_sent || 0}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Emails Sent</div>
+                        <div className="text-sm text-fg-muted">Emails Sent</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="bg-surface rounded-md p-4 border border-border">
                         <div className="text-2xl font-bold text-blue-600">{stats.total_opened || 0}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Opened</div>
+                        <div className="text-sm text-fg-muted">Opened</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="bg-surface rounded-md p-4 border border-border">
                         <div className="text-2xl font-bold text-purple-600">{stats.overall_open_rate || 0}%</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Open Rate</div>
+                        <div className="text-sm text-fg-muted">Open Rate</div>
                     </div>
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div className="bg-surface rounded-md p-4 border border-border">
                         <div className="text-2xl font-bold text-rose-600">{stats.unsubscribed || 0}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">Unsubscribed</div>
+                        <div className="text-sm text-fg-muted">Unsubscribed</div>
                     </div>
                 </div>
             )}
 
             {/* Campaigns Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-surface rounded-md border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-                            <tr className="text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <thead className="bg-surface-2 border-b border-border">
+                            <tr className="text-left text-xs font-semibold text-fg-muted uppercase tracking-wider">
                                 <th className="px-6 py-4">Campaign</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Recipients</th>
@@ -220,20 +235,20 @@ const Campaigns = () => {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        <tbody className="divide-y divide-border">
                             {campaigns.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-fg-muted">
                                         No campaigns yet. Create your first campaign!
                                     </td>
                                 </tr>
                             ) : (
                                 campaigns.map((campaign) => (
-                                    <tr key={campaign.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => navigate(`/campaigns/${campaign.id}`)}>
+                                    <tr key={campaign.id} className="hover:bg-surface-2 transition-colors cursor-pointer" onClick={() => navigate(`/campaigns/${campaign.id}`)}>
                                         <td className="px-6 py-4">
                                             <div>
-                                                <div className="font-semibold text-slate-900 dark:text-white hover:text-brand-600">{campaign.name}</div>
-                                                <div className="text-sm text-slate-500 dark:text-slate-400">{campaign.subject}</div>
+                                                <div className="font-semibold text-fg hover:text-brand-600">{campaign.name}</div>
+                                                <div className="text-sm text-fg-muted">{campaign.subject}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -241,21 +256,21 @@ const Campaigns = () => {
                                                 {campaign.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                        <td className="px-6 py-4 text-fg-muted">
                                             {campaign.total_recipients || 0}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                        <td className="px-6 py-4 text-fg-muted">
                                             {campaign.sent_count || 0}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                        <td className="px-6 py-4 text-fg-muted">
                                             {campaign.opened_count || 0}
                                             {campaign.sent_count > 0 && (
-                                                <span className="text-xs text-slate-400 ml-1">
+                                                <span className="text-xs text-fg-subtle ml-1">
                                                     ({((campaign.opened_count / campaign.sent_count) * 100).toFixed(1)}%)
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                        <td className="px-6 py-4 text-fg-muted">
                                             {campaign.clicked_count || 0}
                                         </td>
                                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -437,22 +452,10 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                        {campaign?.id ? 'Edit Campaign' : 'New Campaign'}
-                    </h2>
-                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <Dialog open onClose={onClose} title={campaign?.id ? 'Edit campaign' : 'New campaign'} size="lg">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-fg mb-1">
                             Campaign Name *
                         </label>
                         <input
@@ -461,20 +464,20 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             value={formData.name}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                             placeholder="January Newsletter"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-fg mb-1">
                             Email Template
                         </label>
                         <select
                             name="template_id"
                             value={formData.template_id}
                             onChange={(e) => handleTemplateSelect(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                         >
                             <option value="">-- No Template (Custom HTML) --</option>
                             {templates.map(template => (
@@ -496,7 +499,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-fg mb-1">
                             Email Subject *
                         </label>
                         <input
@@ -505,14 +508,14 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             value={formData.subject}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                             placeholder="Exciting news for {{name}}!"
                         />
-                        <p className="mt-1 text-xs text-slate-500">Use {'{{name}}'} for personalization</p>
+                        <p className="mt-1 text-xs text-fg-muted">Use {'{{name}}'} for personalization</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-fg mb-1">
                             Preview Text
                         </label>
                         <input
@@ -520,20 +523,20 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                             name="preview_text"
                             value={formData.preview_text}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                             placeholder="Short preview shown in inbox..."
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-fg mb-1">
                             Audience
                         </label>
                         <select
                             name="audience_type"
                             value={formData.audience_type}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                            className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                         >
                             <option value="all_leads">All Leads</option>
                             <option value="all_clients">All Clients</option>
@@ -553,10 +556,10 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                 className="w-4 h-4 rounded text-brand-600"
                             />
                             <div>
-                                <label htmlFor="auto_enroll" className="text-sm font-medium text-slate-900 dark:text-white cursor-pointer">
+                                <label htmlFor="auto_enroll" className="text-sm font-medium text-fg cursor-pointer">
                                     Auto-enroll new contacts
                                 </label>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                <p className="text-xs text-fg-muted">
                                     New {formData.audience_type === 'all_leads' ? 'leads' : 'clients'} will automatically receive this campaign
                                 </p>
                             </div>
@@ -567,7 +570,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         <div className="space-y-3">
                             {/* File Upload */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <label className="block text-sm font-medium text-fg mb-1">
                                     Upload Email List (Excel/CSV)
                                 </label>
                                 <div className="flex items-center gap-2">
@@ -596,22 +599,22 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                     />
                                     <label
                                         htmlFor="emailFile"
-                                        className="flex-1 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
+                                        className="flex-1 px-4 py-3 border-2 border-dashed border-border-strong rounded-lg text-center cursor-pointer hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
                                     >
-                                        <svg className="w-6 h-6 mx-auto text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-6 h-6 mx-auto text-fg-subtle mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                         </svg>
-                                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                                        <span className="text-sm text-fg-muted">
                                             Click to upload CSV or Excel file
                                         </span>
                                     </label>
                                 </div>
-                                <p className="mt-1 text-xs text-slate-500">File should have columns: email, name (name is optional)</p>
+                                <p className="mt-1 text-xs text-fg-muted">File should have columns: email, name (name is optional)</p>
                             </div>
 
                             {/* Manual Entry */}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                <label className="block text-sm font-medium text-fg mb-1">
                                     Or paste email addresses (one per line)
                                 </label>
                                 <textarea
@@ -619,7 +622,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                     value={formData.custom_emails}
                                     onChange={handleChange}
                                     rows={4}
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                    className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                                     placeholder="john@example.com&#10;Jane Doe <jane@example.com>&#10;support@company.com"
                                 />
                                 {formData.custom_emails && (
@@ -633,7 +636,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
 
                     {!formData.template_id && (
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-sm font-medium text-fg mb-1">
                                 Email Content (HTML)
                             </label>
                             <textarea
@@ -641,7 +644,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                 value={formData.html_content}
                                 onChange={handleChange}
                                 rows={10}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 font-mono text-sm"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 font-mono text-sm"
                                 placeholder="<h1>Hello {{name}}!</h1>&#10;<p>Your email content here...</p>"
                             />
                         </div>
@@ -649,7 +652,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-sm font-medium text-fg mb-1">
                                 Rate Limit (per hour)
                             </label>
                             <input
@@ -659,11 +662,11 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                 onChange={handleChange}
                                 min={1}
                                 max={500}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-sm font-medium text-fg mb-1">
                                 Delay Between Emails (sec)
                             </label>
                             <input
@@ -673,7 +676,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                                 onChange={handleChange}
                                 min={1}
                                 max={60}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
                     </div>
@@ -682,7 +685,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="px-4 py-2 text-fg hover:bg-surface-2 rounded-lg transition-colors"
                         >
                             Cancel
                         </button>
@@ -701,8 +704,7 @@ const CampaignModal = ({ campaign, onClose, onSaved }) => {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </Dialog>
     );
 };
 
