@@ -7,6 +7,7 @@ export { Dialog, ConfirmDialog } from './Dialog';
 export { PageHeader, Panel, StatCard, Avatar } from './Layout';
 export { Badge, StatusBadge } from './Badge';
 export { Tabs } from './Tabs';
+export { Menu } from './Menu';
 export { Skeleton, SkeletonRows, EmptyState, ErrorState, QueryState } from './States';
 export { DataTable } from './DataTable';
 export { cx } from './cx';

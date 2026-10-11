@@ -112,6 +112,7 @@ export default function BlogEditor() {
 
     return (
         <div className="max-w-5xl mx-auto space-y-6">
+            <h1 className="sr-only">Blog editor</h1>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <button

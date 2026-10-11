@@ -715,6 +715,7 @@ const WorkflowEditor = () => {
 
     return (
         <div className="flex h-[calc(100vh-80px)] overflow-hidden">
+            <h1 className="sr-only">{isNew ? 'New workflow' : `Edit workflow: ${workflowName}`}</h1>
             {/* Left Sidebar - Node Palette */}
             <div className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-4 overflow-y-auto">
                 <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Nodes</h3>

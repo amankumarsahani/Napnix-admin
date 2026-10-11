@@ -99,7 +99,7 @@ export default function PricingPage() {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <h2 className="text-base font-semibold text-brand-600 dark:text-brand-400 tracking-wide uppercase">Pricing Plans</h2>
+                    <h1 className="text-base font-semibold text-brand-600 dark:text-brand-400 tracking-wide uppercase">Pricing Plans</h1>
                     <p className="mt-2 text-4xl font-extrabold text-slate-900 dark:text-white sm:text-5xl lg:text-6xl tracking-tight">
                         Scale your business with <span className="text-brand-600">Napnix</span>
                     </p>

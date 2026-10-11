@@ -10,8 +10,8 @@
   <!-- Apply the saved theme before first paint (ThemeContext keeps it in sync afterwards) -->
   <script>
     try {
-      var t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      if (t === 'dark') document.documentElement.classList.add('dark');
+      var t = localStorage.getItem('theme') || 'system';
+      if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
     } catch (e) {}
   </script>
   <!-- SPA redirect script for GitHub Pages -->

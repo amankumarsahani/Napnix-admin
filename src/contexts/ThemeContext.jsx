@@ -2,39 +2,38 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-    const [theme, setTheme] = useState(() => {
-        // Check localStorage first, then system preference
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) return savedTheme;
+// preference: 'light' | 'dark' | 'system' (stored); theme: the resolved 'light' | 'dark'.
+// index.html applies the same rule before first paint, so keep the two in step.
+const readPreference = () => {
+    try { return localStorage.getItem('theme') || 'system'; } catch { return 'system'; }
+};
+const systemDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-        }
-        return 'light';
-    });
+export function ThemeProvider({ children }) {
+    const [preference, setPreference] = useState(readPreference);
+    const [prefersDark, setPrefersDark] = useState(systemDark);
 
     useEffect(() => {
-        const root = document.documentElement;
+        const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+        if (!mq) return undefined;
+        const onChange = e => setPrefersDark(e.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
 
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
+    const theme = preference === 'system' ? (prefersDark ? 'dark' : 'light') : preference;
 
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'light' ? 'dark' : 'light');
-    };
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        try { localStorage.setItem('theme', preference); } catch { /* private mode */ }
+    }, [theme, preference]);
 
     const value = {
         theme,
-        setTheme,
-        toggleTheme,
-        isDark: theme === 'dark'
+        preference,
+        setTheme: setPreference,
+        toggleTheme: () => setPreference(theme === 'dark' ? 'light' : 'dark'),
+        isDark: theme === 'dark',
     };
 
     return (

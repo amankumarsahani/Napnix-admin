@@ -152,6 +152,7 @@ export default function AutomationEditor() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-64px)]">
+            <h1 className="sr-only">Automation editor</h1>
             <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate('/email-marketing/automations')} className="text-slate-400 hover:text-slate-600 text-lg">&larr;</button>
