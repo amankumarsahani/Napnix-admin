@@ -91,11 +91,13 @@ export default function Documents() {
     const [createForm, setCreateForm] = useState(EMPTY);
 
     const query = useQuery({
-        queryKey: ['document-templates', 'list', search],
-        queryFn: async () => (await documentTemplatesAPI.getAll(search ? { search } : {})).data || [],
+        queryKey: ['document-templates', 'list'],
+        queryFn: async () => (await documentTemplatesAPI.getAll()).data || [],
         staleTime: 2 * 60 * 1000,
-        placeholderData: keepPreviousData,
     });
+    // The API has no search param and returns every template; filter here
+    const term = search.trim().toLowerCase();
+    const templates = (query.data || []).filter(t => !term || `${t.name} ${t.description || ''} ${t.category}`.toLowerCase().includes(term));
 
     const create = useMutation({
         mutationFn: () => documentTemplatesAPI.create({ ...createForm, slug: slugify(createForm.name) }),
@@ -121,7 +123,7 @@ export default function Documents() {
                 description="Personalize and send professional documents to your clients."
                 actions={<Button variant="primary" onClick={() => setCreating(true)}><FiPlus className="size-4" />Create Template</Button>}
             />
-            <SearchInput value={search} onChange={setSearch} placeholder="Search documents" label="Search documents" className="w-full sm:w-72" />
+            <SearchInput value={search} onChange={setSearch} delay={0} placeholder="Search documents" label="Search documents" className="w-full sm:w-72" />
 
             <Panel flush>
                 <DataTable
@@ -129,16 +131,15 @@ export default function Documents() {
                     loading={query.isLoading}
                     error={query.error}
                     onRetry={query.refetch}
-                    rows={query.data || []}
+                    rows={templates}
                     onRowClick={t => setPreviewId(t.id)}
-                    className={cx(query.isPlaceholderData && 'opacity-60')}
                     empty={<EmptyState title={search ? `No templates match “${search}”` : 'No templates yet'} />}
                     columns={[
                         {
                             key: 'name', header: 'Template',
                             render: t => (
                                 <span className="block max-w-xl">
-                                    <span className="flex items-center gap-2 font-medium">{t.name}{t.isDefault && <Badge tone="info">Default</Badge>}</span>
+                                    <span className="flex items-center gap-2 font-medium">{t.name}{(t.is_default ?? t.isDefault) ? <Badge tone="info">Default</Badge> : null}</span>
                                     {t.description && <span className="block text-xs text-fg-subtle truncate">{t.description}</span>}
                                 </span>
                             ),
