@@ -1,380 +1,211 @@
-import { useState, useEffect } from 'react';
-import { projectsAPI, clientsAPI } from '../../api';
+import { useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { createStatusColorFn, getPriorityColor } from '../../utils/statusColors';
-import usePagination from '../../hooks/usePagination';
+import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { clientsAPI, projectsAPI } from '../../api';
+import { getPriorityColor } from '../../utils/statusColors';
 import Pagination from '../../components/common/Pagination';
-import ConfirmModal from '../../components/common/ConfirmModal';
+import {
+    Button, ConfirmDialog, DataTable, Dialog, EmptyState, Field, IconButton, Input, PageHeader, Panel,
+    SearchInput, Select, StatusBadge, Textarea, cx,
+} from '../../components/ui';
+
+const PAGE_SIZE = 10;
+const EMPTY = { name: '', description: '', clientId: '', status: 'planning', priority: 'medium', budget: '', startDate: '', endDate: '', progress: 0 };
+const inr = n => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const day = d => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null);
+const fromProject = p => ({
+    name: p.name || '', description: p.description || '', clientId: p.clientId || '', status: p.status || 'planning',
+    priority: p.priority || 'medium', budget: p.budget ?? '', startDate: p.startDate?.split('T')[0] || '',
+    endDate: p.endDate?.split('T')[0] || '', progress: p.progress || 0,
+});
+
+function Progress({ value }) {
+    const v = Math.max(0, Math.min(100, Number(value) || 0));
+    return (
+        <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true" className="w-20 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                <span className="block h-full rounded-full bg-accent" style={{ width: `${v}%` }} />
+            </span>
+            <span className="font-mono tabular-nums text-xs w-8">{v}%</span>
+        </span>
+    );
+}
+
+function ProjectForm({ project, clients, onSubmit }) {
+    const [form, setForm] = useState(() => (project?.id ? fromProject(project) : EMPTY));
+    const set = key => e => setForm(f => ({ ...f, [key]: e.target.value }));
+    return (
+        <form id="project-form" onSubmit={e => { e.preventDefault(); onSubmit(form); }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Project name" required className="sm:col-span-2">
+                <Input value={form.name} onChange={set('name')} data-autofocus />
+            </Field>
+            <Field label="Description" className="sm:col-span-2">
+                <Textarea rows={3} value={form.description} onChange={set('description')} />
+            </Field>
+            {/* The API rejects a project without a client */}
+            <Field label="Client" required hint={clients.length ? undefined : 'Add a client first.'}>
+                <Select value={form.clientId} onChange={set('clientId')}>
+                    <option value="">Select client</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+                </Select>
+            </Field>
+            <Field label="Status">
+                <Select value={form.status} onChange={set('status')}>
+                    <option value="planning">Planning</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="on-hold">On Hold</option>
+                </Select>
+            </Field>
+            <Field label="Priority">
+                <Select value={form.priority} onChange={set('priority')}>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </Select>
+            </Field>
+            <Field label="Budget (₹)">
+                <Input type="number" min="0" value={form.budget} onChange={set('budget')} className="font-mono" />
+            </Field>
+            <Field label="Start date">
+                <Input type="date" value={form.startDate} onChange={set('startDate')} />
+            </Field>
+            <Field label="End date" error={form.startDate && form.endDate && form.endDate < form.startDate ? 'Ends before it starts' : undefined}>
+                <Input type="date" value={form.endDate} min={form.startDate || undefined} onChange={set('endDate')} />
+            </Field>
+            <Field label={`Progress: ${form.progress}%`} className="sm:col-span-2">
+                <input type="range" min="0" max="100" value={form.progress}
+                    onChange={e => setForm(f => ({ ...f, progress: parseInt(e.target.value, 10) }))}
+                    className="w-full accent-[var(--accent)]" />
+            </Field>
+        </form>
+    );
+}
 
 export default function ProjectsList() {
-    const [projects, setProjects] = useState([]);
-    const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingProject, setEditingProject] = useState(null);
-    const [confirmState, setConfirmState] = useState({ isOpen: false });
-    const [searchTerm, setSearchTerm] = useState('');
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        clientId: '',
-        status: 'planning',
-        priority: 'medium',
-        budget: '',
-        startDate: '',
-        endDate: '',
-        progress: 0,
+    const queryClient = useQueryClient();
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+    const [formProject, setFormProject] = useState(null);
+    const [deleting, setDeleting] = useState(null);
+
+    const params = { page, limit: PAGE_SIZE, ...(search && { search }) };
+    const query = useQuery({
+        queryKey: ['projects', params],
+        queryFn: () => projectsAPI.getAll(params),
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+    });
+    // Client options for the form: fetched once, not on every page change
+    const clientsQuery = useQuery({
+        queryKey: ['clients', 'options'],
+        queryFn: async () => { const d = await clientsAPI.getAll({ limit: 1000 }); return Array.isArray(d) ? d : d.clients || []; },
+        staleTime: 5 * 60 * 1000,
+        enabled: !!formProject,
+    });
+    const data = query.data;
+    const projects = data ? (Array.isArray(data) ? data : data.projects || []) : [];
+    const pagination = data?.pagination;
+
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ['projects'] });
+    const save = useMutation({
+        mutationFn: ({ id, form }) => (id ? projectsAPI.update(id, form) : projectsAPI.create(form)),
+        onSuccess: (_, { id }) => { toast.success(id ? 'Project updated' : 'Project created'); setFormProject(null); invalidate(); },
+        onError: err => toast.error(err.response?.data?.message || err.response?.data?.error || 'Could not save the project'),
+    });
+    const remove = useMutation({
+        mutationFn: id => projectsAPI.delete(id),
+        onSuccess: () => { toast.success('Project deleted'); setDeleting(null); invalidate(); },
+        onError: () => toast.error('Failed to delete project'),
     });
 
-    const { currentPage, totalPages, totalItems, pageSize, goToPage, setPagination } = usePagination(10);
-
-    useEffect(() => {
-        fetchData();
-    }, [currentPage, searchTerm]);
-
-    const fetchData = async () => {
-        try {
-            const [projectsData, clientsData] = await Promise.all([
-                projectsAPI.getAll({ page: currentPage, limit: pageSize, ...(searchTerm && { search: searchTerm }) }),
-                clientsAPI.getAll({ limit: 1000 }),
-            ]);
-            setProjects(Array.isArray(projectsData) ? projectsData : projectsData.projects || []);
-            if (projectsData.pagination) setPagination(projectsData.pagination);
-            setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || []);
-        } catch (error) {
-            toast.error('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            if (editingProject) {
-                await projectsAPI.update(editingProject.id, formData);
-                toast.success('Project updated successfully');
-            } else {
-                await projectsAPI.create(formData);
-                toast.success('Project created successfully');
-            }
-            setShowModal(false);
-            resetForm();
-            fetchData();
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Operation failed');
-        }
-    };
-
-    const handleDelete = (id) => {
-        setConfirmState({
-            isOpen: true,
-            title: 'Delete Project',
-            message: 'Are you sure you want to delete this project? This action cannot be undone.',
-            variant: 'danger',
-            confirmText: 'Delete',
-            onConfirm: async () => {
-                setConfirmState({ isOpen: false });
-                try {
-                    await projectsAPI.delete(id);
-                    toast.success('Project deleted successfully');
-                    fetchData();
-                } catch (error) {
-                    toast.error('Failed to delete project');
-                }
-            },
-        });
-    };
-
-    const handleEdit = (project) => {
-        setEditingProject(project);
-        setFormData({
-            name: project.name || '',
-            description: project.description || '',
-            clientId: project.clientId || '',
-            status: project.status || 'planning',
-            priority: project.priority || 'medium',
-            budget: project.budget || '',
-            startDate: project.startDate ? project.startDate.split('T')[0] : '',
-            endDate: project.endDate ? project.endDate.split('T')[0] : '',
-            progress: project.progress || 0,
-        });
-        setShowModal(true);
-    };
-
-    const resetForm = () => {
-        setEditingProject(null);
-        setFormData({
-            name: '',
-            description: '',
-            clientId: '',
-            status: 'planning',
-            priority: 'medium',
-            budget: '',
-            startDate: '',
-            endDate: '',
-            progress: 0,
-        });
-    };
-
-    const getStatusColor = createStatusColorFn('project');
-
-
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
-            </div>
-        );
-    }
-
     return (
-        <div>
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Projects</h1>
-                    <p className="text-slate-600 dark:text-slate-400 mt-1">{projects.length} total projects</p>
-                </div>
-                <button
-                    onClick={() => {
-                        resetForm();
-                        setShowModal(true);
-                    }}
-                    className="btn btn-primary"
-                >
-                    + Add Project
-                </button>
-            </div>
+        <div className="space-y-4">
+            <PageHeader
+                title="Projects"
+                description={pagination ? `${pagination.total} projects` : undefined}
+                actions={<Button variant="primary" onClick={() => setFormProject({})}><FiPlus className="size-4" />Add Project</Button>}
+            />
+            <SearchInput value={search} onChange={t => { setSearch(t); setPage(1); }} placeholder="Search projects" label="Search projects" className="w-full sm:w-72" />
 
-            <div className="mb-6">
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search projects..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-72 pl-10 pr-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                    />
-                    <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-                {projects.map((project) => (
-                    <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-100 dark:border-slate-700">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="flex-1">
-                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{project.name}</h3>
-                                <p className="text-slate-600 dark:text-slate-400 text-sm mb-3">{project.description}</p>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)}`}>
-                                        {project.status}
-                                    </span>
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(project.priority)}`}>
-                                        {project.priority} priority
-                                    </span>
-                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300">
-                                        {project.clientName || 'No client'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => handleEdit(project)}
-                                    className="px-4 py-2 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors font-medium"
-                                >
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(project.id)}
-                                    className="px-4 py-2 bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900 transition-colors font-medium"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Budget</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">Rs.{Number(project.budget || 0).toLocaleString()}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Start Date</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">
-                                    {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not set'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">End Date</p>
-                                <p className="font-semibold text-slate-900 dark:text-white">
-                                    {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Not set'}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex justify-between text-sm mb-2">
-                                <span className="text-slate-600 dark:text-slate-400">Progress</span>
-                                <span className="font-semibold text-slate-900 dark:text-white">{project.progress}%</span>
-                            </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                <div
-                                    className="bg-brand-600 h-2 rounded-full transition-all"
-                                    style={{ width: `${project.progress}%` }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                {projects.length === 0 && (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-12 text-center text-slate-500 dark:text-slate-400 border border-transparent dark:border-slate-700">
-                        <p className="text-lg mb-2">No projects yet</p>
-                        <p className="text-sm">Click "Add Project" to create your first project</p>
+            <Panel flush>
+                <DataTable
+                    caption="Projects"
+                    loading={query.isLoading}
+                    error={query.error}
+                    onRetry={query.refetch}
+                    rows={projects}
+                    onRowClick={p => setFormProject(p)}
+                    className={cx(query.isPlaceholderData && 'opacity-60')}
+                    empty={<EmptyState title={search ? `No projects match “${search}”` : 'No projects yet'}
+                        action={!search && <Button variant="primary" size="sm" onClick={() => setFormProject({})}><FiPlus className="size-4" />Add Project</Button>} />}
+                    columns={[
+                        {
+                            key: 'name', header: 'Project',
+                            render: p => (
+                                <span className="block min-w-0 max-w-md">
+                                    <span className="block font-medium truncate">{p.name}</span>
+                                    <span className="block text-xs text-fg-subtle truncate">{p.clientName || 'No client'}{p.description ? ` · ${p.description}` : ''}</span>
+                                </span>
+                            ),
+                        },
+                        { key: 'status', header: 'Status', render: p => <StatusBadge entity="project" status={p.status} /> },
+                        {
+                            key: 'priority', header: 'Priority',
+                            render: p => <span className={cx('inline-flex rounded-sm border px-1.5 py-0.5 text-2xs font-medium capitalize', getPriorityColor(p.priority))}>{p.priority}</span>,
+                        },
+                        { key: 'budget', header: 'Budget', align: 'right', mono: true, render: p => inr(p.budget) },
+                        {
+                            key: 'dates', header: 'Dates', className: 'whitespace-nowrap text-fg-muted text-xs',
+                            render: p => (p.startDate || p.endDate ? `${day(p.startDate) || '—'} → ${day(p.endDate) || '—'}` : <span className="text-fg-subtle">Not set</span>),
+                        },
+                        { key: 'progress', header: 'Progress', render: p => <Progress value={p.progress} /> },
+                    ]}
+                    actions={p => (
+                        <span className="inline-flex gap-0.5">
+                            <IconButton size="sm" label={`Edit ${p.name}`} onClick={() => setFormProject(p)}><FiEdit2 className="size-4" /></IconButton>
+                            <IconButton size="sm" variant="danger" label={`Delete ${p.name}`} onClick={() => setDeleting(p)}><FiTrash2 className="size-4" /></IconButton>
+                        </span>
+                    )}
+                />
+                {pagination && pagination.pages > 1 && (
+                    <div className="border-t border-border">
+                        <Pagination currentPage={page} totalPages={pagination.pages} totalItems={pagination.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
                     </div>
                 )}
-            </div>
+            </Panel>
 
-            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPageChange={goToPage} />
+            <Dialog
+                open={!!formProject}
+                onClose={() => setFormProject(null)}
+                title={formProject?.id ? 'Edit project' : 'Add new project'}
+                size="lg"
+                footer={
+                    <>
+                        <Button onClick={() => setFormProject(null)} disabled={save.isPending}>Cancel</Button>
+                        <Button variant="primary" type="submit" form="project-form" loading={save.isPending}>{formProject?.id ? 'Update project' : 'Create project'}</Button>
+                    </>
+                }
+            >
+                {formProject && (
+                    <ProjectForm
+                        key={formProject.id ?? 'new'}
+                        project={formProject}
+                        clients={clientsQuery.data || []}
+                        onSubmit={form => save.mutate({ id: formProject.id, form })}
+                    />
+                )}
+            </Dialog>
 
-            {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent dark:border-slate-700">
-                        <h2 className="text-2xl font-bold mb-6 text-slate-900 dark:text-white">{editingProject ? 'Edit Project' : 'Add New Project'}</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Project Name *</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Description</label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    rows="3"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Client</label>
-                                    <select
-                                        value={formData.clientId}
-                                        onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    >
-                                        <option value="">Select client</option>
-                                        {clients.map((client) => (
-                                            <option key={client.id} value={client.id}>
-                                                {client.companyName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Status</label>
-                                    <select
-                                        value={formData.status}
-                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    >
-                                        <option value="planning">Planning</option>
-                                        <option value="in-progress">In Progress</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="on-hold">On Hold</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Priority</label>
-                                    <select
-                                        value={formData.priority}
-                                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    >
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Budget</label>
-                                    <input
-                                        type="number"
-                                        value={formData.budget}
-                                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Start Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.startDate}
-                                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">End Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.endDate}
-                                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Progress: {formData.progress}%</label>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={formData.progress}
-                                    onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
-                                    className="w-full"
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="submit"
-                                    className="flex-1 btn btn-primary"
-                                >
-                                    {editingProject ? 'Update Project' : 'Create Project'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowModal(false);
-                                        resetForm();
-                                    }}
-                                    className="px-6 py-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-500 transition-all"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            <ConfirmModal
-                isOpen={confirmState.isOpen}
-                onClose={() => setConfirmState({ isOpen: false })}
-                onConfirm={confirmState.onConfirm}
-                title={confirmState.title}
-                message={confirmState.message}
-                variant={confirmState.variant}
-                confirmText={confirmState.confirmText}
+            <ConfirmDialog
+                open={!!deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={() => remove.mutate(deleting.id)}
+                loading={remove.isPending}
+                title="Delete project?"
+                message={deleting && `This deletes ${deleting.name}. This can't be undone.`}
+                confirmText="Delete project"
             />
         </div>
     );
