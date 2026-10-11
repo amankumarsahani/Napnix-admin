@@ -82,7 +82,7 @@ export const Checkbox = forwardRef(function Checkbox({ label, className, ...prop
 });
 
 /** On/off switch. `checked` + `onChange(nextBoolean)`. */
-export function Switch({ checked, onChange, label, disabled, className }) {
+export function Switch({ checked, onChange, label, disabled, className, hideLabel }) {
     return (
         <button
             type="button"
@@ -102,7 +102,7 @@ export function Switch({ checked, onChange, label, disabled, className }) {
                     checked ? 'translate-x-4' : 'translate-x-0.5'
                 )} />
             </span>
-            {label && <span>{label}</span>}
+            {label && <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>}
         </button>
     );
 }

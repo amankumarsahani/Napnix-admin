@@ -1,42 +1,81 @@
 import { useState } from 'react';
-import { FiActivity, FiPlus } from '../../components/icons/FeatherIcons';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { nmAutomationsAPI } from '../../api/nexmail';
+import { Badge, Button, ConfirmDialog, DataTable, EmptyState, IconButton, PageHeader, Panel, Switch } from '../../components/ui';
+
+// This page used to render a permanently empty list with two buttons that did nothing.
+const STATUS_TONE = { active: 'success', paused: 'warning', draft: 'neutral' };
+const apiErr = (err, fallback) => err?.response?.data?.error || fallback;
 
 export default function Automations() {
-    const [automations, setAutomations] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const [deleting, setDeleting] = useState(null);
+
+    const query = useQuery({ queryKey: ['nexmail-automations'], queryFn: () => nmAutomationsAPI.getAll().then(r => r.data || []), staleTime: 60 * 1000 });
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['nexmail-automations'] });
+
+    const toggle = useMutation({
+        mutationFn: a => (a.status === 'active' ? nmAutomationsAPI.pause(a.id) : nmAutomationsAPI.activate(a.id)),
+        onSuccess: (_, a) => { toast.success(a.status === 'active' ? 'Automation paused' : 'Automation activated'); refresh(); },
+        onError: err => toast.error(apiErr(err, 'Could not change the automation')),
+    });
+    const remove = useMutation({
+        mutationFn: a => nmAutomationsAPI.delete(a.id),
+        onSuccess: () => { toast.success('Automation deleted'); setDeleting(null); refresh(); },
+        onError: err => { toast.error(apiErr(err, 'Failed to delete')); setDeleting(null); },
+    });
+
+    const addButton = <Button variant="primary" onClick={() => navigate('/email-marketing/automations/new')}><FiPlus className="size-4" />New automation</Button>;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Automations</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Create automated email sequences and drip campaigns</p>
-                </div>
-                <button className="btn btn-primary flex items-center gap-2"><FiPlus /> New Automation</button>
-            </div>
-
-            {loading ? (
-                <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>
-            ) : automations.length === 0 ? (
-                <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <FiActivity className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white">No automations yet</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 mb-4">Set up welcome series, abandoned cart emails, and re-engagement flows</p>
-                    <button className="btn btn-primary mx-auto">Create Automation</button>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4">
-                    {automations.map((a) => (
-                        <div key={a.id} className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{a.name}</h3>
-                                <p className="text-xs text-slate-500 mt-1">Trigger: {a.trigger_type} &middot; {a.entry_count} enrolled</p>
-                            </div>
-                            <span className={`text-xs px-2 py-1 rounded-full ${a.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{a.status}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
+        <div className="space-y-4">
+            <PageHeader title="Automations" description="Automated email sequences and drip campaigns" actions={addButton} />
+            <Panel flush>
+                <DataTable
+                    caption="Automations"
+                    loading={query.isLoading}
+                    error={query.error}
+                    onRetry={query.refetch}
+                    rows={query.data || []}
+                    onRowClick={a => navigate(`/email-marketing/automations/${a.id}/edit`)}
+                    empty={<EmptyState title="No automations yet" description="Set up a welcome series, a re-engagement flow or a drip campaign." action={addButton} />}
+                    columns={[
+                        { key: 'name', header: 'Automation', render: a => (<span className="block min-w-0 max-w-sm"><span className="block truncate font-medium">{a.name}</span>{a.description && <span className="block truncate text-xs text-fg-subtle">{a.description}</span>}</span>) },
+                        { key: 'trigger', header: 'Trigger', className: 'capitalize text-fg-muted', render: a => String(a.trigger_type || '').replace(/_/g, ' ') },
+                        { key: 'status', header: 'Status', render: a => <Badge tone={STATUS_TONE[a.status] || 'neutral'} className="capitalize">{a.status}</Badge> },
+                        { key: 'entries', header: 'Enrolled', align: 'right', mono: true, render: a => (a.entry_count || 0).toLocaleString('en-IN') },
+                        { key: 'done', header: 'Completed', align: 'right', mono: true, render: a => (a.completed_count || 0).toLocaleString('en-IN') },
+                        {
+                            key: 'active', header: 'Active',
+                            render: a => (
+                                // Row click opens the editor, so the switch must not bubble
+                                <span onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} role="presentation">
+                                    <Switch checked={a.status === 'active'} onChange={() => toggle.mutate(a)} disabled={toggle.isPending} hideLabel label={`${a.status === 'active' ? 'Pause' : 'Activate'} ${a.name}`} />
+                                </span>
+                            ),
+                        },
+                    ]}
+                    actions={a => (
+                        <span className="inline-flex gap-0.5">
+                            <IconButton size="sm" label={`Edit ${a.name}`} onClick={() => navigate(`/email-marketing/automations/${a.id}/edit`)}><FiEdit2 className="size-4" /></IconButton>
+                            <IconButton size="sm" variant="danger" label={`Delete ${a.name}`} onClick={() => setDeleting(a)}><FiTrash2 className="size-4" /></IconButton>
+                        </span>
+                    )}
+                />
+            </Panel>
+            <ConfirmDialog
+                open={!!deleting}
+                onClose={() => setDeleting(null)}
+                onConfirm={() => remove.mutate(deleting)}
+                loading={remove.isPending}
+                title="Delete automation?"
+                message={deleting && `This deletes “${deleting.name}” and stops anyone currently enrolled. This can’t be undone.`}
+                confirmText="Delete automation"
+            />
         </div>
     );
 }
