@@ -1,192 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import { billingAPI, settingsAPI } from '../../api';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { FiCheck } from 'react-icons/fi';
+import { plansAPI, settingsAPI } from '../../api';
+import { Badge, EmptyState, ErrorState, PageHeader, Panel, Skeleton, Tabs } from '../../components/ui';
 
-const plans = [
-    {
-        id: 'starter',
-        name: 'Starter',
-        price: 'Free',
-        monthly: 0,
-        description: 'Perfect for individuals and small startups just getting started.',
-        features: ['Up to 100 Leads', 'Basic Workflows', 'Email Support', '1 Team Member']
-    },
-    {
-        id: 'growth',
-        name: 'Growth',
-        price: '$49',
-        monthly: 49,
-        description: 'Advanced tools for rapidly growing businesses.',
-        features: ['Unlimited Leads', 'Advanced Automation', 'Priority Support', '5 Team Members', 'Analytics Dashboard']
-    },
-    {
-        id: 'business',
-        name: 'Business',
-        price: '$199',
-        monthly: 199,
-        description: 'Elite solutions for large enterprises with complex needs.',
-        features: ['Custom Workflows', 'API Access', '24/7 Dedicated Support', 'Unlimited Team Members', 'White-labeling']
-    },
-];
+// This page used to show hard-coded USD prices ($49, $199), invented feature lists and a "30-day money back
+// guarantee", none of which exist. It now shows the real plans from the database (INR), read-only.
+const inr = n => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+const featureList = f => {
+    let obj = f;
+    if (typeof f === 'string') { try { obj = JSON.parse(f); } catch { obj = {}; } }
+    return Object.entries(obj || {}).map(([k, v]) => ({ key: k, label: k.replace(/_/g, ' '), value: v }));
+};
+const lim = n => (n == null || Number(n) >= 100000 ? 'Unlimited' : Number(n).toLocaleString('en-IN'));
 
 export default function PricingPage() {
-    const [usePaymentLink, setUsePaymentLink] = useState(true);
-    const [billingCycle, setBillingCycle] = useState('monthly');
-    const [contactEmail, setContactEmail] = useState('sales@napnix.com');
-    const [loading, setLoading] = useState(true);
+    const [cycle, setCycle] = useState('monthly');
+    const plans = useQuery({ queryKey: ['plans'], queryFn: () => plansAPI.getAll().then(r => r.data || []), staleTime: 5 * 60 * 1000 });
+    const settings = useQuery({ queryKey: ['settings'], queryFn: () => settingsAPI.getSettings().then(r => r.data || {}), staleTime: 2 * 60 * 1000 });
+    const mode = settings.data?.pricing_page_mode;
 
-    useEffect(() => {
-        const fetchPricingMode = async () => {
-            try {
-                const response = await settingsAPI.getSettings();
-                if (response.success) {
-                    if (response.data.pricing_page_mode) {
-                        setUsePaymentLink(response.data.pricing_page_mode === 'payment_link');
-                    }
-                    if (response.data.contact_sales_email) {
-                        setContactEmail(response.data.contact_sales_email);
-                    }
-                }
-            } catch {
-                // silently ignore
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPricingMode();
-    }, []);
-
-    const handleBuy = async (planId) => {
-        if (!usePaymentLink) {
-            window.location.href = `mailto:${contactEmail}?subject=Napnix%20Subscription%20Inquiry:%20${planId}%20Plan%20(${billingCycle})`;
-            return;
-        }
-
-        const id = toast.loading('Initiating secure checkout...');
-        try {
-            const finalPlanId = billingCycle === 'yearly' ? `${planId}_yearly` : planId;
-            const response = await billingAPI.createPaymentLink({
-                planId: finalPlanId,
-                successUrl: window.location.origin + '/dashboard?payment=success',
-                cancelUrl: window.location.origin + '/pricing?payment=cancelled',
-                metadata: {
-                    source: 'pricing_page',
-                    billing_cycle: billingCycle
-                }
-            });
-
-            if (response.success && response.url) {
-                window.location.href = response.url;
-            } else {
-                toast.error('Failed to generate checkout link', { id });
-            }
-        } catch {
-            toast.error('Payment gateway error', { id });
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-surface-2">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600" />
+    let body;
+    if (plans.isLoading) body = <div className="grid grid-cols-1 gap-4 md:grid-cols-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-80 rounded-md" />)}</div>;
+    else if (plans.isError) body = <ErrorState error={plans.error} onRetry={plans.refetch} />;
+    else if (!plans.data.length) body = <Panel><EmptyState title="No plans configured" /></Panel>;
+    else {
+        body = (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {plans.data.filter(p => p.is_active !== 0 && p.is_active !== false).map(plan => {
+                    const price = cycle === 'monthly' ? plan.price_monthly : plan.price_yearly;
+                    return (
+                        <Panel key={plan.id} title={plan.name} description={plan.description}>
+                            <p className="mb-4">
+                                <span className="font-mono text-3xl font-semibold tabular-nums text-fg">{inr(price)}</span>
+                                <span className="ml-1 text-sm text-fg-muted">/{cycle === 'monthly' ? 'month' : 'year'}</span>
+                            </p>
+                            <dl className="mb-4 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                {[['Users', plan.max_users], ['Leads', plan.max_leads], ['Clients', plan.max_clients], ['Projects', plan.max_projects]].map(([k, v]) => (
+                                    <div key={k} className="flex justify-between"><dt className="text-fg-muted">{k}</dt><dd className="font-mono tabular-nums text-fg">{lim(v)}</dd></div>
+                                ))}
+                            </dl>
+                            <ul className="space-y-1.5">
+                                {featureList(plan.features).map(f => (
+                                    <li key={f.key} className="flex items-start gap-2 text-sm text-fg-muted">
+                                        <FiCheck aria-hidden="true" className={f.value === false ? 'mt-0.5 size-4 shrink-0 text-fg-subtle' : 'mt-0.5 size-4 shrink-0 text-success'} />
+                                        <span className={f.value === false ? 'line-through' : undefined}>
+                                            <span className="capitalize">{f.label}</span>{typeof f.value === 'number' ? `: ${f.value.toLocaleString('en-IN')}` : ''}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </Panel>
+                    );
+                })}
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-surface-2 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                    <h1 className="text-base font-semibold text-brand-600 dark:text-brand-400 tracking-wide uppercase">Pricing Plans</h1>
-                    <p className="mt-2 text-4xl font-extrabold text-fg sm:text-5xl lg:text-6xl tracking-tight">
-                        Scale your business with <span className="text-brand-600">Napnix</span>
-                    </p>
-                    <p className="mt-4 max-w-2xl text-xl text-fg-muted mx-auto">
-                        Choose the perfect plan for your business needs. No hidden fees.
-                    </p>
-
-                    <div className="mt-8 flex flex-col items-center gap-6">
-                        <div className="flex bg-slate-200/50 dark:bg-slate-800/50 p-1.5 rounded-md border border-border">
-                            <button
-                                onClick={() => setBillingCycle('monthly')}
-                                className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-surface text-brand-600 dark:text-brand-400 shadow-lg' : 'text-fg-muted'}`}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                onClick={() => setBillingCycle('yearly')}
-                                className={`px-6 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-surface text-brand-600 dark:text-brand-400 shadow-lg' : 'text-fg-muted'}`}
-                            >
-                                Yearly
-                                <span className="bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 text-[10px] px-2 py-0.5 rounded-full">Save 15%</span>
-                            </button>
-                        </div>
-
-                        <div className="flex justify-center items-center gap-4">
-                            <span className={`text-sm font-medium ${!usePaymentLink ? 'text-brand-600' : 'text-fg-muted font-normal'}`}>Consultation Mode</span>
-                            <button
-                                onClick={() => setUsePaymentLink(!usePaymentLink)}
-                                className="relative inline-flex items-center cursor-pointer focus:outline-none"
-                            >
-                                <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out ${usePaymentLink ? 'bg-brand-600' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                                    <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-in-out ${usePaymentLink ? 'translate-x-6' : 'translate-x-0'}`} />
-                                </div>
-                            </button>
-                            <span className={`text-sm font-medium ${usePaymentLink ? 'text-brand-600' : 'text-fg-muted font-normal'}`}>Instant Access</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {plans.map((plan) => (
-                        <div
-                            key={plan.id}
-                            className={`relative flex flex-col bg-surface rounded-md p-8 shadow-sm border-2 transition-colors ${plan.id === 'growth' ? 'border-brand-500' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600'
-                                }`}
-                        >
-                            {plan.id === 'growth' && (
-                                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1 px-4 py-1 bg-brand-500 text-white text-sm font-bold rounded-full">
-                                    MOST POPULAR
-                                </div>
-                            )}
-                            <div className="mb-8">
-                                <h3 className="text-2xl font-bold text-fg mb-2">{plan.name}</h3>
-                                <p className="text-fg-muted text-sm leading-relaxed">{plan.description}</p>
-                            </div>
-                            <div className="mb-8">
-                                <span className="text-5xl font-extrabold text-fg">
-                                    {plan.id === 'starter' ? 'Free' : (billingCycle === 'monthly' ? plan.price : `$${Math.round(plan.monthly * 12 * 0.85)}`)}
-                                </span>
-                                {plan.monthly > 0 && <span className="text-fg-muted font-medium tracking-wide">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>}
-                            </div>
-                            <ul className="flex-1 space-y-4 mb-8">
-                                {plan.features.map((feature, i) => (
-                                    <li key={i} className="flex items-center text-fg-muted text-sm">
-                                        <svg className="w-5 h-5 text-brand-500 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        {feature}
-                                    </li>
-                                ))}
-                            </ul>
-                            <button
-                                onClick={() => handleBuy(plan.id)}
-                                className={`w-full py-4 rounded-md font-bold text-lg transition-all shadow-lg ${plan.id === 'growth'
-                                    ? 'bg-brand-600 text-white hover:bg-brand-700'
-                                    : 'bg-surface-3 text-fg hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
-                            >
-                                {usePaymentLink ? (plan.id === 'starter' ? 'Get Started' : 'Buy Now') : 'Contact Sales'}
-                            </button>
-                        </div>
-                    ))}
-                </div>
-
-                <p className="mt-12 text-center text-fg-muted text-sm">
-                    All plans include a 30-day money back guarantee. Prices are in USD.
-                </p>
-            </div>
+        <div className="max-w-6xl space-y-4">
+            <PageHeader
+                title="Plans and pricing"
+                description={
+                    <span className="flex flex-wrap items-center gap-2">
+                        <span>The plans customers can buy, read from the database. Checkout behaviour is set in</span>
+                        <Link to="/settings?tab=payments" className="text-accent hover:underline">Settings, Payments</Link>
+                        {mode && <Badge tone="info">{mode === 'payment_link' ? 'Pricing page: Stripe checkout' : 'Pricing page: contact us'}</Badge>}
+                    </span>
+                }
+            />
+            <Tabs label="Billing cycle" value={cycle} onChange={setCycle} tabs={[{ id: 'monthly', label: 'Monthly' }, { id: 'yearly', label: 'Yearly' }]} />
+            {body}
         </div>
     );
 }
-

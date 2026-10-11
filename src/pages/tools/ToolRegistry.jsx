@@ -1,63 +1,49 @@
 import { useQuery } from '@tanstack/react-query';
+import { FiBox } from 'react-icons/fi';
 import { toolsAPI } from '../../api';
-import { FiGrid } from '../../components/icons/FeatherIcons';
+import { Badge, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '../../components/ui';
+
+const STATUS_TONE = { active: 'success', beta: 'warning', deprecated: 'danger', maintenance: 'neutral' };
 
 export default function ToolRegistry() {
-    const { data: toolsData, isLoading: loading } = useQuery({
-        queryKey: ['tools'],
-        queryFn: async () => {
-            const res = await toolsAPI.getAll();
-            return res.data || [];
-        },
-    });
+    const query = useQuery({ queryKey: ['tools'], queryFn: () => toolsAPI.getAll().then(r => r.data || []), staleTime: 5 * 60 * 1000 });
+    const tools = query.data || [];
 
-    const tools = toolsData || [];
-
-    const toolIcons = {
-        nexcrm: '💼',
-        nexmail: '📧',
-    };
-
-    const statusColors = {
-        active: 'bg-emerald-100 text-emerald-700',
-        beta: 'bg-amber-100 text-amber-700',
-        deprecated: 'bg-red-100 text-red-700',
-        maintenance: 'bg-slate-100 text-fg-muted',
-    };
-
-    if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div></div>;
-
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-fg">Tool Registry</h1>
-                    <p className="text-sm text-fg-muted mt-1">Manage Napnix platform tools and services</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tools.map((tool) => (
-                    <div key={tool.id} className="bg-surface rounded-md p-6 border border-border">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-md bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center text-2xl">
-                                {toolIcons[tool.slug] || <FiGrid />}
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold text-fg">{tool.name}</h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-fg-muted">v{tool.version}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[tool.status] || statusColors.active}`}>{tool.status}</span>
-                                </div>
+    let body;
+    if (query.isLoading) body = <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map(i => <Skeleton key={i} className="h-40 rounded-md" />)}</div>;
+    else if (query.isError) body = <ErrorState error={query.error} onRetry={query.refetch} />;
+    else if (!tools.length) body = <Panel><EmptyState title="No tools registered" /></Panel>;
+    else {
+        body = (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {tools.map(tool => (
+                    <Panel key={tool.id}>
+                        <div className="flex items-start gap-3">
+                            <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-sm bg-surface-3 text-fg-subtle"><FiBox className="size-5" /></span>
+                            <div className="min-w-0">
+                                <h2 className="font-semibold text-fg">{tool.name}</h2>
+                                <p className="mt-0.5 flex items-center gap-2 text-xs text-fg-muted">
+                                    <span className="font-mono">v{tool.version}</span>
+                                    <Badge tone={STATUS_TONE[tool.status] || 'neutral'} className="capitalize">{tool.status}</Badge>
+                                </p>
                             </div>
                         </div>
-                        <p className="text-sm text-fg-muted mb-4">{tool.description}</p>
-                        <div className="pt-4 border-t border-border">
-                            <p className="text-xs text-fg-muted">URL Pattern: <code className="text-xs bg-surface-3 px-1.5 py-0.5 rounded">{tool.base_url_pattern}</code></p>
-                        </div>
-                    </div>
+                        {tool.description && <p className="mt-3 text-sm text-fg-muted">{tool.description}</p>}
+                        {tool.base_url_pattern && (
+                            <p className="mt-4 border-t border-border pt-3 text-xs text-fg-muted">
+                                URL pattern <code className="ml-1 rounded-sm bg-surface-3 px-1.5 py-0.5 font-mono">{tool.base_url_pattern}</code>
+                            </p>
+                        )}
+                    </Panel>
                 ))}
             </div>
+        );
+    }
+
+    return (
+        <div className="max-w-6xl space-y-4">
+            <PageHeader title="Tool registry" description="Napnix platform tools and services" />
+            {body}
         </div>
     );
 }
