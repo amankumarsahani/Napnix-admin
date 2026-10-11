@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import toast from 'react-hot-toast';
 import { expensesAPI } from '../../api';
+import { Button, ConfirmDialog, Dialog, PageHeader, SearchInput, StatCard } from '../../components/ui';
 import {
     FiPlus, FiSearch, FiTrash2, FiEdit2, FiDownload,
     FiDollarSign, FiTrendingUp, FiRepeat, FiX, FiSave,
@@ -56,7 +57,7 @@ const fmt = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFract
 
 const EMPTY_FORM = (type = 'expense') => ({
     type,
-    date: new Date().toISOString().slice(0, 10),
+    date: new Date().toLocaleDateString('en-CA'), // local YYYY-MM-DD (toISOString is UTC: yesterday before 05:30 IST)
     amount: '',
     category: type === 'deposit' ? 'Client Payment' : 'Other',
     description: '',
@@ -79,6 +80,8 @@ export default function Expenses() {
     const [selected, setSelected] = useState([]);
     const [modal, setModal] = useState(null);
     const [showCharts, setShowCharts] = useState(true);
+    const [confirmDelete, setConfirmDelete] = useState(null); // ids awaiting confirmation
+    const [exporting, setExporting] = useState(false);
 
     const queryParams = useMemo(() => {
         const p = { page, limit: 50 };
@@ -136,13 +139,13 @@ export default function Expenses() {
 
     const deleteMutation = useMutation({
         mutationFn: (id) => expensesAPI.delete(id),
-        onSuccess: () => { invalidate(); toast.success('Deleted'); },
+        onSuccess: () => { invalidate(); toast.success('Deleted'); setConfirmDelete(null); },
         onError: () => toast.error('Failed to delete'),
     });
 
     const bulkDeleteMutation = useMutation({
         mutationFn: (ids) => expensesAPI.bulkDelete(ids),
-        onSuccess: (_, ids) => { invalidate(); toast.success(`${ids.length} records deleted`); setSelected([]); },
+        onSuccess: (_, ids) => { invalidate(); toast.success(`${ids.length} records deleted`); setSelected([]); setConfirmDelete(null); },
         onError: () => toast.error('Bulk delete failed'),
     });
 
@@ -153,6 +156,8 @@ export default function Expenses() {
     const depStats = stats.deposit || {};
     const netStats = stats.net || {};
 
+    // Only rows on screen count as selected, so a bulk delete never hits rows hidden by paging/filters
+    const visibleSelected = selected.filter(id => records.some(r => r.id === id));
     const allChecked = records.length > 0 && records.every(r => selected.includes(r.id));
     const toggleAll  = () => setSelected(allChecked ? [] : records.map(r => r.id));
     const toggleOne  = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -174,21 +179,39 @@ export default function Expenses() {
         else updateMutation.mutate({ id: modal.data.id, data: payload });
     };
 
-    const exportCSV = () => {
+    const exportCSV = async () => {
+        setExporting(true);
+        let all;
+        try {
+            // Every record matching the filters, not just the 50 on this page
+            all = (await expensesAPI.getAll({ ...queryParams, page: 1, limit: 100000 }))?.data || [];
+        } catch {
+            toast.error('Export failed');
+            return;
+        } finally {
+            setExporting(false);
+        }
+        // Quote-escape, and neutralise leading = + - @ so spreadsheets don't run them as formulas
+        const cell = v => {
+            let t = String(v ?? '');
+            if (/^[=+\-@]/.test(t) && !/^-?\d+(\.\d+)?$/.test(t)) t = `'${t}`;
+            return `"${t.replace(/"/g, '""')}"`;
+        };
         const headers = ['Type','Date','Vendor / From','Spent By','Category','Description','Amount','Payment Method','Reference','Recurring'];
-        const rows = records.map(r => [
+        const rows = all.map(r => [
             r.type, r.date?.slice(0, 10), r.vendor || '', r.spent_by || '', r.category,
             r.description || '', r.amount,
             PAYMENT_LABELS[r.payment_method] || r.payment_method,
             r.reference || '',
             r.is_recurring ? (r.recurring_interval || 'yes') : 'no'
         ]);
-        const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+        const csv = [headers, ...rows].map(r => r.map(cell).join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `finance-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
+        URL.revokeObjectURL(a.href);
     };
 
     const filterCategories = [
@@ -206,59 +229,32 @@ export default function Expenses() {
 
     return (
         <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Finance Tracker</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Expenses and deposits in one place</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => setShowCharts(v => !v)}
-                        className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2">
-                        <FiBarChart2 size={16} /> {showCharts ? 'Hide' : 'Show'} Charts
-                    </button>
-                    <button onClick={exportCSV}
-                        className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 transition-colors flex items-center gap-2">
-                        <FiDownload size={16} /> Export CSV
-                    </button>
-                    {/* Split add button */}
-                    <div className="flex rounded-lg overflow-hidden border border-brand-600">
-                        <button onClick={() => openAdd('expense')}
-                            className="px-3 py-2 bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 flex items-center gap-1.5 transition-colors">
-                            <FiPlus size={15} /> Expense
-                        </button>
-                        <div className="w-px bg-brand-500" />
-                        <button onClick={() => openAdd('deposit')}
-                            className="px-3 py-2 bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 flex items-center gap-1.5 transition-colors">
-                            <FiPlus size={15} /> Deposit
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <PageHeader
+                title="Finance Tracker"
+                description="Expenses and deposits in one place."
+                actions={
+                    <>
+                        <Button variant="ghost" onClick={() => setShowCharts(v => !v)}><FiBarChart2 size={16} />{showCharts ? 'Hide' : 'Show'} charts</Button>
+                        <Button onClick={exportCSV} loading={exporting}>{!exporting && <FiDownload size={16} />}Export CSV</Button>
+                        <Button variant="primary" onClick={() => openAdd('expense')}><FiPlus size={15} />Expense</Button>
+                        <Button variant="primary" onClick={() => openAdd('deposit')}><FiPlus size={15} />Deposit</Button>
+                    </>
+                }
+            />
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard label="Deposits (Month)" value={fmt(depStats.thisMonth)} icon={<FiTrendingUp size={16} />} color="green" />
-                <StatCard label="Expenses (Month)" value={fmt(expStats.thisMonth)} icon={<FiDollarSign size={16} />} color="brand" />
-                <StatCard
-                    label="Net This Month"
-                    value={fmt(netStats.thisMonth)}
-                    icon={<FiBarChart2 size={16} />}
-                    color={netStats.thisMonth >= 0 ? 'teal' : 'red'}
-                />
-                <StatCard
-                    label="Net YTD"
-                    value={fmt(netStats.ytd)}
-                    icon={<FiFilter size={16} />}
-                    color={netStats.ytd >= 0 ? 'purple' : 'red'}
-                />
+                <StatCard label="Deposits (month)" value={fmt(depStats.thisMonth)} icon={<FiTrendingUp size={16} />} />
+                <StatCard label="Expenses (month)" value={fmt(expStats.thisMonth)} icon={<FiDollarSign size={16} />} />
+                <StatCard label="Net this month" value={<span className={netStats.thisMonth < 0 ? 'text-danger' : undefined}>{fmt(netStats.thisMonth)}</span>} icon={<FiBarChart2 size={16} />} />
+                <StatCard label="Net YTD" value={<span className={netStats.ytd < 0 ? 'text-danger' : undefined}>{fmt(netStats.ytd)}</span>} icon={<FiFilter size={16} />} />
             </div>
 
             {/* Charts */}
             {showCharts && trend.length > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Monthly Cash Flow</h3>
+                    <div className="bg-surface rounded-md border border-border p-5">
+                        <h3 className="text-sm font-semibold text-fg mb-4">Monthly Cash Flow</h3>
                         <ResponsiveContainer width="100%" height={220}>
                             <BarChart data={trend} barSize={12} barGap={3}>
                                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
@@ -274,8 +270,8 @@ export default function Expenses() {
                         </ResponsiveContainer>
                     </div>
                     {(expStats.byCategory || []).length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-                            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Expense Breakdown</h3>
+                        <div className="bg-surface rounded-md border border-border p-5">
+                            <h3 className="text-sm font-semibold text-fg mb-4">Expense Breakdown</h3>
                             <ResponsiveContainer width="100%" height={220}>
                                 <PieChart>
                                     <Pie data={expStats.byCategory} dataKey="total" nameKey="category"
@@ -292,10 +288,10 @@ export default function Expenses() {
                         </div>
                     )}
                     {spenders.length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 lg:col-span-2">
+                        <div className="bg-surface rounded-md border border-border p-5 lg:col-span-2">
                             <div className="flex items-baseline justify-between mb-4">
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Spend by Person</h3>
-                                <span className="text-xs text-slate-400">Expenses, year to date</span>
+                                <h3 className="text-sm font-semibold text-fg">Spend by Person</h3>
+                                <span className="text-xs text-fg-subtle">Expenses, year to date</span>
                             </div>
                             {/* Horizontal bars: names need the long axis to stay readable. */}
                             <ResponsiveContainer width="100%" height={Math.max(140, spenders.length * 38)}>
@@ -326,49 +322,49 @@ export default function Expenses() {
             )}
 
             {/* Filters */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div className="bg-surface rounded-md border border-border p-4">
                 <div className="flex flex-wrap gap-3">
-                    <div className="relative flex-1 min-w-48">
-                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                        <input type="text" placeholder="Search vendor, description..."
-                            value={filters.search}
-                            onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
-                    </div>
+                    <SearchInput
+                        value={filters.search}
+                        onChange={search => { setFilters(f => ({ ...f, search })); setPage(1); }}
+                        placeholder="Search vendor, description..."
+                        label="Search records"
+                        className="flex-1 min-w-48"
+                    />
                     <select value={filters.type}
                         onChange={e => { setFilters(f => ({ ...f, type: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                         <option value="">All Types</option>
                         <option value="expense">Expenses</option>
                         <option value="deposit">Deposits</option>
                     </select>
                     <select value={filters.category}
                         onChange={e => { setFilters(f => ({ ...f, category: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                         <option value="">All Categories</option>
                         {filterCategories.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                     <select value={filters.spent_by}
                         onChange={e => { setFilters(f => ({ ...f, spent_by: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                         <option value="">All People</option>
                         {people.map(p => <option key={p.name} value={p.name}>{p.name}</option>)}
                     </select>
                     <select value={filters.payment_method}
                         onChange={e => { setFilters(f => ({ ...f, payment_method: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                         <option value="">All Payments</option>
                         {Object.entries(PAYMENT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                     <input type="date" value={filters.date_from} title="From date"
                         onChange={e => { setFilters(f => ({ ...f, date_from: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                     <input type="date" value={filters.date_to} title="To date"
                         onChange={e => { setFilters(f => ({ ...f, date_to: e.target.value })); setPage(1); }}
-                        className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                     {(filters.search || filters.type || filters.category || filters.date_from || filters.date_to || filters.payment_method || filters.spent_by) && (
                         <button onClick={() => { setFilters({ search:'', type:'', category:'', date_from:'', date_to:'', payment_method:'', spent_by:'' }); setPage(1); }}
-                            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1">
+                            className="px-3 py-2 text-sm text-fg-muted hover:text-fg flex items-center gap-1">
                             <FiX size={14} /> Clear
                         </button>
                     )}
@@ -376,52 +372,52 @@ export default function Expenses() {
             </div>
 
             {/* Bulk Actions */}
-            {selected.length > 0 && (
-                <div className="flex items-center gap-3 px-4 py-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-xl">
-                    <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selected.length} selected</span>
-                    <button onClick={() => bulkDeleteMutation.mutate(selected)} disabled={bulkDeleteMutation.isPending}
+            {visibleSelected.length > 0 && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-md">
+                    <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{visibleSelected.length} selected</span>
+                    <button onClick={() => setConfirmDelete(visibleSelected)} disabled={bulkDeleteMutation.isPending}
                         className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-1.5 disabled:opacity-50">
                         <FiTrash2 size={13} /> Delete Selected
                     </button>
-                    <button onClick={() => setSelected([])} className="px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400">Clear</button>
+                    <button onClick={() => setSelected([])} className="px-3 py-1.5 text-sm text-fg-muted">Clear</button>
                 </div>
             )}
 
             {/* Table */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="bg-surface rounded-md border border-border overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
+                            <tr className="border-b border-border bg-surface-2">
                                 <th className="px-4 py-3 w-8">
                                     <input type="checkbox" checked={allChecked} onChange={toggleAll} className="rounded border-slate-300" />
                                 </th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 w-24">Type</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Date</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Vendor / From</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Spent By</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Category</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Description</th>
-                                <th className="px-4 py-3 text-right font-medium text-slate-500 dark:text-slate-400">Amount</th>
-                                <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400">Payment</th>
-                                <th className="px-4 py-3 text-center font-medium text-slate-500 dark:text-slate-400">Recurring</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted w-24">Type</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Date</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Vendor / From</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Spent By</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Category</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Description</th>
+                                <th className="px-4 py-3 text-right font-medium text-fg-muted">Amount</th>
+                                <th className="px-4 py-3 text-left font-medium text-fg-muted">Payment</th>
+                                <th className="px-4 py-3 text-center font-medium text-fg-muted">Recurring</th>
                                 <th className="px-4 py-3 w-20"></th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
-                                <tr><td colSpan={11} className="px-4 py-12 text-center text-slate-400">Loading...</td></tr>
+                                <tr><td colSpan={11} className="px-4 py-12 text-center text-fg-subtle">Loading...</td></tr>
                             ) : records.length === 0 ? (
                                 <tr>
                                     <td colSpan={11} className="px-4 py-16 text-center">
-                                        <FiDollarSign className="mx-auto text-slate-300 dark:text-slate-600 mb-3" size={36} />
-                                        <p className="text-slate-400 font-medium">No records found</p>
-                                        <p className="text-slate-300 dark:text-slate-600 text-xs mt-1">Add an expense or deposit to get started</p>
+                                        <FiDollarSign className="mx-auto text-fg-subtle mb-3" size={36} />
+                                        <p className="text-fg-subtle font-medium">No records found</p>
+                                        <p className="text-fg-subtle text-xs mt-1">Add an expense or deposit to get started</p>
                                     </td>
                                 </tr>
                             ) : records.map(row => (
                                 <tr key={row.id}
-                                    className={`border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors ${selected.includes(row.id) ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}
+                                    className={`border-b border-slate-50 dark:border-slate-700/50 hover:bg-surface-2 transition-colors ${selected.includes(row.id) ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}
                                 >
                                     <td className="px-4 py-3">
                                         <input type="checkbox" checked={selected.includes(row.id)} onChange={() => toggleOne(row.id)} className="rounded border-slate-300" />
@@ -435,33 +431,33 @@ export default function Expenses() {
                                             {row.type === 'deposit' ? '+ Deposit' : '− Expense'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{row.date?.slice(0, 10)}</td>
-                                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white max-w-32 truncate">
-                                        {row.vendor || <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                    <td className="px-4 py-3 text-fg-muted whitespace-nowrap">{row.date?.slice(0, 10)}</td>
+                                    <td className="px-4 py-3 font-medium text-fg max-w-32 truncate">
+                                        {row.vendor || <span className="text-fg-subtle">—</span>}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    <td className="px-4 py-3 text-fg-muted whitespace-nowrap">
                                         {row.spent_by
                                             ? <span className="inline-flex items-center gap-1.5">
-                                                <FiUsers size={12} className="text-slate-400" />{row.spent_by}
+                                                <FiUsers size={12} className="text-fg-subtle" />{row.spent_by}
                                               </span>
-                                            : <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                            : <span className="text-fg-subtle">—</span>}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_COLORS[row.category] || CATEGORY_COLORS['Other']}`}>
                                             {row.category}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 max-w-40 truncate">
-                                        {row.description || <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                    <td className="px-4 py-3 text-fg-muted max-w-40 truncate">
+                                        {row.description || <span className="text-fg-subtle">—</span>}
                                     </td>
                                     <td className={`px-4 py-3 text-right font-semibold whitespace-nowrap ${
                                         row.type === 'deposit'
                                             ? 'text-emerald-600 dark:text-emerald-400'
-                                            : 'text-slate-900 dark:text-white'
+                                            : 'text-fg'
                                     }`}>
                                         {row.type === 'deposit' ? '+' : '−'}{fmt(row.amount)}
                                     </td>
-                                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                                    <td className="px-4 py-3 text-fg-muted text-xs">
                                         {PAYMENT_LABELS[row.payment_method] || row.payment_method}
                                     </td>
                                     <td className="px-4 py-3 text-center">
@@ -469,16 +465,16 @@ export default function Expenses() {
                                             <span className="inline-flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 font-medium">
                                                 <FiRepeat size={11} />{row.recurring_interval}
                                             </span>
-                                        ) : <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>}
+                                        ) : <span className="text-fg-subtle text-xs">—</span>}
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 justify-end">
-                                            <button onClick={() => openEdit(row)}
-                                                className="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                            <button onClick={() => openEdit(row)} aria-label="Edit record" title="Edit"
+                                                className="p-1.5 text-fg-subtle hover:text-brand-600 dark:hover:text-brand-400 rounded hover:bg-surface-2 transition-colors">
                                                 <FiEdit2 size={14} />
                                             </button>
-                                            <button onClick={() => { if (confirm('Delete this record?')) deleteMutation.mutate(row.id); }}
-                                                className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                            <button onClick={() => setConfirmDelete([row.id])} aria-label="Delete record" title="Delete"
+                                                className="p-1.5 text-fg-subtle hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-surface-2 transition-colors">
                                                 <FiTrash2 size={14} />
                                             </button>
                                         </div>
@@ -488,9 +484,9 @@ export default function Expenses() {
                         </tbody>
                         {records.length > 0 && (
                             <tfoot>
-                                <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
-                                    <td colSpan={7} className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        {pagination.total} record{pagination.total !== 1 ? 's' : ''}
+                                <tr className="border-t border-border bg-surface-2">
+                                    <td colSpan={7} className="px-4 py-3 text-sm font-medium text-fg-muted">
+                                        {pagination.total} record{pagination.total !== 1 ? 's' : ''} · net on this page
                                     </td>
                                     <td className={`px-4 py-3 text-right text-sm font-bold ${listTotal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                                         {listTotal >= 0 ? '+' : '−'}{fmt(Math.abs(listTotal))}
@@ -502,21 +498,31 @@ export default function Expenses() {
                     </table>
                 </div>
                 {pagination.pages > 1 && (
-                    <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Page {pagination.page} of {pagination.pages}</span>
+                    <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+                        <span className="text-sm text-fg-muted">Page {pagination.page} of {pagination.pages}</span>
                         <div className="flex gap-2">
                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                                className="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40">
+                                className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-surface-2 disabled:opacity-40">
                                 Previous
                             </button>
                             <button onClick={() => setPage(p => Math.min(pagination.pages, p + 1))} disabled={page >= pagination.pages}
-                                className="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40">
+                                className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-surface-2 disabled:opacity-40">
                                 Next
                             </button>
                         </div>
                     </div>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={!!confirmDelete}
+                onClose={() => setConfirmDelete(null)}
+                onConfirm={() => (confirmDelete.length === 1 ? deleteMutation.mutate(confirmDelete[0]) : bulkDeleteMutation.mutate(confirmDelete))}
+                loading={deleteMutation.isPending || bulkDeleteMutation.isPending}
+                title={confirmDelete?.length > 1 ? `Delete ${confirmDelete.length} records?` : 'Delete this record?'}
+                message="Deleted records are removed from totals and reports. This can't be undone."
+                confirmText={confirmDelete?.length > 1 ? `Delete ${confirmDelete.length} records` : 'Delete record'}
+            />
 
             {modal && (
                 <RecordModal
@@ -534,25 +540,6 @@ export default function Expenses() {
     );
 }
 
-function StatCard({ label, value, icon, color, small }) {
-    const colorMap = {
-        brand:  'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400',
-        green:  'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-        teal:   'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400',
-        purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-        red:    'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-    };
-    return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-            <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</span>
-                <div className={`p-2 rounded-lg ${colorMap[color] || colorMap.brand}`}>{icon}</div>
-            </div>
-            <p className={`font-bold text-slate-900 dark:text-white ${small ? 'text-base truncate' : 'text-xl'}`}>{value}</p>
-        </div>
-    );
-}
-
 function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClose, onSubmit, loading }) {
     const [form, setForm] = useState({ ...data, spent_by: data.spent_by || '' });
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -566,17 +553,8 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
     };
 
     return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
-                <div className="p-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        {mode === 'add' ? (isDeposit ? 'Add Deposit' : 'Add Expense') : (isDeposit ? 'Edit Deposit' : 'Edit Expense')}
-                    </h2>
-                    <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                        <FiX size={18} />
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <Dialog open onClose={onClose} title={mode === 'add' ? (isDeposit ? 'Add deposit' : 'Add expense') : (isDeposit ? 'Edit deposit' : 'Edit expense')}>
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="flex gap-2">
                         {[{ k: 'expense', l: '− Expense' }, { k: 'deposit', l: '+ Deposit' }].map(t => (
                             <button key={t.k} type="button"
@@ -586,7 +564,7 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                                         ? t.k === 'deposit'
                                             ? 'bg-emerald-600 text-white border-emerald-600'
                                             : 'bg-red-500 text-white border-red-500'
-                                        : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                        : 'border-border text-fg-muted hover:bg-surface-2'
                                 }`}>
                                 {t.l}
                             </button>
@@ -595,37 +573,37 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Date *</label>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">Date *</label>
                             <input type="date" value={form.date} onChange={e => set('date', e.target.value)} required
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Amount (₹) *</label>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">Amount (₹) *</label>
                             <input type="number" step="0.01" min="0" value={form.amount} onChange={e => set('amount', e.target.value)} required placeholder="0.00"
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                            <label className="block text-xs font-medium text-fg-muted mb-1">
                                 {isDeposit ? 'From / Source' : 'Vendor'}
                             </label>
                             <input type="text" value={form.vendor} onChange={e => set('vendor', e.target.value)}
                                 placeholder={isDeposit ? 'e.g. Acme Corp' : 'e.g. AWS, Google'}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Category</label>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">Category</label>
                             <select value={form.category} onChange={e => set('category', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        <label className="block text-xs font-medium text-fg-muted mb-1">
                             {isDeposit ? 'Received By' : 'Spent By'}
                         </label>
                         <PersonSelect
@@ -638,37 +616,37 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Description</label>
+                        <label className="block text-xs font-medium text-fg-muted mb-1">Description</label>
                         <input type="text" value={form.description} onChange={e => set('description', e.target.value)} placeholder="Brief description"
-                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                     </div>
 
                     {isDeposit && (
                         <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reference / Invoice #</label>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">Reference / Invoice #</label>
                             <input type="text" value={form.reference} onChange={e => set('reference', e.target.value)} placeholder="e.g. INV-001"
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Payment Method</label>
+                        <label className="block text-xs font-medium text-fg-muted mb-1">Payment Method</label>
                         <select value={form.payment_method} onChange={e => set('payment_method', e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                             {Object.entries(PAYMENT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
                     </div>
 
-                    <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                    <div className="rounded-lg border border-border p-3 space-y-3">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={form.is_recurring} onChange={e => set('is_recurring', e.target.checked)} className="rounded border-slate-300" />
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                            <span className="text-sm font-medium text-fg flex items-center gap-1.5">
                                 <FiRepeat size={14} /> Recurring
                             </span>
                         </label>
                         {form.is_recurring && (
                             <select value={form.recurring_interval} onChange={e => set('recurring_interval', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                                 <option value="monthly">Monthly</option>
                                 <option value="quarterly">Quarterly</option>
                                 <option value="yearly">Yearly</option>
@@ -677,14 +655,14 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Notes</label>
+                        <label className="block text-xs font-medium text-fg-muted mb-1">Notes</label>
                         <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any additional notes..." rows={2}
-                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 resize-none" />
+                            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500 resize-none" />
                     </div>
 
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={onClose}
-                            className="px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                            className="px-4 py-2 text-sm text-fg hover:bg-surface-2 rounded-lg">
                             Cancel
                         </button>
                         <button type="submit" disabled={loading}
@@ -701,8 +679,7 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </Dialog>
     );
 }
 
@@ -745,13 +722,13 @@ function PersonSelect({ value, people, onChange, onAddPerson, adding }) {
                         if (e.key === 'Enter') { e.preventDefault(); saveNew(); }
                         if (e.key === 'Escape') { e.preventDefault(); setAddMode(false); }
                     }}
-                    className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500" />
+                    className="flex-1 px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                 <button type="button" onClick={saveNew} disabled={adding}
                     className="px-3 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 flex items-center gap-1.5">
                     <FiCheckCircle size={14} /> Add
                 </button>
                 <button type="button" onClick={() => setAddMode(false)}
-                    className="px-2 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg">
+                    className="px-2 py-2 text-fg-subtle hover:text-fg rounded-lg">
                     <FiX size={16} />
                 </button>
             </div>
@@ -760,7 +737,7 @@ function PersonSelect({ value, people, onChange, onAddPerson, adding }) {
 
     return (
         <select value={value || ''} onChange={e => handleSelect(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500">
+            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
             <option value="">— Not specified —</option>
             {options.map(n => <option key={n} value={n}>{n}</option>)}
             <option disabled>──────────</option>
