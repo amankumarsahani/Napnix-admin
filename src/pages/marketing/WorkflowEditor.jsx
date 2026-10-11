@@ -2424,7 +2424,7 @@ const WorkflowEditor = () => {
                                 <div className="p-3 bg-violet-50 dark:bg-violet-900/30 rounded-lg border border-violet-100 dark:border-violet-800">
                                     <span className="font-semibold text-sm text-violet-700 dark:text-violet-300">AI Agent</span>
                                     <p className="text-xs text-violet-600 dark:text-violet-400">
-                                        Give it a goal. It decides which tools to call, reads the results and repeats until done. Blog posts are only ever saved as drafts.
+                                        Give it a goal. It decides which tools to call, reads the results and repeats until done.
                                     </p>
                                 </div>
                                 <div>
@@ -2437,7 +2437,7 @@ const WorkflowEditor = () => {
                                         ['keyword_research', 'Keyword research (Google Autocomplete)'],
                                         ['gsc_opportunities', 'Search Console opportunities'],
                                         ['list_blog_posts', 'List our blog posts'],
-                                        ['write_blog_draft', 'Write blog draft'],
+                                        ['write_blog_draft', 'Write blog post'],
                                         ['http_get', 'HTTP GET (allowlisted hosts only)'],
                                     ].map(([id, label]) => {
                                         const tools = localConfig?.tools || ['keyword_research', 'gsc_opportunities', 'list_blog_posts', 'write_blog_draft'];
@@ -2473,8 +2473,17 @@ const WorkflowEditor = () => {
                                         <p className="text-xs text-slate-500 mt-1">Fetched pages can contain instructions aimed at the agent; only list sites you trust.</p>
                                     </div>
                                 )}
+                                {(localConfig?.tools || ['write_blog_draft']).includes('write_blog_draft') && (
+                                    <label className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                        <input type="checkbox" className="mt-0.5" checked={localConfig?.publish === true} onChange={(e) => setLocalConfig({ ...localConfig, publish: e.target.checked })} />
+                                        <span>
+                                            Publish blog posts automatically
+                                            <span className="block text-xs text-slate-500">Off = saved as drafts for review. On = live on the website immediately and submitted for indexing.</span>
+                                        </span>
+                                    </label>
+                                )}
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Context (for drafts)</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Brand Context (for blog posts)</label>
                                     <textarea rows={4} value={localConfig?.brand_context || ''} onChange={(e) => setLocalConfig({ ...localConfig, brand_context: e.target.value })} placeholder="Leave empty to use the default Napnix context." className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
@@ -2483,7 +2492,7 @@ const WorkflowEditor = () => {
                                         <input type="number" min={1} max={15} value={localConfig?.max_steps || 6} onChange={(e) => setLocalConfig({ ...localConfig, max_steps: parseInt(e.target.value) || 6 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Drafts</label>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Max Posts</label>
                                         <input type="number" min={1} max={5} value={localConfig?.max_drafts || 1} onChange={(e) => setLocalConfig({ ...localConfig, max_drafts: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500 text-sm" />
                                     </div>
                                     <div>
