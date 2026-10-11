@@ -8,6 +8,7 @@ import { tenantsAPI, billingAPI, plansAPI, toolsAPI } from '../../api';
 import toast from 'react-hot-toast';
 import { createStatusColorFn } from '../../utils/statusColors';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { Button, Checkbox, Dialog, Field, Input } from '../../components/ui';
 
 const TenantDetail = () => {
     const { id } = useParams();
@@ -614,7 +615,7 @@ const TenantDetail = () => {
     if (!tenant) {
         return (
             <div className="text-center py-12">
-                <p className="text-slate-500">Tenant not found</p>
+                <p className="text-fg-muted">Tenant not found</p>
             </div>
         );
     }
@@ -633,22 +634,22 @@ const TenantDetail = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/tenants')}
-                        className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-2 text-fg-muted hover:text-slate-700 hover:bg-surface-2 rounded-lg transition-colors"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{tenant.name}</h1>
-                        <p className="text-slate-500 dark:text-slate-400 font-mono text-xs">{tenant.slug}</p>
+                        <h1 className="text-2xl font-bold text-fg">{tenant.name}</h1>
+                        <p className="text-fg-muted font-mono text-xs">{tenant.slug}</p>
                     </div>
                     <span className={`px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(tenant.status)}`}>
                         {tenant.status}
                     </span>
                     <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${getProcessStatusColor(tenant.process_status)}`}></div>
-                        <span className="text-sm text-slate-600 dark:text-slate-300 capitalize">
+                        <span className="text-sm text-fg-muted capitalize">
                             {tenant.process_status || 'stopped'}
                         </span>
                     </div>
@@ -696,7 +697,7 @@ const TenantDetail = () => {
                         </button>
                     )}
 
-                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                    <div className="w-px h-8 bg-surface-3 mx-2"></div>
 
                     {tenant.status === 'trial' && (
                         <button
@@ -719,7 +720,7 @@ const TenantDetail = () => {
                     <button
                         onClick={handleSendPaymentLink}
                         disabled={actionLoading === 'sendPayment'}
-                        className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
+                        className="px-4 py-2 border border-border-strong text-fg hover:bg-surface-2 rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2"
                         title="Send payment link email without suspending tenant"
                     >
                         {actionLoading === 'sendPayment' ? (
@@ -755,7 +756,7 @@ const TenantDetail = () => {
             </div>
 
             {(tenant.process_status === 'error' || tenant.provision_error) && (
-                <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 px-5 py-4">
+                <div className="rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 px-5 py-4">
                     <div className="font-semibold text-rose-800 dark:text-rose-200">Provisioning failed</div>
                     <div className="mt-1 text-sm text-rose-700 dark:text-rose-300">
                         {tenant.provision_step && (
@@ -767,29 +768,29 @@ const TenantDetail = () => {
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Port</div>
-                    <div className="text-xl font-bold text-slate-900 dark:text-white">{tenant.assigned_port || '-'}</div>
+                <div className="bg-surface rounded-md p-4 border border-border">
+                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Port</div>
+                    <div className="text-xl font-bold text-fg">{tenant.assigned_port || '-'}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
+                <div className="bg-surface rounded-md p-4 border border-border">
+                    <div className="text-xs font-medium text-fg-muted uppercase mb-1 flex items-center gap-1">
                         <FiServer className="text-brand-500" /> Server
                     </div>
-                    <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{tenant.server_name || 'Primary'}</div>
+                    <div className="text-lg font-bold text-fg truncate">{tenant.server_name || 'Primary'}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Industry</div>
-                    <div className="text-lg font-semibold text-slate-900 dark:text-white capitalize">{tenant.industry_type || 'general'}</div>
+                <div className="bg-surface rounded-md p-4 border border-border">
+                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Industry</div>
+                    <div className="text-lg font-semibold text-fg capitalize">{tenant.industry_type || 'general'}</div>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Plan</div>
+                <div className="bg-surface rounded-md p-4 border border-border">
+                    <div className="text-xs font-medium text-fg-muted uppercase mb-1">Plan</div>
                     <div className="text-lg font-semibold text-purple-600">{tenant.plan_name || 'Starter'}</div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                    <FiGlobe className="w-5 h-5 text-slate-500" />
+            <div className="bg-surface rounded-md p-6 border border-border">
+                <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
+                    <FiGlobe className="w-5 h-5 text-fg-muted" />
                     Domains
                     <button onClick={handleRepairDns} disabled={repairingDns || !infrastructureReady} title={infrastructureReady ? 'Re-attach Pages custom domains' : 'Finish tenant provisioning before repairing DNS'} className="ml-auto text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1 mr-2 disabled:opacity-50">
                         {repairingDns ? 'Repairing…' : '⚡ Repair DNS'}
@@ -801,71 +802,71 @@ const TenantDetail = () => {
                 </h3>
                 <div className="grid md:grid-cols-3 gap-4">
                     {/* CRM Dashboard */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
+                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">CRM Dashboard</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_crm || `${tenant.slug}-crm.${domain}`}</p>
+                                <p className="text-xs text-fg-muted">CRM Dashboard</p>
+                                <p className="font-medium text-fg text-sm">{tenant.custom_domain_crm || `${tenant.slug}-crm.${domain}`}</p>
                                 {tenant.custom_domain_crm ? (
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                         {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
                                     </span>
                                 ) : (
-                                    <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
+                                    <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
                                 )}
                             </div>
                         </div>
-                        <a href={infrastructureReady ? (tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
+                        <a href={infrastructureReady ? (tenant.custom_domain_crm ? `https://${tenant.custom_domain_crm}` : `https://${tenant.slug}-crm.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* API (always uses default napnixsolutions domain) */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
+                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-500">
+                            <div className="w-10 h-10 bg-surface-3 rounded-lg flex items-center justify-center text-fg-muted">
                                 <FiGlobe />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">API</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.slug}-crm-api.{domain}</p>
-                                <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Managed by Napnix' : 'Not provisioned'}</span>
+                                <p className="text-xs text-fg-muted">API</p>
+                                <p className="font-medium text-fg text-sm">{tenant.slug}-crm-api.{domain}</p>
+                                <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Managed by Napnix' : 'Not provisioned'}</span>
                             </div>
                         </div>
-                        <a href={infrastructureReady ? `https://${tenant.slug}-crm-api.${domain}` : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
+                        <a href={infrastructureReady ? `https://${tenant.slug}-crm-api.${domain}` : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
                     {/* Storefront */}
-                    <div className="p-4 border rounded-xl flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
+                    <div className="p-4 border rounded-md flex items-center justify-between group hover:border-brand-200 dark:border-slate-600 dark:hover:border-brand-500 transition">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/30 rounded-lg flex items-center justify-center text-brand-600">
                                 <FiGlobe />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Storefront</p>
-                                <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{tenant.custom_domain_storefront || `${tenant.slug}.${domain}`}</p>
+                                <p className="text-xs text-fg-muted">Storefront</p>
+                                <p className="font-medium text-fg text-sm">{tenant.custom_domain_storefront || `${tenant.slug}.${domain}`}</p>
                                 {tenant.custom_domain_storefront ? (
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tenant.custom_domain_verified ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                         {tenant.custom_domain_verified ? 'Verified' : 'Pending DNS'}
                                     </span>
                                 ) : (
-                                    <span className="text-[10px] text-slate-400">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
+                                    <span className="text-[10px] text-fg-subtle">{infrastructureReady ? 'Default' : 'Not provisioned'}</span>
                                 )}
                             </div>
                         </div>
-                        <a href={infrastructureReady ? (tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-slate-400 transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
+                        <a href={infrastructureReady ? (tenant.custom_domain_storefront ? `https://${tenant.custom_domain_storefront}` : `https://${tenant.slug}.${domain}`) : undefined} aria-disabled={!infrastructureReady} target="_blank" rel="noreferrer" className={`p-2 text-fg-subtle transition ${infrastructureReady ? 'hover:text-brand-600' : 'opacity-40 pointer-events-none'}`}>
                             <FiExternalLink />
                         </a>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                    <FiDatabase className="w-5 h-5 text-slate-500" />
+            <div className="bg-surface rounded-md p-6 border border-border">
+                <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
+                    <FiDatabase className="w-5 h-5 text-fg-muted" />
                     Infrastructure Details
                     <button onClick={handleRunMigration} disabled={runningMigration} title="Run database migrations to create missing industry tables" className="ml-auto text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 disabled:opacity-50">
                         {runningMigration ? 'Running…' : '⚡ Run Migration'}
@@ -873,10 +874,10 @@ const TenantDetail = () => {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Database Name</p>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                            <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{tenant.db_name}</span>
-                            <button onClick={() => copyToClipboard(tenant.db_name)} className="text-slate-400 hover:text-brand-600">
+                        <p className="text-xs font-medium text-fg-muted uppercase mb-2">Database Name</p>
+                        <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
+                            <span className="font-mono text-sm text-fg">{tenant.db_name}</span>
+                            <button onClick={() => copyToClipboard(tenant.db_name)} className="text-fg-subtle hover:text-brand-600">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
@@ -884,10 +885,10 @@ const TenantDetail = () => {
                         </div>
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Admin Email</p>
-                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                            <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{tenant.email || 'admin@' + tenant.slug + '.local'}</span>
-                            <button onClick={() => copyToClipboard(tenant.email || 'admin@' + tenant.slug + '.local')} className="text-slate-400 hover:text-brand-600">
+                        <p className="text-xs font-medium text-fg-muted uppercase mb-2">Admin Email</p>
+                        <div className="flex items-center justify-between p-3 bg-surface-2 rounded-lg">
+                            <span className="font-mono text-sm text-fg">{tenant.email || 'admin@' + tenant.slug + '.local'}</span>
+                            <button onClick={() => copyToClipboard(tenant.email || 'admin@' + tenant.slug + '.local')} className="text-fg-subtle hover:text-brand-600">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
@@ -896,9 +897,9 @@ const TenantDetail = () => {
                     </div>
                     {tenant.admin_password && (
                         <div className="md:col-span-2">
-                            <p className="text-xs font-medium text-slate-500 uppercase mb-2">Admin Password</p>
+                            <p className="text-xs font-medium text-fg-muted uppercase mb-2">Admin Password</p>
                             <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                                <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{tenant.admin_password}</span>
+                                <span className="font-mono text-sm text-fg">{tenant.admin_password}</span>
                                 <button onClick={() => copyToClipboard(tenant.admin_password)} className="text-amber-600 hover:text-amber-700">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -911,44 +912,44 @@ const TenantDetail = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <FiCreditCard className="w-5 h-5 text-slate-500" />
+            <div className="bg-surface rounded-md border border-border overflow-hidden">
+                <div className="px-6 py-4 border-b border-border">
+                    <h3 className="text-lg font-semibold text-fg mb-4 flex items-center gap-2">
+                        <FiCreditCard className="w-5 h-5 text-fg-muted" />
                         Billing & Subscriptions
                         {paymentsLoading && (
-                            <svg className="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-4 w-4 text-fg-subtle" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
                         )}
                     </h3>
                 </div>
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 space-y-6">
+                <div className="p-6 border-b border-border space-y-6">
                     <div className="grid md:grid-cols-5 gap-4">
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Current Plan</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white">{subscription?.plan_name || tenant.plan_name || 'Unassigned'}</div>
+                        <div className="rounded-md border border-border p-4">
+                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Current Plan</div>
+                            <div className="text-lg font-semibold text-fg">{subscription?.plan_name || tenant.plan_name || 'Unassigned'}</div>
                         </div>
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Subscription</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white capitalize">{subscription?.status || 'Not created yet'}</div>
+                        <div className="rounded-md border border-border p-4">
+                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Subscription</div>
+                            <div className="text-lg font-semibold text-fg capitalize">{subscription?.status || 'Not created yet'}</div>
                         </div>
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Billing Cycle</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white capitalize">{subscription?.billing_cycle || billingForm.billing_cycle}</div>
+                        <div className="rounded-md border border-border p-4">
+                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Billing Cycle</div>
+                            <div className="text-lg font-semibold text-fg capitalize">{subscription?.billing_cycle || billingForm.billing_cycle}</div>
                         </div>
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Current Period Ends</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                        <div className="rounded-md border border-border p-4">
+                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Current Period Ends</div>
+                            <div className="text-lg font-semibold text-fg">
                                 {subscription?.current_period_end
                                     ? new Date(subscription.current_period_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                                     : 'Not set'}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-1">Trial Ends</div>
-                            <div className="text-lg font-semibold text-slate-900 dark:text-white">
+                        <div className="rounded-md border border-border p-4">
+                            <div className="text-xs font-medium text-fg-muted uppercase mb-1">Trial Ends</div>
+                            <div className="text-lg font-semibold text-fg">
                                 {tenant.trial_ends_at
                                     ? new Date(tenant.trial_ends_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                                     : 'No trial'}
@@ -979,7 +980,7 @@ const TenantDetail = () => {
                         <button
                             onClick={() => handleCancelSubscription(false)}
                             disabled={!subscription || ['cancelled', 'expired'].includes(subscription.status) || subscriptionActionLoading}
-                            className="px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                            className="px-4 py-2.5 rounded-lg border border-border-strong text-fg hover:bg-surface-2 disabled:opacity-50 transition-colors"
                         >
                             {subscriptionActionLoading === 'cancel-later' ? 'Scheduling...' : 'Cancel At Period End'}
                         </button>
@@ -992,11 +993,11 @@ const TenantDetail = () => {
                         </button>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                    <div className="rounded-md border border-border p-5 space-y-5">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Edit Trial & Billing</h4>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                <h4 className="text-sm font-semibold text-fg">Edit Trial & Billing</h4>
+                                <p className="text-xs text-fg-muted mt-1">
                                     New tenants already start automatically as a 14-day trial. Use this form to change the plan, edit the trial end date, activate access, send a payment link, or mark the tenant as paid.
                                 </p>
                             </div>
@@ -1004,11 +1005,11 @@ const TenantDetail = () => {
 
                         <div className="grid md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Plan</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Plan</label>
                                 <select
                                     value={billingForm.plan_id}
                                     onChange={(e) => handleBillingFormChange('plan_id', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 >
                                     <option value="">Select Plan</option>
                                     {plans.map((plan) => (
@@ -1019,11 +1020,11 @@ const TenantDetail = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Tenant Status</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Tenant Status</label>
                                 <select
                                     value={billingForm.status}
                                     onChange={(e) => handleBillingFormChange('status', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 >
                                     <option value="trial">Trial</option>
                                     <option value="active">Active</option>
@@ -1033,30 +1034,30 @@ const TenantDetail = () => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Trial Ends On</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Trial Ends On</label>
                                 <input
                                     type="date"
                                     value={billingForm.trial_ends_at}
                                     onChange={(e) => handleBillingFormChange('trial_ends_at', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 />
                             </div>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Billing Cycle</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Billing Cycle</label>
                                 <select
                                     value={billingForm.billing_cycle}
                                     onChange={(e) => handleBillingFormChange('billing_cycle', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 >
                                     <option value="monthly">Monthly</option>
                                     <option value="yearly">Yearly</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Manual Amount</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Manual Amount</label>
                                 <input
                                     type="number"
                                     min="0"
@@ -1064,20 +1065,20 @@ const TenantDetail = () => {
                                     value={billingForm.amount}
                                     onChange={(e) => handleBillingFormChange('amount', e.target.value)}
                                     placeholder={suggestedAmount ? `${suggestedAmount}` : 'Auto from plan'}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 />
-                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                <p className="mt-1 text-xs text-fg-muted">
                                     {selectedPlan
                                         ? `Suggested ${billingForm.billing_cycle} amount: ₹${suggestedAmount.toFixed(2)}`
                                         : 'Pick a plan to auto-suggest the amount.'}
                                 </p>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">After Save</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">After Save</label>
                                 <select
                                     value={billingForm.follow_up_action}
                                     onChange={(e) => handleBillingFormChange('follow_up_action', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 >
                                     <option value="none">Do nothing</option>
                                     <option value="send_payment_link">Send payment link</option>
@@ -1117,10 +1118,10 @@ const TenantDetail = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                    <div className="rounded-md border border-border p-5 space-y-5">
                         <div>
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Send Billing Invoice</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <h4 className="text-sm font-semibold text-fg">Send Billing Invoice</h4>
+                            <p className="text-xs text-fg-muted mt-1">
                                 Send a PDF invoice plus Razorpay payment link for a specific billing month. Use this for previous month dues or the current cycle.
                             </p>
                         </div>
@@ -1129,14 +1130,14 @@ const TenantDetail = () => {
                             <button
                                 type="button"
                                 onClick={() => handleBillingRequestFormChange('billing_month', previousMonthValue)}
-                                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm"
+                                className="px-3 py-2 rounded-lg border border-border-strong text-fg hover:bg-surface-2 transition-colors text-sm"
                             >
                                 Previous Month
                             </button>
                             <button
                                 type="button"
                                 onClick={() => handleBillingRequestFormChange('billing_month', currentMonthValue)}
-                                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-sm"
+                                className="px-3 py-2 rounded-lg border border-border-strong text-fg hover:bg-surface-2 transition-colors text-sm"
                             >
                                 Current Month
                             </button>
@@ -1144,30 +1145,30 @@ const TenantDetail = () => {
 
                         <div className="grid md:grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Billing Month</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Billing Month</label>
                                 <input
                                     type="month"
                                     value={billingRequestForm.billing_month}
                                     onChange={(e) => handleBillingRequestFormChange('billing_month', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Due Date</label>
+                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Due Date</label>
                                 <input
                                     type="date"
                                     value={billingRequestForm.due_date}
                                     onChange={(e) => handleBillingRequestFormChange('due_date', e.target.value)}
-                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg"
                                 />
                             </div>
                             <div className="flex items-end">
-                                <div className="w-full rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 px-4 py-3">
-                                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Invoice Amount</div>
-                                    <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">
+                                <div className="w-full rounded-lg bg-surface-2 border border-border px-4 py-3">
+                                    <div className="text-xs font-medium text-fg-muted uppercase">Invoice Amount</div>
+                                    <div className="mt-1 text-lg font-semibold text-fg">
                                         ₹{Number(effectiveAmount || 0).toFixed(2)}
                                     </div>
-                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <div className="mt-1 text-xs text-fg-muted">
                                         Uses the manual amount above when entered, otherwise the selected plan amount.
                                     </div>
                                 </div>
@@ -1193,10 +1194,10 @@ const TenantDetail = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-5">
+                    <div className="rounded-md border border-border p-5 space-y-5">
                         <div>
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Tenant Tools</h4>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <h4 className="text-sm font-semibold text-fg">Tenant Tools</h4>
+                            <p className="text-xs text-fg-muted mt-1">
                                 Enable or suspend add-on products per tenant. CRM provisioning is special-cased and uses the tenant infrastructure already assigned.
                             </p>
                         </div>
@@ -1210,19 +1211,19 @@ const TenantDetail = () => {
                                 const loadingKey = isEnabled ? `disable-${tool.id}` : `enable-${tool.id}`;
 
                                 return (
-                                    <div key={tool.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-4">
+                                    <div key={tool.id} className="rounded-md border border-border p-4 space-y-4">
                                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <h5 className="font-semibold text-slate-900 dark:text-white">{tool.name}</h5>
+                                                    <h5 className="font-semibold text-fg">{tool.name}</h5>
                                                     <span className={`px-2 py-0.5 text-xs rounded-full ${isEnabled ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                                         {assignment?.status || 'not enabled'}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{tool.description}</p>
+                                                <p className="text-sm text-fg-muted mt-1">{tool.description}</p>
                                                 {assignment?.plan_name && (
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                                        Current plan: <span className="font-medium text-slate-700 dark:text-slate-200">{assignment.plan_name}</span>
+                                                    <p className="text-xs text-fg-muted mt-2">
+                                                        Current plan: <span className="font-medium text-fg">{assignment.plan_name}</span>
                                                     </p>
                                                 )}
                                             </div>
@@ -1250,12 +1251,12 @@ const TenantDetail = () => {
 
                                         <div className="grid md:grid-cols-3 gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Tool Plan</label>
+                                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Tool Plan</label>
                                                 <select
                                                     value={formState.tool_plan_id || ''}
                                                     onChange={(e) => handleToolFormChange(tool.id, 'tool_plan_id', e.target.value)}
                                                     disabled={tool.slug === 'nexcrm' || plansForTool.length === 0}
-                                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
+                                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg disabled:opacity-60"
                                                 >
                                                     <option value="">No plan</option>
                                                     {plansForTool.map((plan) => (
@@ -1266,7 +1267,7 @@ const TenantDetail = () => {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase mb-2">Trial Days</label>
+                                                <label className="block text-xs font-medium text-fg-muted uppercase mb-2">Trial Days</label>
                                                 <input
                                                     type="number"
                                                     min="1"
@@ -1274,11 +1275,11 @@ const TenantDetail = () => {
                                                     onChange={(e) => handleToolFormChange(tool.id, 'trial_days', e.target.value)}
                                                     disabled={tool.slug === 'nexcrm'}
                                                     placeholder="Leave empty for active"
-                                                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-60"
+                                                    className="w-full px-3 py-2.5 border border-border-strong rounded-lg bg-surface text-fg disabled:opacity-60"
                                                 />
                                             </div>
                                             <div className="flex items-end">
-                                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                <div className="text-xs text-fg-muted">
                                                     {tool.slug === 'nexcrm'
                                                         ? 'CRM uses tenant process/server provisioning and is managed separately from add-on tools.'
                                                         : assignment?.trial_ends_at
@@ -1296,38 +1297,38 @@ const TenantDetail = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Date</th>
-                                <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Invoice</th>
-                                <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Plan</th>
-                                <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400">Amount</th>
-                                <th className="px-6 py-3 font-medium text-slate-500 dark:text-slate-400 text-center">Status</th>
+                            <tr className="bg-surface-2 border-b border-border">
+                                <th className="px-6 py-3 font-medium text-fg-muted">Date</th>
+                                <th className="px-6 py-3 font-medium text-fg-muted">Invoice</th>
+                                <th className="px-6 py-3 font-medium text-fg-muted">Plan</th>
+                                <th className="px-6 py-3 font-medium text-fg-muted">Amount</th>
+                                <th className="px-6 py-3 font-medium text-fg-muted text-center">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                        <tbody className="divide-y divide-border">
                             {paymentsLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading billing history...</td>
+                                    <td colSpan="5" className="px-6 py-8 text-center text-fg-muted">Loading billing history...</td>
                                 </tr>
                             ) : payments.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">No payment history found for this tenant.</td>
+                                    <td colSpan="5" className="px-6 py-8 text-center text-fg-muted">No payment history found for this tenant.</td>
                                 </tr>
                             ) : (
                                 payments.map((payment) => (
-                                    <tr key={payment.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                        <td className="px-6 py-3 text-slate-600 dark:text-slate-300">
+                                    <tr key={payment.id} className="hover:bg-surface-2">
+                                        <td className="px-6 py-3 text-fg-muted">
                                             {new Date(payment.created_at).toLocaleDateString('en-IN', {
                                                 day: 'numeric', month: 'short', year: 'numeric'
                                             })}
                                         </td>
-                                        <td className="px-6 py-3 font-mono text-xs text-slate-500">{payment.invoice_number || '-'}</td>
-                                        <td className="px-6 py-3 text-slate-900 dark:text-white font-medium">{payment.plan_name || 'One-time Payment'}</td>
-                                        <td className="px-6 py-3 font-semibold text-slate-900 dark:text-white">
+                                        <td className="px-6 py-3 font-mono text-xs text-fg-muted">{payment.invoice_number || '-'}</td>
+                                        <td className="px-6 py-3 text-fg font-medium">{payment.plan_name || 'One-time Payment'}</td>
+                                        <td className="px-6 py-3 font-semibold text-fg">
                                             ₹{parseFloat(payment.amount).toFixed(2)}
                                         </td>
                                         <td className="px-6 py-3">
-                                            <div className="flex items-center justify-center gap-1.5 capitalize text-slate-700 dark:text-slate-300">
+                                            <div className="flex items-center justify-center gap-1.5 capitalize text-fg">
                                                 {getPaymentStatusIcon(payment.status)}
                                                 <span className="text-xs">{payment.status}</span>
                                             </div>
@@ -1340,20 +1341,20 @@ const TenantDetail = () => {
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <FiTerminal className="w-5 h-5 text-slate-500" />
+            <div className="bg-surface rounded-md border border-border overflow-hidden">
+                <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-fg flex items-center gap-2">
+                        <FiTerminal className="w-5 h-5 text-fg-muted" />
                         PM2 Logs
                         {logsLoading && (
-                            <svg className="animate-spin h-4 w-4 text-slate-400" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-4 w-4 text-fg-subtle" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                             </svg>
                         )}
                     </h3>
                     <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <label className="flex items-center gap-2 text-sm text-fg-muted">
                             <input
                                 type="checkbox"
                                 checked={autoRefresh}
@@ -1387,7 +1388,7 @@ const TenantDetail = () => {
                 </div>
             </div>
 
-            <div className="bg-rose-50 dark:bg-rose-900/10 rounded-xl border border-rose-200 dark:border-rose-900/30 p-6">
+            <div className="bg-rose-50 dark:bg-rose-900/10 rounded-md border border-rose-200 dark:border-rose-900/30 p-6">
                 <h3 className="text-lg font-semibold text-rose-700 dark:text-rose-400 mb-2 flex items-center gap-2">
                     <FiTrash2 className="w-5 h-5" />
                     Danger Zone
@@ -1404,38 +1405,46 @@ const TenantDetail = () => {
             </div>
 
             {/* Custom Domain Modal */}
-            {showDomainModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-lg w-full p-6 my-8">
-                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Configure Custom Domains</h2>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-slate-100 dark:bg-slate-700 px-1 rounded">{tenant.slug}-crm-api.{domain}</code>.
+            <Dialog
+                open={showDomainModal}
+                onClose={() => setShowDomainModal(false)}
+                title="Configure custom domains"
+                footer={
+                    <>
+                        <Button onClick={() => setShowDomainModal(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={handleSetupDomain} loading={domainLoading}>Save Domains</Button>
+                    </>
+                }
+            >
+                    <div>
+                        <p className="text-sm text-fg-muted mb-4">
+                            Point the tenant's custom domains to Cloudflare Pages. The API always stays on <code className="text-xs bg-surface-3 px-1 rounded">{tenant.slug}-crm-api.{domain}</code>.
                         </p>
 
                         {/* CRM Domain */}
-                        <div className="mb-4 p-3 border rounded-lg dark:border-slate-600">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CRM Dashboard</label>
+                        <div className="mb-4 p-3 border border-border rounded-sm">
+                            <label className="block text-sm font-medium text-fg mb-1">CRM Dashboard</label>
                             <input
                                 type="text"
                                 value={customDomains.crm}
                                 onChange={(e) => setCustomDomains(prev => ({ ...prev, crm: e.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg text-sm"
                                 placeholder="crm.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-frontend.pages.dev</code></p>
+                            <p className="text-xs text-fg-muted mt-1">CNAME Target: <code className="bg-surface-3 px-1 rounded">nexcrm-frontend.pages.dev</code></p>
                         </div>
 
                         {/* Storefront Domain */}
-                        <div className="mb-4 p-3 border rounded-lg dark:border-slate-600">
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Storefront</label>
+                        <div className="mb-4 p-3 border border-border rounded-sm">
+                            <label className="block text-sm font-medium text-fg mb-1">Storefront</label>
                             <input
                                 type="text"
                                 value={customDomains.storefront}
                                 onChange={(e) => setCustomDomains(prev => ({ ...prev, storefront: e.target.value }))}
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
+                                className="w-full px-3 py-2 border border-border-strong rounded-lg bg-surface text-fg text-sm"
                                 placeholder="yourbrand.com or store.yourbrand.com"
                             />
-                            <p className="text-xs text-slate-500 mt-1">CNAME Target: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">nexcrm-storefront.pages.dev</code></p>
+                            <p className="text-xs text-fg-muted mt-1">CNAME Target: <code className="bg-surface-3 px-1 rounded">nexcrm-storefront.pages.dev</code></p>
                         </div>
 
                         {/* Setup Help Section */}
@@ -1452,101 +1461,83 @@ const TenantDetail = () => {
                                 <svg className={`w-4 h-4 transition-transform ${showDomainHelp ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </button>
                             {showDomainHelp && (
-                                <div className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400 space-y-3 bg-white dark:bg-slate-800">
+                                <div className="px-4 py-3 text-sm text-fg-muted space-y-3 bg-surface">
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">1</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Enter the tenant's custom domains above</p>
+                                            <p className="font-medium text-fg">Enter the tenant's custom domains above</p>
                                             <p className="text-xs mt-0.5">CRM and Storefront are both optional. You can set up one or both.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">2</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Click "Save Domains"</p>
+                                            <p className="font-medium text-fg">Click "Save Domains"</p>
                                             <p className="text-xs mt-0.5">This registers the custom domains with Cloudflare Pages automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">3</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Tenant adds CNAME records in their DNS provider</p>
+                                            <p className="font-medium text-fg">Tenant adds CNAME records in their DNS provider</p>
                                             <p className="text-xs mt-0.5">The tenant goes to their domain registrar (GoDaddy, Namecheap, etc.) and adds CNAME records:</p>
-                                            <div className="mt-2 bg-slate-50 dark:bg-slate-900 rounded-md p-2 text-xs font-mono space-y-1">
-                                                <p><span className="text-slate-400">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
-                                                <p><span className="text-slate-400">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
+                                            <div className="mt-2 bg-surface-2 rounded-md p-2 text-xs font-mono space-y-1">
+                                                <p><span className="text-fg-subtle">CRM:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">crm.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-frontend.pages.dev</span></p>
+                                                <p><span className="text-fg-subtle">Storefront:</span> CNAME <span className="text-emerald-600 dark:text-emerald-400">store.yourbrand.com</span> &rarr; <span className="text-blue-600 dark:text-blue-400">nexcrm-storefront.pages.dev</span></p>
                                             </div>
-                                            <p className="text-xs mt-1.5 text-slate-500">Works with any DNS provider — no Cloudflare account needed for the tenant.</p>
+                                            <p className="text-xs mt-1.5 text-fg-muted">Works with any DNS provider — no Cloudflare account needed for the tenant.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">4</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Wait for DNS propagation</p>
+                                            <p className="font-medium text-fg">Wait for DNS propagation</p>
                                             <p className="text-xs mt-0.5">Usually takes a few minutes. Cloudflare Pages handles SSL certificates automatically.</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold">5</span>
                                         <div>
-                                            <p className="font-medium text-slate-700 dark:text-slate-300">Done!</p>
-                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{domain}</code> under the hood — customers never see it.</p>
+                                            <p className="font-medium text-fg">Done!</p>
+                                            <p className="text-xs mt-0.5">The storefront will automatically detect the custom domain and load the correct tenant. The API stays on <code className="bg-surface-3 px-1 rounded">{domain}</code> under the hood — customers never see it.</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button onClick={() => setShowDomainModal(false)} className="px-4 py-2 text-slate-600">Cancel</button>
-                            <button
-                                onClick={handleSetupDomain}
-                                disabled={domainLoading}
-                                className="px-4 py-2 bg-brand-600 text-white rounded-lg disabled:opacity-50"
-                            >
-                                {domainLoading ? 'Configuring...' : 'Save Domains'}
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
+            </Dialog>
 
-            {showDeleteModal && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
-                        <h2 className="text-xl font-semibold text-rose-600 mb-4">Confirm Permanent Deletion</h2>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Type <strong>{tenant.slug}</strong> to confirm deletion of <strong>{tenant.name}</strong>.
-                        </p>
-                        <input
-                            type="text"
-                            value={confirmText}
-                            onChange={(e) => setConfirmText(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 mb-4"
-                            placeholder={tenant.slug}
-                        />
-                        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 mb-6">
-                            <input
-                                type="checkbox"
-                                checked={deleteOptions.dropDatabase}
-                                onChange={(e) => setDeleteOptions(prev => ({ ...prev, dropDatabase: e.target.checked }))}
-                                className="rounded border-slate-300 text-rose-600"
-                            />
-                            Drop database ({tenant.db_name})
-                        </label>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowDeleteModal(false)} className="px-4 py-2 text-slate-600">Cancel</button>
-                            <button
-                                onClick={handleFullDelete}
-                                disabled={deleteLoading || confirmText !== tenant.slug}
-                                className="px-4 py-2 bg-rose-600 text-white rounded-lg disabled:opacity-50"
-                            >
-                                {deleteLoading ? 'Deleting...' : 'Delete Permanently'}
-                            </button>
-                        </div>
-                    </div>
+            <Dialog
+                open={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                dismissible={!deleteLoading}
+                title="Confirm permanent deletion"
+                size="sm"
+                footer={
+                    <>
+                        <Button onClick={() => setShowDeleteModal(false)} disabled={deleteLoading}>Cancel</Button>
+                        <Button variant="danger" onClick={handleFullDelete} loading={deleteLoading} disabled={confirmText !== tenant.slug}>
+                            Delete Permanently
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-fg-muted">
+                        This permanently deletes <strong className="text-fg">{tenant.name}</strong>. It can't be undone.
+                    </p>
+                    <Field label={<>Type <span className="font-mono">{tenant.slug}</span> to confirm</>}>
+                        <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={tenant.slug} className="font-mono" data-autofocus />
+                    </Field>
+                    <Checkbox
+                        label={<>Drop database <span className="font-mono">({tenant.db_name})</span></>}
+                        checked={deleteOptions.dropDatabase}
+                        onChange={(e) => setDeleteOptions(prev => ({ ...prev, dropDatabase: e.target.checked }))}
+                    />
                 </div>
-            )}
+            </Dialog>
 
             <ConfirmModal
                 isOpen={confirmState.isOpen}
