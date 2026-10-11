@@ -1,101 +1,39 @@
 /**
- * Admin Stats Dashboard Section
- * Shows charts and statistics for admin users
+ * Analytics charts for the dashboard. Receives the dashboard stats from the page
+ * (one shared query) instead of fetching them again.
  */
-import { useState, useEffect } from 'react';
-import { dashboardAPI } from '../../api';
+import { Badge, Panel } from '../ui';
 import { LeadStatusChart, InquiryStatusChart, ConversionRateCard, RevenueTrendChart } from './DashboardCharts';
-import toast from 'react-hot-toast';
 
-export default function AdminStatsSection() {
-    const [leadStats, setLeadStats] = useState(null);
-    const [inquiryStats, setInquiryStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchStats();
-    }, []);
-
-    const fetchStats = async () => {
-        try {
-            const stats = await dashboardAPI.getStats();
-
-            // Map aggregated stats to component expected structure
-            setLeadStats({
-                total: stats.totalLeads,
-                newLeads: stats.newLeads,
-                qualified: stats.qualifiedLeads,
-                won: stats.wonLeads,
-                totalValue: stats.leadTotalValue,
-                ...stats.leadsByStatus // Spread status counts for charts
-            });
-
-            setInquiryStats({
-                total: stats.totalInquiries,
-                ...stats.inquiriesByStatus
-            });
-
-        } catch (error) {
-            // Don't show error toast - might not have permission
-        } finally {
-            setLoading(false);
-        }
+export default function AdminStatsSection({ stats }) {
+    const leadStats = {
+        total: stats.totalLeads,
+        newLeads: stats.newLeads,
+        qualified: stats.qualifiedLeads,
+        won: stats.wonLeads,
+        totalValue: stats.leadTotalValue,
+        ...stats.leadsByStatus, // status counts for the charts
     };
-
-    if (loading) {
-        return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl h-80 animate-pulse"></div>
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl h-80 animate-pulse"></div>
-                </div>
-            </div>
-        );
-    }
+    const inquiryStats = { total: stats.totalInquiries, ...stats.inquiriesByStatus };
 
     return (
-        <div className="space-y-6">
-            {/* Conversion Rates */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
-                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Conversion Overview</h3>
+        <div className="space-y-4">
+            <Panel title="Conversion">
                 <ConversionRateCard inquiryStats={inquiryStats} leadStats={leadStats} />
-            </div>
+            </Panel>
 
-            {/* Revenue Trend */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white">Revenue Overview</h3>
-                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full">Last 6 months</span>
-                </div>
+            <Panel title="Revenue" actions={<Badge>Last 6 months</Badge>}>
                 <RevenueTrendChart />
-            </div>
+            </Panel>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Lead Status Chart */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">Leads by Status</h3>
-                        <span className="text-sm text-slate-500">
-                            Total: {leadStats?.total || 0}
-                        </span>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Panel title="Leads by status" actions={<span className="text-xs text-fg-subtle">Total <span className="font-mono tabular-nums text-fg">{leadStats.total || 0}</span></span>}>
                     <LeadStatusChart data={leadStats} />
-                </div>
-
-                {/* Inquiry Status Chart */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm p-6 rounded-xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-white">Inquiries by Status</h3>
-                        <span className="text-sm text-slate-500">
-                            Total: {inquiryStats?.total || 0}
-                        </span>
-                    </div>
+                </Panel>
+                <Panel title="Inquiries by status" actions={<span className="text-xs text-fg-subtle">Total <span className="font-mono tabular-nums text-fg">{inquiryStats.total || 0}</span></span>}>
                     <InquiryStatusChart data={inquiryStats} />
-                </div>
+                </Panel>
             </div>
-
-
         </div>
     );
 }
