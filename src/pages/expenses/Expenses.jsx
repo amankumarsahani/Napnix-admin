@@ -223,11 +223,12 @@ export default function Expenses() {
             if (/^[=+\-@]/.test(t) && !/^-?\d+(\.\d+)?$/.test(t)) t = `'${t}`;
             return `"${t.replace(/"/g, '""')}"`;
         };
-        const headers = ['Type','Date','Vendor / From','Spent By','Category','Description','Amount','Payment Method','Reference','Recurring'];
+        const headers = ['Type','Date','Vendor / From','Spent By','Category','Description','Amount','Payment Method','Account','Tax','Status','Reference','Recurring'];
         const rows = all.map(r => [
             r.type, r.date?.slice(0, 10), r.vendor || '', r.spent_by || '', r.category,
             r.description || '', r.amount,
             PAYMENT_LABELS[r.payment_method] || r.payment_method,
+            r.account || '', r.tax_amount || 0, r.status || '',
             r.reference || '',
             r.is_recurring ? (r.recurring_interval || 'yes') : 'no'
         ]);
@@ -244,7 +245,9 @@ export default function Expenses() {
         ...new Set([...ALL_CATEGORIES, ...(stats.allExpenseCategories || []), ...(stats.allDepositCategories || [])])
     ];
 
+    // Same rule as the stats cards: only approved rows count (pending/rejected are shown but excluded).
     const listTotal = records.reduce((s, r) => {
+        if (r.status && r.status !== 'approved') return s;
         return r.type === 'deposit' ? s + parseFloat(r.amount || 0) : s - parseFloat(r.amount || 0);
     }, 0);
 
