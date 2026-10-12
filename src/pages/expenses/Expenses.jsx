@@ -64,6 +64,9 @@ const EMPTY_FORM = (type = 'expense') => ({
     vendor: '',
     spent_by: '',
     payment_method: 'card',
+    account: 'bank',
+    tax_amount: '',
+    receipt_url: '',
     is_recurring: false,
     recurring_interval: 'monthly',
     reference: '',
@@ -75,8 +78,10 @@ export default function Expenses() {
     const chart = useChartTheme();
     const [filters, setFilters] = useState({
         search: '', type: '', category: '',
-        date_from: '', date_to: '', payment_method: '', spent_by: ''
+        date_from: '', date_to: '', payment_method: '', spent_by: '', status: ''
     });
+    const [showDeleted, setShowDeleted] = useState(false); // recycle bin view
+    const [history, setHistory] = useState(null); // expense id whose audit log is open
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState([]);
     const [modal, setModal] = useState(null);
@@ -93,8 +98,10 @@ export default function Expenses() {
         if (filters.date_to)        p.date_to = filters.date_to;
         if (filters.payment_method) p.payment_method = filters.payment_method;
         if (filters.spent_by)       p.spent_by = filters.spent_by;
+        if (filters.status)         p.status = filters.status;
+        if (showDeleted)            p.deleted = 'true';
         return p;
-    }, [filters, page]);
+    }, [filters, page, showDeleted]);
 
     const { data: listData, isLoading } = useQuery({
         queryKey: ['expenses', queryParams],
@@ -148,6 +155,24 @@ export default function Expenses() {
         mutationFn: (ids) => expensesAPI.bulkDelete(ids),
         onSuccess: (_, ids) => { invalidate(); toast.success(`${ids.length} records deleted`); setSelected([]); setConfirmDelete(null); },
         onError: () => toast.error('Bulk delete failed'),
+    });
+
+    const restoreMutation = useMutation({
+        mutationFn: (id) => expensesAPI.restore(id),
+        onSuccess: () => { invalidate(); toast.success('Restored'); },
+        onError: (e) => toast.error(e.response?.data?.error || 'Failed to restore'),
+    });
+
+    const statusMutation = useMutation({
+        mutationFn: ({ id, action }) => expensesAPI[action](id),
+        onSuccess: () => { invalidate(); toast.success('Updated'); },
+        onError: (e) => toast.error(e.response?.data?.error || 'Failed to update'),
+    });
+
+    const { data: auditData, isLoading: auditLoading } = useQuery({
+        queryKey: ['expense-audit', history],
+        queryFn: () => expensesAPI.getAudit(history),
+        enabled: !!history,
     });
 
     const records = listData?.data || [];
@@ -258,6 +283,23 @@ export default function Expenses() {
                 <StatCard label="Net YTD" value={<span className={netStats.ytd < 0 ? 'text-danger' : undefined}>{fmt(netStats.ytd)}</span>} icon={<FiFilter size={16} />} />
             </div>
 
+            {(stats.accountBalances?.length > 0 || stats.pendingApprovals > 0) && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {(stats.accountBalances || []).map(a => (
+                        <span key={a.account} className="px-2.5 py-1 rounded-full border border-border bg-surface text-fg-muted">
+                            <span className="capitalize">{a.account}</span>{' '}
+                            <span className={a.balance < 0 ? 'text-danger font-semibold' : 'text-fg font-semibold'}>{a.balance < 0 ? '−' : ''}{fmt(Math.abs(a.balance))}</span>
+                        </span>
+                    ))}
+                    {stats.pendingApprovals > 0 && (
+                        <button onClick={() => { setFilters(f => ({ ...f, status: 'pending' })); setShowDeleted(false); setPage(1); }}
+                            className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 font-medium">
+                            {stats.pendingApprovals} pending approval
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Charts */}
             {showCharts && trend.length > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -359,14 +401,26 @@ export default function Expenses() {
                         <option value="">All Payments</option>
                         {Object.entries(PAYMENT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
+                    <select value={filters.status}
+                        onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1); }}
+                        className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button onClick={() => { setShowDeleted(v => !v); setSelected([]); setPage(1); }}
+                        className={`px-3 py-2 text-sm border rounded-lg flex items-center gap-1.5 ${showDeleted ? 'border-red-400 text-red-600 bg-red-50 dark:bg-red-900/20' : 'border-border text-fg-muted hover:bg-surface-2'}`}>
+                        <FiTrash2 size={13} /> {showDeleted ? 'Viewing deleted' : 'Deleted'}
+                    </button>
                     <input type="date" value={filters.date_from} title="From date"
                         onChange={e => { setFilters(f => ({ ...f, date_from: e.target.value })); setPage(1); }}
                         className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                     <input type="date" value={filters.date_to} title="To date"
                         onChange={e => { setFilters(f => ({ ...f, date_to: e.target.value })); setPage(1); }}
                         className="px-3 py-2 text-sm border border-border rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
-                    {(filters.search || filters.type || filters.category || filters.date_from || filters.date_to || filters.payment_method || filters.spent_by) && (
-                        <button onClick={() => { setFilters({ search:'', type:'', category:'', date_from:'', date_to:'', payment_method:'', spent_by:'' }); setPage(1); }}
+                    {(filters.search || filters.type || filters.category || filters.date_from || filters.date_to || filters.payment_method || filters.spent_by || filters.status) && (
+                        <button onClick={() => { setFilters({ search:'', type:'', category:'', date_from:'', date_to:'', payment_method:'', spent_by:'', status:'' }); setPage(1); }}
                             className="px-3 py-2 text-sm text-fg-muted hover:text-fg flex items-center gap-1">
                             <FiX size={14} /> Clear
                         </button>
@@ -375,7 +429,7 @@ export default function Expenses() {
             </div>
 
             {/* Bulk Actions */}
-            {visibleSelected.length > 0 && (
+            {visibleSelected.length > 0 && !showDeleted && (
                 <div className="flex items-center gap-3 px-4 py-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-md">
                     <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{visibleSelected.length} selected</span>
                     <button onClick={() => setConfirmDelete(visibleSelected)} disabled={bulkDeleteMutation.isPending}
@@ -433,6 +487,11 @@ export default function Expenses() {
                                         }`}>
                                             {row.type === 'deposit' ? '+ Deposit' : '− Expense'}
                                         </span>
+                                        {row.status && row.status !== 'approved' && (
+                                            <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${row.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                                {row.status}
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-4 py-3 text-fg-muted whitespace-nowrap">{row.date?.slice(0, 10)}</td>
                                     <td className="px-4 py-3 font-medium text-fg max-w-32 truncate">
@@ -472,6 +531,18 @@ export default function Expenses() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 justify-end">
+                                            {showDeleted ? (
+                                                <button onClick={() => restoreMutation.mutate(row.id)} disabled={restoreMutation.isPending}
+                                                    className="px-2 py-1 text-xs text-brand-600 hover:bg-surface-2 rounded">Restore</button>
+                                            ) : (<>
+                                            {row.status === 'pending' && (<>
+                                                <button onClick={() => statusMutation.mutate({ id: row.id, action: 'approve' })} aria-label="Approve" title="Approve"
+                                                    className="p-1.5 text-fg-subtle hover:text-emerald-600 rounded hover:bg-surface-2"><FiCheckCircle size={14} /></button>
+                                                <button onClick={() => statusMutation.mutate({ id: row.id, action: 'reject' })} aria-label="Reject" title="Reject"
+                                                    className="p-1.5 text-fg-subtle hover:text-red-600 rounded hover:bg-surface-2"><FiX size={14} /></button>
+                                            </>)}
+                                            <button onClick={() => setHistory(row.id)} aria-label="History" title="History"
+                                                className="px-1.5 py-1 text-xs text-fg-subtle hover:text-brand-600 rounded hover:bg-surface-2">Log</button>
                                             <button onClick={() => openEdit(row)} aria-label="Edit record" title="Edit"
                                                 className="p-1.5 text-fg-subtle hover:text-brand-600 dark:hover:text-brand-400 rounded hover:bg-surface-2 transition-colors">
                                                 <FiEdit2 size={14} />
@@ -480,6 +551,7 @@ export default function Expenses() {
                                                 className="p-1.5 text-fg-subtle hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-surface-2 transition-colors">
                                                 <FiTrash2 size={14} />
                                             </button>
+                                            </>)}
                                         </div>
                                     </td>
                                 </tr>
@@ -523,9 +595,24 @@ export default function Expenses() {
                 onConfirm={() => (confirmDelete.length === 1 ? deleteMutation.mutate(confirmDelete[0]) : bulkDeleteMutation.mutate(confirmDelete))}
                 loading={deleteMutation.isPending || bulkDeleteMutation.isPending}
                 title={confirmDelete?.length > 1 ? `Delete ${confirmDelete.length} records?` : 'Delete this record?'}
-                message="Deleted records are removed from totals and reports. This can't be undone."
+                message="Deleted records are removed from totals and reports. You can restore them from the Deleted view."
                 confirmText={confirmDelete?.length > 1 ? `Delete ${confirmDelete.length} records` : 'Delete record'}
             />
+
+            {history && (
+                <Dialog open onClose={() => setHistory(null)} title="Record history">
+                    {auditLoading ? <p className="text-sm text-fg-subtle">Loading...</p>
+                        : (auditData?.data || []).length === 0 ? <p className="text-sm text-fg-subtle">No history recorded.</p>
+                        : <ul className="space-y-2 text-sm max-h-80 overflow-y-auto">
+                            {auditData.data.map(a => (
+                                <li key={a.id} className="flex justify-between gap-4 border-b border-border pb-2">
+                                    <span className="font-medium text-fg capitalize">{a.action}</span>
+                                    <span className="text-fg-muted text-xs">{new Date(a.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}{a.user_id ? ` · user ${a.user_id}` : ' · system'}</span>
+                                </li>
+                            ))}
+                        </ul>}
+                </Dialog>
+            )}
 
             {modal && (
                 <RecordModal
@@ -552,6 +639,8 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!form.date || !form.amount) { toast.error('Date and amount are required'); return; }
+        if (Number(form.amount) <= 0) { toast.error('Amount must be greater than 0'); return; }
+        if (Number(form.tax_amount || 0) > Number(form.amount)) { toast.error('Tax cannot exceed amount'); return; }
         onSubmit(form);
     };
 
@@ -582,7 +671,7 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-fg-muted mb-1">Amount (₹) *</label>
-                            <input type="number" step="0.01" min="0" value={form.amount} onChange={e => set('amount', e.target.value)} required placeholder="0.00"
+                            <input type="number" step="0.01" min="0.01" value={form.amount} onChange={e => set('amount', e.target.value)} required placeholder="0.00"
                                 className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                         </div>
                     </div>
@@ -638,6 +727,27 @@ function RecordModal({ mode, data, people = [], onAddPerson, addingPerson, onClo
                             className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
                             {Object.entries(PAYMENT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">Account</label>
+                            <select value={form.account || 'bank'} onChange={e => set('account', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500">
+                                {['bank', 'cash', 'upi', 'card', 'wallet', 'other'].map(a => <option key={a} value={a}>{a[0].toUpperCase() + a.slice(1)}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-fg-muted mb-1">GST / Tax included (₹)</label>
+                            <input type="number" step="0.01" min="0" value={form.tax_amount ?? ''} onChange={e => set('tax_amount', e.target.value)} placeholder="0.00"
+                                className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-medium text-fg-muted mb-1">Receipt link</label>
+                        <input type="url" value={form.receipt_url || ''} onChange={e => set('receipt_url', e.target.value)} placeholder="https://drive.google.com/..."
+                            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg bg-surface text-fg focus:ring-2 focus:ring-brand-500" />
                     </div>
 
                     <div className="rounded-lg border border-border p-3 space-y-3">
