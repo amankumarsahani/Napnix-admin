@@ -34,6 +34,7 @@ const Telemetry = React.lazy(() => import('./pages/system/Telemetry'));
 const SiteAnalytics = React.lazy(() => import('./pages/system/SiteAnalytics'));
 const TenantHealth = React.lazy(() => import('./pages/system/TenantHealth'));
 const MonitorEvents = React.lazy(() => import('./pages/system/MonitorEvents'));
+const Monitoring = React.lazy(() => import('./pages/system/Monitoring'));
 const Campaigns = React.lazy(() => import('./pages/marketing/Campaigns'));
 const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail'));
 const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
@@ -107,6 +108,7 @@ function AppRoutes() {
             <Route path="infrastructure/backups" element={<LazyRoute element={<BackupAccounts />} />} />
             <Route path="tenant-health" element={<LazyRoute element={<TenantHealth />} />} />
             <Route path="monitor-events" element={<LazyRoute element={<MonitorEvents />} />} />
+            <Route path="monitoring" element={<LazyRoute element={<Monitoring />} />} />
             <Route path="campaigns" element={<LazyRoute element={<Campaigns />} />} />
             <Route path="campaigns/:id" element={<LazyRoute element={<CampaignDetail />} />} />
             <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />

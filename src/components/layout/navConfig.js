@@ -58,6 +58,7 @@ export const NAV_GROUPS = [
         items: [
             { name: 'Servers', path: '/infrastructure/servers', icon: FiServer, roles: ADMIN },
             { name: 'Backups', path: '/infrastructure/backups', icon: FiHardDrive, roles: ADMIN },
+            { name: 'Monitoring', path: '/monitoring', icon: FiActivity, roles: ADMIN },
             { name: 'Tenant Health', path: '/tenant-health', icon: FiHeart, roles: ADMIN },
             { name: 'Monitor Alerts', path: '/monitor-events', icon: FiShield, roles: ADMIN },
         ],
