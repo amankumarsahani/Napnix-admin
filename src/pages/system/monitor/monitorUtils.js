@@ -16,6 +16,7 @@ export const RULE_LABELS = {
     crash_loop: 'Crash loop',
     pm2_mismatch: 'PM2 status mismatch',
     server_unreachable: 'Server unreachable',
+    monitor_dns_failure: 'Monitor DNS failure',
     credential_stuffing: 'Credential stuffing',
     brute_force_ip: 'Brute force (IP)',
     brute_force_account: 'Brute force (account)',

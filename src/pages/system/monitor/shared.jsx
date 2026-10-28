@@ -15,7 +15,7 @@ export function EventsTable({ query, showTenant = true, empty }) {
     const rows = query.data?.events || [];
     const columns = [
         { key: 'severity', header: 'Severity', render: r => <SeverityBadge severity={r.severity} /> },
-        ...(showTenant ? [{ key: 'tenant', header: 'Tenant', render: r => r.tenant_slug || (r.server_name ? `server: ${r.server_name}` : '—') }] : []),
+        ...(showTenant ? [{ key: 'tenant', header: 'Tenant', render: r => r.tenant_slug || (r.server_name ? `server: ${r.server_name}` : 'monitor host') }] : []),
         { key: 'rule', header: 'Rule', render: r => <span className="whitespace-nowrap">{RULE_LABELS[r.rule] || r.rule}</span> },
         { key: 'summary', header: 'What happened', className: 'min-w-[16rem]', render: r => (
             <span>{r.summary}{r.occurrences > 1 && <span className="ml-1 text-fg-subtle">×{r.occurrences}</span>}</span>
