@@ -11,6 +11,7 @@ import OverviewTab from './detail/OverviewTab';
 import BillingTab from './detail/BillingTab';
 import ToolsTab from './detail/ToolsTab';
 import LogsTab from './detail/LogsTab';
+import MonitoringTab from './detail/MonitoringTab';
 import { DeleteDialog, DomainDialog } from './detail/TenantDialogs';
 import { PROCESS_DOT, apiError } from './detail/helpers';
 
@@ -18,6 +19,7 @@ const TABS = [
     { id: 'overview', label: 'Overview' },
     { id: 'billing', label: 'Billing' },
     { id: 'tools', label: 'Tools' },
+    { id: 'monitoring', label: 'Monitoring' },
     { id: 'logs', label: 'Logs' },
 ];
 const DONE = { start: 'Tenant started', stop: 'Tenant stopped', restart: 'Tenant restarted', provision: 'Tenant provisioned', unsuspend: 'Tenant unsuspended' };
@@ -178,6 +180,7 @@ export default function TenantDetail() {
             )}
             {tab === 'billing' && <BillingTab tenant={tenant} />}
             {tab === 'tools' && <ToolsTab tenant={tenant} />}
+            {tab === 'monitoring' && <MonitoringTab tenant={tenant} />}
             {tab === 'logs' && <LogsTab tenant={tenant} />}
 
             <DomainDialog tenant={tenant} open={domainsOpen} onClose={() => setDomainsOpen(false)} onSubmit={d => domains.mutate(d)} saving={domains.isPending} />

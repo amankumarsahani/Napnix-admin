@@ -32,6 +32,8 @@ const ApiDocumentation = React.lazy(() => import('./pages/admin/ApiDocumentation
 const MobileApp = React.lazy(() => import('./pages/admin/MobileApp'));
 const Telemetry = React.lazy(() => import('./pages/system/Telemetry'));
 const SiteAnalytics = React.lazy(() => import('./pages/system/SiteAnalytics'));
+const TenantHealth = React.lazy(() => import('./pages/system/TenantHealth'));
+const MonitorEvents = React.lazy(() => import('./pages/system/MonitorEvents'));
 const Campaigns = React.lazy(() => import('./pages/marketing/Campaigns'));
 const CampaignDetail = React.lazy(() => import('./pages/marketing/CampaignDetail'));
 const SmtpAccounts = React.lazy(() => import('./pages/marketing/SmtpAccounts'));
@@ -103,6 +105,8 @@ function AppRoutes() {
             <Route path="tenants/:id" element={<LazyRoute element={<TenantDetail />} />} />
             <Route path="infrastructure/servers" element={<LazyRoute element={<Servers />} />} />
             <Route path="infrastructure/backups" element={<LazyRoute element={<BackupAccounts />} />} />
+            <Route path="tenant-health" element={<LazyRoute element={<TenantHealth />} />} />
+            <Route path="monitor-events" element={<LazyRoute element={<MonitorEvents />} />} />
             <Route path="campaigns" element={<LazyRoute element={<Campaigns />} />} />
             <Route path="campaigns/:id" element={<LazyRoute element={<CampaignDetail />} />} />
             <Route path="smtp-accounts" element={<LazyRoute element={<SmtpAccounts />} />} />

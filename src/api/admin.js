@@ -94,4 +94,12 @@ export const siteAnalyticsAPI = {
     getHeatmap:        (page, range) => axios.get('/admin/site-analytics/heatmap', { params: { page, range } }).then(r => r.data),
 };
 
+// Tenant health + security monitoring (nexs-backend workers/tenantMonitorWorker.js)
+export const tenantMonitorAPI = {
+    getOverview: ()                 => axios.get('/admin/tenant-monitor/overview').then(r => r.data),
+    getChecks:   (tenantId, hours)  => axios.get(`/admin/tenant-monitor/tenants/${tenantId}/checks`, { params: { hours } }).then(r => r.data),
+    getEvents:   (params)           => axios.get('/admin/tenant-monitor/events', { params }).then(r => r.data),
+    acknowledge: (ids)              => axios.post('/admin/tenant-monitor/events/ack', { ids }).then(r => r.data),
+};
+
 export default serverService;

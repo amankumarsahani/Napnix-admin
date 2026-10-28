@@ -2,7 +2,7 @@ import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText, FiMail, FiMessageCircle,
     FiLayout, FiCreditCard, FiActivity, FiLayers, FiServer, FiHardDrive, FiDollarSign,
     FiLifeBuoy, FiSend, FiInbox, FiTool, FiTag, FiCode, FiBox, FiGlobe, FiRepeat, FiAtSign,
-    FiImage, FiBookOpen, FiSmartphone, FiTrendingUp,
+    FiImage, FiBookOpen, FiSmartphone, FiTrendingUp, FiHeart, FiShield,
 } from 'react-icons/fi';
 
 // Single source for navigation: Sidebar, CommandPalette and the header breadcrumb all read this.
@@ -58,6 +58,8 @@ export const NAV_GROUPS = [
         items: [
             { name: 'Servers', path: '/infrastructure/servers', icon: FiServer, roles: ADMIN },
             { name: 'Backups', path: '/infrastructure/backups', icon: FiHardDrive, roles: ADMIN },
+            { name: 'Tenant Health', path: '/tenant-health', icon: FiHeart, roles: ADMIN },
+            { name: 'Monitor Alerts', path: '/monitor-events', icon: FiShield, roles: ADMIN },
         ],
     },
     {
