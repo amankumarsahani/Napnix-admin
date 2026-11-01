@@ -366,7 +366,7 @@ const ApiDocumentation = () => {
                         </div>
                         <div>
                             <h1 className={`text-xl font-bold text-fg`}>API Documentation</h1>
-                            <p className={`text-fg-muted text-sm`}>NapCRM v1.0 • 13 Industries • REST API</p>
+                            <p className={`text-fg-muted text-sm`}>Napnix CRM v1.0 • 13 Industries • REST API</p>
                         </div>
                     </div>
                     <div className="relative">

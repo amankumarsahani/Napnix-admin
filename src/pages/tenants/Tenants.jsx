@@ -105,7 +105,7 @@ export default function Tenants() {
         <div className="space-y-4">
             <PageHeader
                 title="Tenants"
-                description="Manage NapCRM customers."
+                description="Manage Napnix CRM customers."
                 actions={<Button variant="primary" onClick={() => setCreating(true)}><FiPlus className="size-4" />Add Tenant</Button>}
             />
 

@@ -93,7 +93,7 @@ export default function MobileApp() {
                     <div className="flex items-center justify-between gap-4 mb-5">
                         <div>
                             <h2 className="text-lg font-semibold text-fg">Current Release</h2>
-                            <p className="text-sm text-fg-muted">The APK currently visible across all NapCRM tenants.</p>
+                            <p className="text-sm text-fg-muted">The APK currently visible across all Napnix CRM tenants.</p>
                         </div>
                     </div>
 

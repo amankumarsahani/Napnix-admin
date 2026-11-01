@@ -55,7 +55,7 @@ export default function TenantHealth() {
         <div>
             <PageHeader
                 title="Tenant health"
-                description="Live status of every trial/active NapCRM tenant. Checked every minute; PM2 and security every 5 minutes."
+                description="Live status of every trial/active Napnix CRM tenant. Checked every minute; PM2 and security every 5 minutes."
                 actions={<>
                     <Link to="/monitor-events" className="inline-flex h-8 items-center rounded-sm border border-border-strong px-2.5 text-sm text-fg hover:bg-surface-2">All alerts</Link>
                     <Button size="sm" onClick={() => query.refetch()} disabled={query.isFetching}>

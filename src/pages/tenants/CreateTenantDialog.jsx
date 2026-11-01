@@ -7,7 +7,7 @@ import serverService from '../../api/admin';
 import { Button, Dialog, Field, Input, Select, cx } from '../../components/ui';
 
 const PRODUCTS = [
-    { slug: 'nexcrm', name: 'NapCRM', desc: 'Full CRM with contacts, deals, tasks, storefront', icon: FiDatabase },
+    { slug: 'nexcrm', name: 'Napnix CRM', desc: 'Full CRM with contacts, deals, tasks, storefront', icon: FiDatabase },
     { slug: 'napmail', name: 'NapMail', desc: 'Email marketing campaigns & automation', icon: FiMail },
 ];
 

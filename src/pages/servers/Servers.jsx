@@ -43,7 +43,7 @@ function ServerForm({ server, onSubmit }) {
             </fieldset>
             <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <legend className="mb-3 text-sm font-semibold text-fg">Runtime paths and ports</legend>
-                <Field label="NapCRM backend path" required className="sm:col-span-2"><Input required value={form.nexcrm_backend_path} onChange={set('nexcrm_backend_path')} className="font-mono" /></Field>
+                <Field label="Napnix CRM backend path" required className="sm:col-span-2"><Input required value={form.nexcrm_backend_path} onChange={set('nexcrm_backend_path')} className="font-mono" /></Field>
                 <Field label="PM2 ecosystem path" required><Input required value={form.ecosystem_config_path} onChange={set('ecosystem_config_path')} className="font-mono" /></Field>
                 <Field label="Tunnel config path" required><Input required value={form.cloudflare_config_path} onChange={set('cloudflare_config_path')} className="font-mono" /></Field>
                 <Field label="Tenant port start" required><Input type="number" min="1024" max="65535" required value={form.port_start} onChange={set('port_start', true)} className="font-mono" /></Field>
