@@ -10,6 +10,7 @@ export const RULE_LABELS = {
     db_unreachable: 'Database unreachable',
     tenant_recovered: 'Recovered',
     slow: 'Slow responses',
+    slow_network: 'Slow public path (tunnel)',
     memory_high: 'High memory',
     error_spike: '5xx spike',
     scan_suspect: '4xx spike (scanning?)',
