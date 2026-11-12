@@ -103,4 +103,14 @@ export const tenantMonitorAPI = {
     acknowledge: (ids)              => axios.post('/admin/tenant-monitor/events/ack', { ids }).then(r => r.data),
 };
 
+// FlatFit (flatmate app) admin: nexs-backend routes/flatfit.routes.js, reading the flatfit database
+export const flatfitAPI = {
+    getOverview: ()             => axios.get('/admin/flatfit/overview').then(r => r.data),
+    getReports:  (status)       => axios.get('/admin/flatfit/reports', { params: { status } }).then(r => r.data),
+    actOnReport: (id, action)   => axios.post(`/admin/flatfit/reports/${id}`, { action }).then(r => r.data),
+    getUsers:    (params)       => axios.get('/admin/flatfit/users', { params }).then(r => r.data),
+    setStatus:   (id, status)   => axios.post(`/admin/flatfit/users/${id}/status`, { status }).then(r => r.data),
+    getWaitlist: ()             => axios.get('/admin/flatfit/waitlist').then(r => r.data),
+};
+
 export default serverService;

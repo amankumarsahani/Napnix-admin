@@ -2,7 +2,7 @@ import {
     FiBarChart2, FiUsers, FiSettings, FiBriefcase, FiZap, FiFileText, FiMail, FiMessageCircle,
     FiLayout, FiCreditCard, FiActivity, FiLayers, FiServer, FiHardDrive, FiDollarSign,
     FiLifeBuoy, FiSend, FiInbox, FiTool, FiTag, FiCode, FiBox, FiGlobe, FiRepeat, FiAtSign,
-    FiImage, FiBookOpen, FiSmartphone, FiTrendingUp, FiHeart, FiShield,
+    FiImage, FiBookOpen, FiSmartphone, FiTrendingUp, FiHeart, FiShield, FiHome,
 } from 'react-icons/fi';
 
 // Single source for navigation: Sidebar, CommandPalette and the header breadcrumb all read this.
@@ -15,6 +15,7 @@ export const NAV_GROUPS = [
         items: [
             { name: 'Dashboard', path: '/dashboard', icon: FiBarChart2, roles: ['admin', 'sales_operator'] },
             { name: 'Tenants', path: '/tenants', icon: FiLayers, roles: ADMIN },
+            { name: 'FlatFit', path: '/flatfit', icon: FiHome, roles: ADMIN },
             { name: 'Clients', path: '/clients', icon: FiUsers, roles: ['admin', 'user'] },
             { name: 'Projects', path: '/projects', icon: FiBriefcase, roles: ['admin', 'user'] },
             { name: 'Leads', path: '/leads', icon: FiZap, roles: ['admin', 'sales_operator'] },
